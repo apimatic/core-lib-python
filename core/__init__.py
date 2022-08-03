@@ -1,5 +1,5 @@
 __all__ = [
-    'http',
     'configurations',
-    'utilities'
+    'http',
+    'utilities',
 ]
