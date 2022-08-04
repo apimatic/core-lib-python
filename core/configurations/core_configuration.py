@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from http.client.core_requests_client import CoreRequestsClient
+from core.http.client.core_requests_client import CoreRequestsClient
 
 
 class CoreConfiguration(object):

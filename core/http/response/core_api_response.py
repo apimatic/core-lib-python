@@ -38,6 +38,7 @@ class CoreApiResponse:
         self.body = body
         self.errors = errors
 
+
     def is_success(self):
         """ Returns true if status code is between 200-300
 

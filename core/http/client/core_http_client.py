@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from http.request.core_request import CoreHttpRequest
+from core.http.request.core_request import CoreHttpRequest
 
-from http.core_http_method_enum import CoreHttpMethodEnum
+from core.http.core_http_method_enum import CoreHttpMethodEnum
 
 
 class CoreHttpClient(object):

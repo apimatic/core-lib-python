@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-from utilities.api_helper import CoreHelper
+from core.utilities.core_helper import CoreHelper
 
 
 class CoreHttpRequest(object):

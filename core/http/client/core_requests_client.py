@@ -4,10 +4,10 @@ from cachecontrol import CacheControl
 from requests import session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from http.client.core_http_client import CoreHttpClient
-from http.core_http_method_enum import CoreHttpMethodEnum
+from core.http.client.core_http_client import CoreHttpClient
+from core.http.core_http_method_enum import CoreHttpMethodEnum
 
-from http.response.core_response import CoreHttpResponse
+from core.http.response.core_response import CoreHttpResponse
 
 
 class CoreRequestsClient(CoreHttpClient):
