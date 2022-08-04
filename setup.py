@@ -20,6 +20,7 @@ setup(
     author_email='support@apimatic.io',
     url='https://apimatic.io',
     packages=find_packages(),
+    package_data={"core": ["py.typed"]},
     install_requires=[
         'jsonpickle~=1.4, >= 1.4.1',
         'requests~=2.25',
