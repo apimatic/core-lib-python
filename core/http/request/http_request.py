@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 
-from core.utilities.core_helper import CoreHelper
+from core.utilities.api_helper import ApiHelper
 
 
-class CoreHttpRequest(object):
+class HttpRequest(object):
     """Information about an HTTP Request including its method, headers,
         parameters, URL, and Basic Auth details
 
@@ -74,8 +74,8 @@ class CoreHttpRequest(object):
             value (string): The value of the query parameter.
 
         """
-        self.query_url = CoreHelper.append_url_with_query_parameters(
+        self.query_url = ApiHelper.append_url_with_query_parameters(
             self.query_url,
             {name: value}
         )
-        self.query_url = CoreHelper.clean_url(self.query_url)
+        self.query_url = ApiHelper.clean_url(self.query_url)

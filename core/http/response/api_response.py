@@ -1,6 +1,6 @@
 
 
-class CoreApiResponse:
+class ApiResponse:
 
     """Http response received.
 

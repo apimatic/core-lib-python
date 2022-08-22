@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-
-class CoreHttpResponse(object):
-
+class HttpResponse(object):
     """Information about an HTTP Response including its status code, returned
         headers, and raw body
 

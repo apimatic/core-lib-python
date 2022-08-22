@@ -4,13 +4,13 @@ from cachecontrol import CacheControl
 from requests import session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from core.http.client.core_http_client import CoreHttpClient
-from core.http.core_http_method_enum import CoreHttpMethodEnum
+from core.http.client.http_client import HttpClient
+from core.http.http_method_enum import HttpMethodEnum
 
-from core.http.response.core_response import CoreHttpResponse
+from core.http.response.http_response import HttpResponse
 
 
-class CoreRequestsClient(CoreHttpClient):
+class RequestsClient(HttpClient):
     """An implementation of CoreHttpClient that uses Requests as its HTTP Client
 
     Attributes:
@@ -34,12 +34,12 @@ class CoreRequestsClient(CoreHttpClient):
             timeout (float): The default global timeout(seconds).
 
         """
-        if http_client_instance == None:
-            self.create_default_http_cient(timeout, cache, max_retries,
+        if http_client_instance is None:
+            self.create_default_http_client(timeout, cache, max_retries,
                                            backoff_factor, retry_statuses,
                                            retry_methods, verify)
         else:
-            if override_http_client_configuration == True:
+            if override_http_client_configuration:
                 http_client_instance.timeout = timeout
                 http_client_instance.session.verify = verify
                 adapters = http_client_instance.session.adapters
@@ -52,14 +52,14 @@ class CoreRequestsClient(CoreHttpClient):
             self.timeout = http_client_instance.timeout
             self.session = http_client_instance.session
 
-    def create_default_http_cient(self,
-                                  timeout=60,
-                                  cache=False,
-                                  max_retries=None,
-                                  backoff_factor=None,
-                                  retry_statuses=None,
-                                  retry_methods=None,
-                                  verify=True):
+    def create_default_http_client(self,
+                                   timeout=60,
+                                   cache=False,
+                                   max_retries=None,
+                                   backoff_factor=None,
+                                   retry_statuses=None,
+                                   retry_methods=None,
+                                   verify=True):
         self.timeout = timeout
         self.session = session()
 
@@ -89,12 +89,12 @@ class CoreRequestsClient(CoreHttpClient):
             for adapter in adapters.values():
                 adapter.max_retries.allowed_methods = [request.http_method]
 
-    def execute_as_string(self, request, to_retry=None):
+    def execute(self, request, endpoint_configuration):
         """Execute a given HttpRequest to get a string response back
 
         Args:
             request (HttpRequest): The given HttpRequest to execute.
-            to_retry (boolean): whether to retry on a particular request
+            endpoint_configuration (EndpointConfiguration): The endpoint configurations to use.
 
         Returns:
             CoreHttpResponse: The response of the HttpRequest.
@@ -102,9 +102,9 @@ class CoreRequestsClient(CoreHttpClient):
         """
 
         old_adapters = self.session.adapters
-        self.force_retries(request, to_retry)
+        self.force_retries(request, endpoint_configuration.to_retry)
         response = self.session.request(
-            CoreHttpMethodEnum.to_string(request.http_method),
+            HttpMethodEnum.to_string(request.http_method),
             request.query_url,
             headers=request.headers,
             params=request.query_parameters,
@@ -114,59 +114,27 @@ class CoreRequestsClient(CoreHttpClient):
         )
 
         self.session.adapters = old_adapters
-        return self.convert_response(response, False, request)
+        return self.convert_response(response, endpoint_configuration.has_binary_response, request)
 
-    def execute_as_binary(self, request, to_retry=None):
-        """Execute a given HttpRequest to get a binary response back
-
-        Args:
-            request (HttpRequest): The given HttpRequest to execute.
-            to_retry (boolean): whether to retry on a particular request
-
-        Returns:
-            CoreHttpResponse: The response of the HttpRequest.
-
-        """
-
-        old_adapters = self.session.adapters
-        self.force_retries(request, to_retry)
-        response = self.session.request(
-            CoreHttpMethodEnum.to_string(request.http_method),
-            request.query_url,
-            headers=request.headers,
-            params=request.query_parameters,
-            data=request.parameters,
-            files=request.files,
-            timeout=self.timeout
-        )
-        self.session.adapters = old_adapters
-        return self.convert_response(response, True, request)
-
-    def convert_response(self, response, binary, http_request):
+    def convert_response(self, response, is_binary_response, http_request):
         """Converts the Response object of the CoreHttpClient into an
         CoreHttpResponse object.
 
         Args:
             response (dynamic): The original response object.
+            is_binary_response (bool): The flag to check if the response is of binary type.
             http_request (HttpRequest): The original HttpRequest object.
 
         Returns:
             CoreHttpResponse: The converted CoreHttpResponse object.
 
         """
-        if binary:
-            return CoreHttpResponse(
-                response.status_code,
-                response.reason,
-                response.headers,
-                response.content,
-                http_request
-            )
-        else:
-            return CoreHttpResponse(
-                response.status_code,
-                response.reason,
-                response.headers,
-                response.text,
-                http_request
-            )
+        response_body = response.content if is_binary_response else response.text
+
+        return HttpResponse(
+            response.status_code,
+            response.reason,
+            response.headers,
+            response_body,
+            http_request
+        )

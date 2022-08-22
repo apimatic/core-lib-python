@@ -1,3 +1,3 @@
 __all__ = [
-    'core_configuration',
+    'global_configuration',
 ]

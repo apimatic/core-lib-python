@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from core.http.client.core_requests_client import CoreRequestsClient
+from core.http.client.requests_client import RequestsClient
 
 
-class CoreConfiguration(object):
+class HttpClientConfiguration(object):
     """A class used for configuring the SDK by a user.
     """
 
@@ -17,10 +17,6 @@ class CoreConfiguration(object):
     @property
     def override_http_client_configuration(self):
         return self._override_http_client_configuration
-
-    @property
-    def http_call_back(self):
-        return self._http_call_back
 
     @property
     def timeout(self):
@@ -42,25 +38,12 @@ class CoreConfiguration(object):
     def retry_methods(self):
         return self._retry_methods
 
-    @property
-    def environment(self):
-        return self._environment
-
-    @property
-    def port(self):
-        return self._port
-
-    @property
-    def suites(self):
-        return self._suites
-
     def __init__(
             self, http_client_instance,
             override_http_client_configuration, http_call_back,
             timeout, max_retries, backoff_factor,
             retry_statuses,
-            retry_methods, environment,
-            port, suites
+            retry_methods
     ):
         # The Http Client passed from the sdk user for making requests
         self._http_client_instance = http_client_instance
@@ -88,46 +71,11 @@ class CoreConfiguration(object):
         # The http methods on which retry is to be done
         self._retry_methods = retry_methods
 
-        # Current API environment
-        self._environment = environment
-
-        # port value
-        self._port = port
-
-        # suites value
-        self._suites = suites
-
         # The Http Client to use for making requests.
         self._http_client = self.create_http_client()
 
-    def clone_with(self, http_client_instance=None,
-                   override_http_client_configuration=None, http_call_back=None,
-                   timeout=None, max_retries=None, backoff_factor=None,
-                   retry_statuses=None, retry_methods=None, environment=None,
-                   port=None, suites=None):
-        http_client_instance = http_client_instance or self.http_client_instance
-        override_http_client_configuration = override_http_client_configuration or self.override_http_client_configuration
-        http_call_back = http_call_back or self.http_call_back
-        timeout = timeout or self.timeout
-        max_retries = max_retries or self.max_retries
-        backoff_factor = backoff_factor or self.backoff_factor
-        retry_statuses = retry_statuses or self.retry_statuses
-        retry_methods = retry_methods or self.retry_methods
-        environment = environment or self.environment
-        port = port or self.port
-        suites = suites or self.suites
-
-        return CoreConfiguration(
-            http_client_instance=http_client_instance,
-            override_http_client_configuration=override_http_client_configuration,
-            http_call_back=http_call_back, timeout=timeout,
-            max_retries=max_retries, backoff_factor=backoff_factor,
-            retry_statuses=retry_statuses, retry_methods=retry_methods,
-            environment=environment, port=port, suites=suites
-        )
-
     def create_http_client(self):
-        return CoreRequestsClient(
+        return RequestsClient(
             timeout=self.timeout, max_retries=self.max_retries,
             backoff_factor=self.backoff_factor, retry_statuses=self.retry_statuses,
             retry_methods=self.retry_methods,

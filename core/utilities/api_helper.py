@@ -13,7 +13,7 @@ import dateutil.parser
 from requests.utils import quote
 
 
-class CoreHelper(object):
+class ApiHelper(object):
     """A Helper Class for various functions associated with API Calls.
 
     This class contains static methods for operations that need to be
@@ -42,8 +42,8 @@ class CoreHelper(object):
         if type(value) is str:
             return value
         if is_wrapped:
-            return CoreHelper.json_serialize_wrapped_params(value)
-        return CoreHelper.json_serialize(value)
+            return ApiHelper.json_serialize_wrapped_params(value)
+        return ApiHelper.json_serialize(value)
 
     @staticmethod
     def json_serialize_wrapped_params(obj):
@@ -60,7 +60,7 @@ class CoreHelper(object):
             return None
         val = dict()
         for k, v in obj.items():
-            val[k] = CoreHelper.json_serialize(v, should_encode=False)
+            val[k] = ApiHelper.json_serialize(v, should_encode=False)
 
         return jsonpickle.encode(val, False)
 
@@ -84,13 +84,13 @@ class CoreHelper(object):
             value = list()
             for item in obj:
                 if hasattr(item, "_names"):
-                    value.append(CoreHelper.to_dictionary(item))
+                    value.append(ApiHelper.to_dictionary(item))
                 else:
                     value.append(item)
             obj = value
         else:
             if hasattr(obj, "_names"):
-                obj = CoreHelper.to_dictionary(obj)
+                obj = ApiHelper.to_dictionary(obj)
         if not should_encode:
             return obj
         return jsonpickle.encode(obj, False)
@@ -177,9 +177,9 @@ class CoreHelper(object):
         tuples = []
 
         if sys.version_info[0] < 3:
-            serializable_types = (str, int, long, float, bool, datetime.date, CoreHelper.CustomDate)
+            serializable_types = (str, int, long, float, bool, datetime.date, ApiHelper.CustomDate)
         else:
-            serializable_types = (str, int, float, bool, datetime.date, CoreHelper.CustomDate)
+            serializable_types = (str, int, float, bool, datetime.date, ApiHelper.CustomDate)
 
         if isinstance(array[0], serializable_types):
             if formatting == "unindexed":
@@ -261,7 +261,7 @@ class CoreHelper(object):
             raise ValueError("URL is None.")
         if parameters is None:
             return url
-        parameters = CoreHelper.process_complex_types_parameters(parameters, array_serialization)
+        parameters = ApiHelper.process_complex_types_parameters(parameters, array_serialization)
         for index, value in enumerate(parameters):
             key = value[0]
             val = value[1]
@@ -276,7 +276,7 @@ class CoreHelper(object):
         processed_params = []
         for key, value in query_parameters.items():
             processed_params.extend(
-                CoreHelper.form_encode(value, key, array_serialization=array_serialization, is_query=True))
+                ApiHelper.form_encode(value, key, array_serialization=array_serialization, is_query=True))
         return processed_params
 
     @staticmethod
@@ -321,7 +321,7 @@ class CoreHelper(object):
         encoded = []
 
         for key, value in form_parameters.items():
-            encoded += CoreHelper.form_encode(value, key, array_serialization)
+            encoded += ApiHelper.form_encode(value, key, array_serialization)
 
         return encoded
 
@@ -345,16 +345,16 @@ class CoreHelper(object):
         retval = []
         # If we received an object, resolve it's field names.
         if hasattr(obj, "_names"):
-            obj = CoreHelper.to_dictionary(obj)
+            obj = ApiHelper.to_dictionary(obj)
 
         if obj is None:
             return []
         elif isinstance(obj, list):
-            for element in CoreHelper.serialize_array(instance_name, obj, array_serialization, is_query):
-                retval += CoreHelper.form_encode(element[1], element[0], array_serialization, is_query)
+            for element in ApiHelper.serialize_array(instance_name, obj, array_serialization, is_query):
+                retval += ApiHelper.form_encode(element[1], element[0], array_serialization, is_query)
         elif isinstance(obj, dict):
             for item in obj:
-                retval += CoreHelper.form_encode(obj[item], instance_name + "[" + item + "]", array_serialization,
+                retval += ApiHelper.form_encode(obj[item], instance_name + "[" + item + "]", array_serialization,
                                                  is_query)
         else:
             retval.append((instance_name, obj))
@@ -383,9 +383,9 @@ class CoreHelper(object):
         # Loop through all properties in this model
 
         for name in obj._names:
-            value = getattr(obj, name, CoreHelper.SKIP)
+            value = getattr(obj, name, ApiHelper.SKIP)
 
-            if value is CoreHelper.SKIP:
+            if value is ApiHelper.SKIP:
                 continue
 
             if value is None:
@@ -398,16 +398,16 @@ class CoreHelper(object):
                 dictionary[obj._names[name]] = list()
                 for item in value:
                     dictionary[obj._names[name]].append(
-                        CoreHelper.to_dictionary(item) if hasattr(item, "_names") else item)
+                        ApiHelper.to_dictionary(item) if hasattr(item, "_names") else item)
             elif isinstance(value, dict):
                 # Loop through each item
                 dictionary[obj._names[name]] = dict()
                 for key in value:
-                    dictionary[obj._names[name]][key] = CoreHelper.to_dictionary(value[key]) if hasattr(value[key],
+                    dictionary[obj._names[name]][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
                                                                                                         "_names") else \
                         value[key]
             else:
-                dictionary[obj._names[name]] = CoreHelper.to_dictionary(value) if hasattr(value, "_names") else value
+                dictionary[obj._names[name]] = ApiHelper.to_dictionary(value) if hasattr(value, "_names") else value
 
         # Loop through all additional properties in this model
         for name in obj.additional_properties:
@@ -417,16 +417,16 @@ class CoreHelper(object):
                 dictionary[name] = list()
                 for item in value:
                     dictionary[name].append(
-                        CoreHelper.to_dictionary(item) if hasattr(item, "additional_properties") else item)
+                        ApiHelper.to_dictionary(item) if hasattr(item, "additional_properties") else item)
             elif isinstance(value, dict):
                 # Loop through each item
                 dictionary[name] = dict()
                 for key in value:
-                    dictionary[name][key] = CoreHelper.to_dictionary(value[key]) if hasattr(value[key],
+                    dictionary[name][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
                                                                                             "additional_properties") else \
                         value[key]
             else:
-                dictionary[name] = CoreHelper.to_dictionary(value) if hasattr(value, "additional_properties") else value
+                dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value, "additional_properties") else value
 
         # Return the result
         return dictionary

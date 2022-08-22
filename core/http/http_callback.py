@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-class CoreHttpCallBack(object):
+class HttpCallBack(object):
     """An interface for  the callback to be called before and after the
     HTTP call for an endpoint is made.
 

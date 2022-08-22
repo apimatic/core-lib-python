@@ -1,3 +1,3 @@
 __all__ = [
-    'core_request',
+    'http_request',
 ]

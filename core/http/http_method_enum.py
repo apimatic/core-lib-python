@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-class CoreHttpMethodEnum(object):
+class HttpMethodEnum(object):
     """Enumeration of an HTTP Method
 
     Attributes:

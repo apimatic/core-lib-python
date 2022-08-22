@@ -1,4 +1,5 @@
 __all__ = [
-    'core_http_client',
-    'core_requests_client',
+    'http_client',
+    'http_client_configuration',
+    'requests_client'
 ]
