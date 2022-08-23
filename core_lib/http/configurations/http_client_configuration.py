@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from core.http.client.requests_client import RequestsClient
+from core_lib.factories.http_response_factory import HttpResponseFactory
 
 
 class HttpClientConfiguration(object):
@@ -7,8 +7,16 @@ class HttpClientConfiguration(object):
     """
 
     @property
+    def http_response_factory(self):
+        return self._http_response_factory
+
+    @property
     def http_client(self):
         return self._http_client
+
+    @property
+    def http_callback(self):
+        return self._http_call_back
 
     @property
     def http_client_instance(self):
@@ -45,6 +53,8 @@ class HttpClientConfiguration(object):
             retry_statuses,
             retry_methods
     ):
+        self._http_response_factory = HttpResponseFactory()
+
         # The Http Client passed from the sdk user for making requests
         self._http_client_instance = http_client_instance
 
@@ -72,13 +82,7 @@ class HttpClientConfiguration(object):
         self._retry_methods = retry_methods
 
         # The Http Client to use for making requests.
-        self._http_client = self.create_http_client()
+        self._http_client = None
 
-    def create_http_client(self):
-        return RequestsClient(
-            timeout=self.timeout, max_retries=self.max_retries,
-            backoff_factor=self.backoff_factor, retry_statuses=self.retry_statuses,
-            retry_methods=self.retry_methods,
-            http_client_instance=self.http_client_instance,
-            override_http_client_configuration=self.override_http_client_configuration
-        )
+    def set_http_client(self, http_client):
+        self._http_client = http_client

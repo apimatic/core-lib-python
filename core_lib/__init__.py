@@ -6,4 +6,5 @@ __all__ = [
     'decorators',
     'http',
     'utilities',
+    'factories'
 ]
