@@ -16,15 +16,13 @@ setup(
     description='The core library for python SDKs provided by APIMatic',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author='APIMatic SDK Generator',
+    author='APIMatic',
     author_email='support@apimatic.io',
     url='https://apimatic.io',
     packages=find_packages(),
-    package_data={"core": ["py.typed"]},
+    # package_data={"core": ["py.typed"]},
     install_requires=[
         'jsonpickle~=1.4, >= 1.4.1',
-        'requests~=2.25',
-        'cachecontrol~=0.12.6',
         'python-dateutil~=2.8.1',
         'enum34~=1.1, >=1.1.10'
     ],

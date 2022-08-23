@@ -1,4 +1,5 @@
 __all__ = [
+    'authentication',
     'api_call',
     'request_builder',
     'response_handler',
@@ -6,4 +7,6 @@ __all__ = [
     'decorators',
     'http',
     'utilities',
+    'factories',
+    'types'
 ]

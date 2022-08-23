@@ -10,6 +10,7 @@ from time import mktime
 
 import jsonpickle
 import dateutil.parser
+from core_lib.types.datetime_format import DateTimeFormat
 from requests.utils import quote
 
 
@@ -124,6 +125,73 @@ class ApiHelper(object):
             return [unboxing_function(element) for element in decoded]
         else:
             return unboxing_function(decoded)
+
+    @staticmethod
+    def dynamic_deserialize(dynamic_response):
+        """JSON Deserialization of a given string.
+
+        Args:
+            dynamic_response (str): The response string to deserialize.
+
+        Returns:
+            dict: A dictionary representing the data contained in the
+                JSON serialized string.
+
+
+        """
+        if dynamic_response is not None or not str(dynamic_response):
+            return ApiHelper.json_deserialize(dynamic_response)
+
+    @staticmethod
+    def date_deserialize(response):
+        """JSON Deserialization of a given string.
+
+        Args:
+            json (str): The JSON serialized string to deserialize.
+
+        Returns:
+            dict: A dictionary representing the data contained in the
+                JSON serialized string.
+
+        """
+        deserialized_response = ApiHelper.json_deserialize(response)
+        if isinstance(deserialized_response, list):
+            return [dateutil.parser.parse(element).date() for element in deserialized_response]
+
+        return dateutil.parser.parse(deserialized_response).date()
+
+
+    @staticmethod
+    def datetime_deserialize(response, datetime_format):
+        """JSON Deserialization of a given string.
+
+        Args:
+            json (str): The JSON serialized string to deserialize.
+
+        Returns:
+            dict: A dictionary representing the data contained in the
+                JSON serialized string.
+
+        """
+        deserialized_response = ApiHelper.json_deserialize(response)
+        if DateTimeFormat.HTTP_DATE_TIME == datetime_format:
+            if isinstance(deserialized_response, list):
+                return [element.datetime for element in
+                        ApiHelper.json_deserialize(response, ApiHelper.HttpDateTime.from_value)]
+            else:
+                return ApiHelper.HttpDateTime.from_value(response).datetime
+        elif DateTimeFormat.UNIX_DATE_TIME == datetime_format:
+            if isinstance(deserialized_response, list):
+                return [element.datetime for element in
+                        ApiHelper.json_deserialize(response, ApiHelper.UnixDateTime.from_value)]
+            else:
+                return ApiHelper.UnixDateTime.from_value(response).datetime
+        elif DateTimeFormat.RFC3339_DATE_TIME == datetime_format:
+            if isinstance(deserialized_response, list):
+                return [element.datetime for element in
+                        ApiHelper.json_deserialize(response, ApiHelper.RFC3339DateTime.from_value)]
+            else:
+                return ApiHelper.RFC3339DateTime.from_value(response).datetime
 
     @staticmethod
     def get_content_type(value):
@@ -355,7 +423,7 @@ class ApiHelper(object):
         elif isinstance(obj, dict):
             for item in obj:
                 retval += ApiHelper.form_encode(obj[item], instance_name + "[" + item + "]", array_serialization,
-                                                 is_query)
+                                                is_query)
         else:
             retval.append((instance_name, obj))
 
@@ -404,7 +472,7 @@ class ApiHelper(object):
                 dictionary[obj._names[name]] = dict()
                 for key in value:
                     dictionary[obj._names[name]][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
-                                                                                                        "_names") else \
+                                                                                                       "_names") else \
                         value[key]
             else:
                 dictionary[obj._names[name]] = ApiHelper.to_dictionary(value) if hasattr(value, "_names") else value
@@ -423,7 +491,7 @@ class ApiHelper(object):
                 dictionary[name] = dict()
                 for key in value:
                     dictionary[name][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
-                                                                                            "additional_properties") else \
+                                                                                           "additional_properties") else \
                         value[key]
             else:
                 dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value, "additional_properties") else value

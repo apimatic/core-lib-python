@@ -1,7 +1,6 @@
 __all__ = [
     'http_callback',
-    'http_method_enum',
-    'client',
+    'configurations',
     'request',
     'response'
 ]
