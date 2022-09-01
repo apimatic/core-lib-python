@@ -10,6 +10,8 @@ from time import mktime
 
 import jsonpickle
 import dateutil.parser
+
+from core_lib.types.array_serialization_format import SerializationFormats
 from core_lib.types.datetime_format import DateTimeFormat
 from requests.utils import quote
 
@@ -250,20 +252,20 @@ class ApiHelper(object):
             serializable_types = (str, int, float, bool, datetime.date, ApiHelper.CustomDate)
 
         if isinstance(array[0], serializable_types):
-            if formatting == "unindexed":
+            if formatting == SerializationFormats.UN_INDEXED:
                 tuples += [("{0}[]".format(key), element) for element in array]
-            elif formatting == "indexed":
+            elif formatting == SerializationFormats.INDEXED:
                 tuples += [("{0}[{1}]".format(key, index), element) for index, element in enumerate(array)]
-            elif formatting == "plain":
+            elif formatting == SerializationFormats.PLAIN:
                 tuples += [(key, element) for element in array]
             elif is_query:
-                if formatting == "csv":
+                if formatting == SerializationFormats.CSV:
                     tuples += [(key, ",".join(str(x) for x in array))]
 
-                elif formatting == "psv":
+                elif formatting == SerializationFormats.PSV:
                     tuples += [(key, "|".join(str(x) for x in array))]
 
-                elif formatting == "tsv":
+                elif formatting == SerializationFormats.TSV:
                     tuples += [(key, "\t".join(str(x) for x in array))]
 
             else:
@@ -478,23 +480,24 @@ class ApiHelper(object):
                 dictionary[obj._names[name]] = ApiHelper.to_dictionary(value) if hasattr(value, "_names") else value
 
         # Loop through all additional properties in this model
-        for name in obj.additional_properties:
-            value = obj.additional_properties.get(name)
-            if isinstance(value, list):
-                # Loop through each item
-                dictionary[name] = list()
-                for item in value:
-                    dictionary[name].append(
-                        ApiHelper.to_dictionary(item) if hasattr(item, "additional_properties") else item)
-            elif isinstance(value, dict):
-                # Loop through each item
-                dictionary[name] = dict()
-                for key in value:
-                    dictionary[name][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
-                                                                                           "additional_properties") else \
-                        value[key]
-            else:
-                dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value, "additional_properties") else value
+        if hasattr(obj, "additional_properties"):
+            for name in obj.additional_properties:
+                value = obj.additional_properties.get(name)
+                if isinstance(value, list):
+                    # Loop through each item
+                    dictionary[name] = list()
+                    for item in value:
+                        dictionary[name].append(
+                            ApiHelper.to_dictionary(item) if hasattr(item, "additional_properties") else item)
+                elif isinstance(value, dict):
+                    # Loop through each item
+                    dictionary[name] = dict()
+                    for key in value:
+                        dictionary[name][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
+                                                                                               "additional_properties") else \
+                            value[key]
+                else:
+                    dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value, "additional_properties") else value
 
         # Return the result
         return dictionary
