@@ -30,12 +30,7 @@ class Single(Authentication):
         return self._is_valid
 
     def apply(self, http_request):
-        """ Add OAuth2 authentication to the request.
 
-            http_request (HttpRequest): The HttpRequest object to which
-                authentication header will be added.
-
-        """
         if not self._is_valid:
             return
 
