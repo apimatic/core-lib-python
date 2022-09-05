@@ -11,6 +11,7 @@ from time import mktime
 import jsonpickle
 import dateutil.parser
 from core_lib.types.datetime_format import DateTimeFormat
+from core_lib.types.file_wrapper import FileWrapper
 from requests.utils import quote
 
 
@@ -502,6 +503,10 @@ class ApiHelper(object):
     @staticmethod
     def when_defined(func, value):
         return func(value) if value else None
+
+    @staticmethod
+    def is_file_wrapper_instance(param):
+        return isinstance(param, FileWrapper)
 
     class CustomDate(object):
 
