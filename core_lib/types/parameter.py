@@ -1,17 +1,17 @@
 
 class Parameter:
 
-    @property
     def get_key(self):
         return self._key
 
-    @property
     def get_value(self):
         return self._value
 
-    @property
-    def needs_encoding(self):
+    def need_to_encode(self):
         return self._should_encode
+
+    def get_default_content_type(self):
+        return self._default_content_type
 
     def __init__(
             self
@@ -20,6 +20,7 @@ class Parameter:
         self._value = None
         self._is_required = False
         self._should_encode = False
+        self._default_content_type = False
 
     def key(self, key):
         self._key = key
@@ -35,6 +36,10 @@ class Parameter:
 
     def should_encode(self, should_encode):
         self._should_encode = should_encode
+        return self
+
+    def default_content_type(self, default_content_type):
+        self._default_content_type = default_content_type
         return self
 
     def validate(self):
