@@ -479,23 +479,24 @@ class ApiHelper(object):
                 dictionary[obj._names[name]] = ApiHelper.to_dictionary(value) if hasattr(value, "_names") else value
 
         # Loop through all additional properties in this model
-        for name in obj.additional_properties:
-            value = obj.additional_properties.get(name)
-            if isinstance(value, list):
-                # Loop through each item
-                dictionary[name] = list()
-                for item in value:
-                    dictionary[name].append(
-                        ApiHelper.to_dictionary(item) if hasattr(item, "additional_properties") else item)
-            elif isinstance(value, dict):
-                # Loop through each item
-                dictionary[name] = dict()
-                for key in value:
-                    dictionary[name][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
-                                                                                           "additional_properties") else \
-                        value[key]
-            else:
-                dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value, "additional_properties") else value
+        if hasattr(obj, "additional_properties"):
+            for name in obj.additional_properties:
+                value = obj.additional_properties.get(name)
+                if isinstance(value, list):
+                    # Loop through each item
+                    dictionary[name] = list()
+                    for item in value:
+                        dictionary[name].append(
+                            ApiHelper.to_dictionary(item) if hasattr(item, "additional_properties") else item)
+                elif isinstance(value, dict):
+                    # Loop through each item
+                    dictionary[name] = dict()
+                    for key in value:
+                        dictionary[name][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
+                                                                                               "additional_properties") else \
+                            value[key]
+                else:
+                    dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value, "additional_properties") else value
 
         # Return the result
         return dictionary
