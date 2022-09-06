@@ -14,6 +14,7 @@ class ResponseHandler:
         self._is_nullify404 = False
         self._local_errors = {}
         self._datetime_format = None
+        self._is_xml_response = False
 
     def deserializer(self, deserializer):
         self._deserializer = deserializer
@@ -41,6 +42,10 @@ class ResponseHandler:
 
     def datetime_format(self, datetime_format):
         self._datetime_format = datetime_format
+        return self
+
+    def is_xml_response(self, is_xml_response):
+        self._is_xml_response = is_xml_response
         return self
 
     def handle(self, response, global_errors):
