@@ -15,6 +15,7 @@ class ResponseHandler:
         self._local_errors = {}
         self._datetime_format = None
         self._is_xml_response = False
+        self._xml_item_name = None
 
     def deserializer(self, deserializer):
         self._deserializer = deserializer
@@ -46,6 +47,10 @@ class ResponseHandler:
 
     def is_xml_response(self, is_xml_response):
         self._is_xml_response = is_xml_response
+        return self
+
+    def xml_item_name(self, xml_item_name):
+        self._xml_item_name = xml_item_name
         return self
 
     def handle(self, response, global_errors):
@@ -80,8 +85,15 @@ class ResponseHandler:
             error_case = global_errors['default']
             raise error_case.get_exception_type()(error_case.get_description(), response)
 
+    def apply_xml_deserializer(self, response):
+        if self._xml_item_name:
+            return self._deserializer(response.text, self._xml_item_name, self._deserialize_into)
+        return self._deserializer(response.text, self._deserialize_into)
+
     def apply_deserializer(self, response):
-        if self._deserialize_into:
+        if self.is_xml_response:
+            return self.apply_xml_deserializer(response)
+        elif self._deserialize_into:
             return self._deserializer(response.text, self._deserialize_into)
         elif self._deserializer and not self._datetime_format:
             return self._deserializer(response.text)

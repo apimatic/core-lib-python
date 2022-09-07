@@ -21,7 +21,6 @@ class RequestBuilder:
         self._body_param = None
         self._body_serializer = None
         self._auth = None
-        self._is_xml_request = False
         self._xml_attributes = None
 
     def server(self, server):
@@ -84,10 +83,6 @@ class RequestBuilder:
         self._auth = auth
         return self
 
-    def is_xml_request(self, is_xml_request):
-        self._is_xml_request = is_xml_request
-        return self
-
     def xml_attributes(self, xml_attributes):
         self._xml_attributes = xml_attributes
         return self
@@ -142,7 +137,7 @@ class RequestBuilder:
         return body_serializer(self._xml_attributes.get_value(), self._xml_attributes.get_root_element_name())
 
     def process_body_params(self):
-        if self._is_xml_request:
+        if self._xml_attributes:
             return self.process_xml_parameters(self._body_serializer)
         elif self._form_params:
             self.add_additional_form_params()
