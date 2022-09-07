@@ -64,7 +64,12 @@ class RequestBuilder:
 
     def body_param(self, body_param):
         body_param.validate()
-        self._body_param = body_param.get_value()
+        if body_param.get_key():
+            if not self._body_param:
+                self._body_param = dict()
+            self._body_param[body_param.get_key()] = body_param.get_value()
+        else:
+            self._body_param = body_param.get_value()
         return self
 
     def body_serializer(self, body_serializer):
