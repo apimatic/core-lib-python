@@ -24,7 +24,7 @@ class Single(Authentication):
 
     def is_valid(self):
         if not self._mapped_auth.is_valid():
-            self._error_message = self._mapped_auth.error_message()
+            self._error_message = self._mapped_auth.error_message
             self._is_valid = False
 
         return self._is_valid
