@@ -1,5 +1,6 @@
 from core_lib.http.request.http_request import HttpRequest
 from core_lib.types.array_serialization_format import SerializationFormats
+from core_lib.types.xml_attributes import XmlAttributes
 from core_lib.utilities.api_helper import ApiHelper
 
 
@@ -14,6 +15,7 @@ class RequestBuilder:
     def __init__(
             self
     ):
+
         self._server = None
         self._path = None
         self._http_method = None
@@ -27,6 +29,8 @@ class RequestBuilder:
         self._body_serializer = None
         self._auth = None
         self._array_serialization_format = SerializationFormats.INDEXED
+        self._is_xml_request = False
+        self._xml_attributes = None
 
     def server(self, server):
         self._server = server
@@ -92,6 +96,14 @@ class RequestBuilder:
         self._array_serialization_format = array_serialization_format
         return self
 
+    def is_xml_request(self, is_xml_request):
+        self._is_xml_request = is_xml_request
+        return self
+
+    def xml_attributes(self, xml_attributes):
+        self._xml_attributes = xml_attributes
+        return self
+
     def build(self, global_configuration):
         _url = self.process_url(global_configuration)
 
@@ -135,13 +147,23 @@ class RequestBuilder:
         return self._header_params
 
     def process_body_params(self):
-        if self._form_params:
+        if self._is_xml_request:
+            return self.process_xml_parameters(self._body_serializer)
+        elif self._form_params:
             self.add_additional_form_params()
             return ApiHelper.form_encode_parameters(self._form_params, self._array_serialization_format)
         elif self._body_param and self._body_serializer:
             return self._body_serializer(self.resolve_body_param())
         elif self._body_param and not self._body_serializer:
             return self.resolve_body_param()
+
+    def process_xml_parameters(self, body_serializer):
+        if self._xml_attributes.get_array_item_name():
+            return body_serializer(self._xml_attributes.get_value(),
+                                   self._xml_attributes.get_root_element_name(),
+                                   self._xml_attributes.get_array_item_name())
+
+        return body_serializer(self._xml_attributes.get_value(), self._xml_attributes.get_root_element_name())
 
     def add_additional_form_params(self):
         if self._additional_form_params:
