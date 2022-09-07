@@ -12,6 +12,7 @@ import jsonpickle
 import dateutil.parser
 from core_lib.types.datetime_format import DateTimeFormat
 from core_lib.types.file_wrapper import FileWrapper
+from core_lib.types.array_serialization_format import SerializationFormats
 from requests.utils import quote
 
 
@@ -251,20 +252,20 @@ class ApiHelper(object):
             serializable_types = (str, int, float, bool, datetime.date, ApiHelper.CustomDate)
 
         if isinstance(array[0], serializable_types):
-            if formatting == "unindexed":
+            if formatting == SerializationFormats.UN_INDEXED:
                 tuples += [("{0}[]".format(key), element) for element in array]
-            elif formatting == "indexed":
+            elif formatting == SerializationFormats.INDEXED:
                 tuples += [("{0}[{1}]".format(key, index), element) for index, element in enumerate(array)]
-            elif formatting == "plain":
+            elif formatting == SerializationFormats.PLAIN:
                 tuples += [(key, element) for element in array]
             elif is_query:
-                if formatting == "csv":
+                if formatting == SerializationFormats.CSV:
                     tuples += [(key, ",".join(str(x) for x in array))]
 
-                elif formatting == "psv":
+                elif formatting == SerializationFormats.PSV:
                     tuples += [(key, "|".join(str(x) for x in array))]
 
-                elif formatting == "tsv":
+                elif formatting == SerializationFormats.TSV:
                     tuples += [(key, "\t".join(str(x) for x in array))]
 
             else:

@@ -1,8 +1,15 @@
 from core_lib.http.request.http_request import HttpRequest
+from core_lib.types.array_serialization_format import SerializationFormats
 from core_lib.utilities.api_helper import ApiHelper
 
 
 class RequestBuilder:
+
+    @staticmethod
+    def get_param_name(param_value):
+        if isinstance(param_value, str):
+            return None
+        return param_value.name
 
     def __init__(
             self
@@ -19,6 +26,7 @@ class RequestBuilder:
         self._body_param = None
         self._body_serializer = None
         self._auth = None
+        self._array_serialization_format = SerializationFormats.INDEXED
 
     def server(self, server):
         self._server = server
@@ -80,6 +88,10 @@ class RequestBuilder:
         self._auth = auth
         return self
 
+    def array_serialization_format(self, array_serialization_format):
+        self._array_serialization_format = array_serialization_format
+        return self
+
     def build(self, global_configuration):
         _url = self.process_url(global_configuration)
 
@@ -112,7 +124,8 @@ class RequestBuilder:
 
     def get_updated_url_with_query_params(self, _query_builder):
         return ApiHelper.append_url_with_query_parameters(_query_builder,
-                                                          self._query_params) if self._query_params else _query_builder
+                                                          self._query_params, self._array_serialization_format)\
+            if self._query_params else _query_builder
 
     def process_request_headers(self, global_configuration):
         global_headers = global_configuration.get_global_headers()
@@ -124,7 +137,7 @@ class RequestBuilder:
     def process_body_params(self):
         if self._form_params:
             self.add_additional_form_params()
-            return ApiHelper.form_encode_parameters(self._form_params)
+            return ApiHelper.form_encode_parameters(self._form_params, self._array_serialization_format)
         elif self._body_param and self._body_serializer:
             return self._body_serializer(self.resolve_body_param())
         elif self._body_param and not self._body_serializer:
@@ -161,9 +174,3 @@ class RequestBuilder:
                 self._auth.apply(http_request)
             else:
                 raise PermissionError(self._auth.error_message)
-
-    @staticmethod
-    def get_param_name(param_value):
-        if isinstance(param_value, str):
-            return None
-        return param_value.name

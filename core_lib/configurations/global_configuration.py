@@ -1,6 +1,5 @@
 from core_lib.utilities.api_helper import ApiHelper
 
-
 class GlobalConfiguration:
 
     def get_http_client_configuration(self):

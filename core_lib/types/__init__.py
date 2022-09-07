@@ -3,4 +3,5 @@ __all__ = [
     'parameter',
     'error_case',
     'file_wrapper'
+    'auths',
 ]
