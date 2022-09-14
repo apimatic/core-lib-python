@@ -149,7 +149,7 @@ class RequestBuilder:
     def process_body_params(self):
         if self._is_xml_request:
             return self.process_xml_parameters(self._body_serializer)
-        elif self._form_params:
+        elif self._form_params or self._additional_form_params:
             self.add_additional_form_params()
             return ApiHelper.form_encode_parameters(self._form_params, self._array_serialization_format)
         elif self._body_param and self._body_serializer:
@@ -183,8 +183,8 @@ class RequestBuilder:
         for multipart_param in self._multipart_params:
             param_value = multipart_param.get_value()
             if ApiHelper.is_file_wrapper_instance(param_value):
-                multipart_params[multipart_param.get_key()] = (
-                    param_value.name, param_value.file_stream, param_value.content_type)
+                file = param_value.file_stream
+                multipart_params[multipart_param.get_key()] = (file.name, file, param_value.content_type)
             else:
                 multipart_params[multipart_param.get_key()] = (self.get_param_name(param_value), param_value,
                                                                multipart_param.get_default_content_type())

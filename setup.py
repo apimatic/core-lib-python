@@ -20,14 +20,14 @@ setup(
     author_email='support@apimatic.io',
     url='https://apimatic.io',
     packages=find_packages(),
-    # package_data={"core": ["py.typed"]},
     install_requires=[
         'jsonpickle~=1.4, >= 1.4.1',
         'python-dateutil~=2.8.1',
         'enum34~=1.1, >=1.1.10'
     ],
     tests_require=[
-        'nose>=1.3.7'
-    ],
-    test_suite = 'nose.collector'
+        'pytest~=7.1.3',
+        'pytest-cov~=3.0.0',
+        'pytest-mock~=3.8.2'
+    ]
 )
