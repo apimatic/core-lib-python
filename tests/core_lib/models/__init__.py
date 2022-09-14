@@ -1,4 +1,5 @@
 __all__ = [
     'person',
-    'days'
+    'days',
+    'attributes_and_elements_model'
 ]

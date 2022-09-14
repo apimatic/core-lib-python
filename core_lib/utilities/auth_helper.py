@@ -7,9 +7,10 @@ class AuthHelper:
 
     @staticmethod
     def apply_base64_encoding(username, password, delimiter=':'):
-        joined = "{}{}{}".format(username, delimiter, password)
-        encoded = base64.b64encode(str.encode(joined)).decode('iso-8859-1')
-        return encoded
+        if username and password:
+            joined = "{}{}{}".format(username, delimiter, password)
+            encoded = base64.b64encode(str.encode(joined)).decode('iso-8859-1')
+            return encoded
 
     @staticmethod
     def set_token_expiry(token):

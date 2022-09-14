@@ -7,7 +7,7 @@ class QueryAuth(Authentication):
         self._auth_params = auth_params
 
     def is_valid(self):
-        return all(param and self._auth_params[param] for param in self._auth_params)
+        return self._auth_params and all(param and self._auth_params[param] for param in self._auth_params)
 
     def apply(self, http_request):
         for param in self._auth_params:

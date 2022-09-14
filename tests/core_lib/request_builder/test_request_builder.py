@@ -1,11 +1,15 @@
 from datetime import datetime, date
 import pytest
 from core_interfaces.types.http_method_enum import HttpMethodEnum
+from core_lib.authentication.multiple.and_auth_group import And
+from core_lib.authentication.multiple.or_auth_group import Or
+from core_lib.authentication.multiple.single_auth import Single
 from core_lib.types.array_serialization_format import SerializationFormats
 from core_lib.types.file_wrapper import FileWrapper
 from core_lib.types.parameter import Parameter
 from core_lib.types.xml_attributes import XmlAttributes
 from core_lib.utilities.api_helper import ApiHelper
+from core_lib.utilities.auth_helper import AuthHelper
 from core_lib.utilities.xml_utilities import XmlUtilities
 from tests.core_lib.base import Base
 from tests.core_lib.test_helper.base_uri_callable import Server
@@ -400,8 +404,8 @@ class TestRequestBuilder(Base):
             actual_body_param_value.close()
             expected_body_param_value.close()
 
-    @pytest.mark.parametrize('input_multipart_param_value1, input_default_content_type1, '
-                             'input_multipart_param_value2, input_default_content_type2, '
+    @pytest.mark.parametrize('input_multipart_param_value1, input_default_content_type1,'
+                             'input_multipart_param_value2, input_default_content_type2,'
                              'expected_multipart_param_value1, expected_default_content_type1, '
                              'expected_multipart_param_value2, expected_default_content_type2', [
                                  (Base.read_file('apimatic.png'), 'image/png', Base.employee_model(),
@@ -445,9 +449,8 @@ class TestRequestBuilder(Base):
             actual_multipart_param_value1.close()
             expected_multipart_param_value1.close()
 
-    @pytest.mark.parametrize('input_multipart_param_value1,'
-                             'input_multipart_param_value2, input_default_content_type2, '
-                             'expected_multipart_param_value1, expected_default_content_type1, '
+    @pytest.mark.parametrize('input_multipart_param_value1, input_multipart_param_value2, input_default_content_type2,'
+                             'expected_multipart_param_value1, expected_default_content_type1,'
                              'expected_multipart_param_value2, expected_default_content_type2', [
                                  (FileWrapper(Base.read_file('apimatic.png'), 'image/png'), Base.employee_model(),
                                   'application/json', Base.read_file('apimatic.png'), 'image/png',
@@ -487,3 +490,106 @@ class TestRequestBuilder(Base):
         finally:
             actual_multipart_param_value1.close()
             expected_multipart_param_value1.close()
+
+    @pytest.mark.parametrize('input_auth_scheme, expected_auth_header_key, expected_auth_header_value', [
+        (Single('basic_auth'), 'Authorization', 'Basic {}'.format(
+            AuthHelper.apply_base64_encoding('test_username', 'test_password'))),
+        (Single('bearer_auth'), 'Authorization', 'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42'),
+        (Single('custom_header_auth'), 'token', 'Qaws2W233WedeRe4T56G6Vref2')
+    ])
+    def test_header_authentication(self, input_auth_scheme, expected_auth_header_key, expected_auth_header_value):
+        http_request = self.new_request_builder \
+            .auth(input_auth_scheme) \
+            .build(self.global_configuration_with_auth)
+
+        assert http_request.headers[expected_auth_header_key] == expected_auth_header_value
+
+    def test_query_authentication(self):
+        http_request = self.new_request_builder \
+            .auth(Single('custom_query_auth')) \
+            .build(self.global_configuration_with_auth)
+
+        assert http_request.query_url == 'http://localhost:3000/test?token=Qaws2W233WedeRe4T56G6Vref2&api-key=W233WedeRe4T56G6Vref2'
+
+    def test_invalid_key_authentication(self):
+        with pytest.raises(ValueError) as validation_error:
+            self.new_request_builder \
+                .auth(Single('invalid')) \
+                .build(self.global_configuration_with_auth)
+        assert validation_error.value.args[0] == 'Auth key is invalid.'
+
+    def test_combine_invalid_key_authentication(self):
+        with pytest.raises(ValueError) as validation_error:
+            self.new_request_builder \
+                .auth(Or('invalid_1', 'invalid_2')) \
+                .build(self.global_configuration_with_auth)
+        assert validation_error.value.args[0] == 'Auth key is invalid.'
+
+    @pytest.mark.parametrize('input_auth_scheme, expected_auth_header_key_1,'
+                             'expected_auth_header_value_1, expected_auth_header_key_2,'
+                             'expected_auth_header_value_2', [
+                                 (Or('basic_auth', 'bearer_auth', 'custom_header_auth'), 'Authorization',
+                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                                 (And('basic_auth', 'bearer_auth', 'custom_header_auth'), 'Authorization',
+                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                                 (Or('basic_auth', And('bearer_auth', 'custom_header_auth')), 'Authorization',
+                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                                 (And('basic_auth', Or('bearer_auth', 'custom_header_auth')), 'Authorization',
+                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                                 (And('basic_auth', And('bearer_auth', 'custom_header_auth')), 'Authorization',
+                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                                 (Or('basic_auth', Or('bearer_auth', 'custom_header_auth')), 'Authorization',
+                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                             ])
+    def test_success_case_of_multiple_authentications(self, input_auth_scheme, expected_auth_header_key_1,
+                                                      expected_auth_header_value_1,
+                                                      expected_auth_header_key_2,
+                                                      expected_auth_header_value_2):
+        http_request = self.new_request_builder \
+            .auth(input_auth_scheme) \
+            .build(self.global_configuration_with_auth)
+
+        assert http_request.headers[expected_auth_header_key_1] == expected_auth_header_value_1 \
+               and http_request.headers[expected_auth_header_key_2] == expected_auth_header_value_2
+
+    @pytest.mark.parametrize('input_auth_scheme, expected_error_message', [
+        (Or('basic_auth', 'bearer_auth', 'custom_header_auth'), '[BasicAuth: _basic_auth_user_name or '
+                                                                '_basic_auth_password is undefined.] or ['
+                                                                'BearerAuth: _access_token is undefined.] or ['
+                                                                'CustomHeaderAuthentication: token is undefined.]'),
+        (And('basic_auth', 'bearer_auth', 'custom_header_auth'), '[BasicAuth: _basic_auth_user_name or '
+                                                                 '_basic_auth_password is undefined.] and ['
+                                                                 'BearerAuth: _access_token is undefined.] and ['
+                                                                 'CustomHeaderAuthentication: token is undefined.]'),
+        (Or('basic_auth', And('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
+                                                                     '_basic_auth_password is undefined.] or ['
+                                                                     'BearerAuth: _access_token is undefined.] and ['
+                                                                     'CustomHeaderAuthentication: token is '
+                                                                     'undefined.]'),
+        (And('basic_auth', Or('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
+                                                                     '_basic_auth_password is undefined.] and ['
+                                                                     'BearerAuth: _access_token is undefined.] or ['
+                                                                     'CustomHeaderAuthentication: token is '
+                                                                     'undefined.]'),
+        (And('basic_auth', And('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
+                                                                      '_basic_auth_password is undefined.] and ['
+                                                                      'BearerAuth: _access_token is undefined.] and ['
+                                                                      'CustomHeaderAuthentication: token is '
+                                                                      'undefined.]'),
+        (Or('basic_auth', Or('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
+                                                                    '_basic_auth_password is undefined.] or ['
+                                                                    'BearerAuth: _access_token is undefined.] or ['
+                                                                    'CustomHeaderAuthentication: token is undefined.]')
+    ])
+    def test_failed_case_of_multiple_authentications(self, input_auth_scheme, expected_error_message):
+        with pytest.raises(PermissionError) as errors:
+            self.new_request_builder \
+                .auth(input_auth_scheme) \
+                .build(self.global_configuration_with_uninitialized_auth_params)
+        assert errors.value.args[0] == expected_error_message
