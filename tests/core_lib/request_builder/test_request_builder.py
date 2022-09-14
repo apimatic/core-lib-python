@@ -4,7 +4,9 @@ from core_interfaces.types.http_method_enum import HttpMethodEnum
 from core_lib.types.array_serialization_format import SerializationFormats
 from core_lib.types.file_wrapper import FileWrapper
 from core_lib.types.parameter import Parameter
+from core_lib.types.xml_attributes import XmlAttributes
 from core_lib.utilities.api_helper import ApiHelper
+from core_lib.utilities.xml_utilities import XmlUtilities
 from tests.core_lib.base import Base
 from tests.core_lib.test_helper.base_uri_callable import Server
 
@@ -344,9 +346,45 @@ class TestRequestBuilder(Base):
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 
+    @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
+        (Base.attributes_and_elements_model(), '<AttributesAndElements string="String" number="Number">'
+                                               '<string>Hey! I am being tested.</string>'
+                                               '<number>5000</number>'
+                                               '</AttributesAndElements>')
+    ])
+    def test_xml_body_param_with_serializer(self, input_body_param_value, expected_body_param_value):
+        http_request = self.new_request_builder \
+            .xml_attributes(XmlAttributes()
+                            .value(input_body_param_value)
+                            .root_element_name('AttributesAndElements')) \
+            .body_serializer(XmlUtilities.serialize_to_xml) \
+            .build(self.global_configuration)
+        assert http_request.parameters == expected_body_param_value
+
+    @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
+        ([Base.attributes_and_elements_model(), Base.attributes_and_elements_model()],
+         '<arrayOfModels>'
+         '<item string="String" number="Number">'
+         '<string>Hey! I am being tested.</string>'
+         '<number>5000</number></item>'
+         '<item string="String" number="Number">'
+         '<string>Hey! I am being tested.</string>'
+         '<number>5000</number></item>'
+         '</arrayOfModels>')
+    ])
+    def test_xml_array_body_param_with_serializer(self, input_body_param_value, expected_body_param_value):
+        http_request = self.new_request_builder \
+            .xml_attributes(XmlAttributes()
+                            .value(input_body_param_value)
+                            .root_element_name('arrayOfModels')
+                            .array_item_name('item')) \
+            .body_serializer(XmlUtilities.serialize_list_to_xml) \
+            .build(self.global_configuration)
+        assert http_request.parameters == expected_body_param_value
+
     @pytest.mark.parametrize('input_body_param_value, expected_body_param_value, expected_content_type', [
-                                 (FileWrapper(Base.read_file('apimatic.png'), 'image/png'),
-                                  Base.read_file('apimatic.png'), 'image/png')])
+        (FileWrapper(Base.read_file('apimatic.png'), 'image/png'),
+         Base.read_file('apimatic.png'), 'image/png')])
     def test_file_as_body_param(self, input_body_param_value, expected_body_param_value, expected_content_type):
         try:
             http_request = self.new_request_builder \

@@ -141,14 +141,6 @@ class RequestBuilder:
             return {**global_headers, **prepared_headers}
         return self._header_params
 
-    def process_xml_parameters(self, body_serializer):
-
-        if self._xml_attributes.get_array_item_name():
-            return body_serializer(self._xml_attributes.get_value(),
-                                   self._xml_attributes.get_root_element_name(),
-                                   self._xml_attributes.get_array_item_name())
-        return body_serializer(self._xml_attributes.get_value(), self._xml_attributes.get_root_element_name())
-
     def process_body_params(self):
         if self._xml_attributes:
             return self.process_xml_parameters(self._body_serializer)

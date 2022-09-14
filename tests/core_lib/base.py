@@ -2,6 +2,7 @@ import os
 from datetime import datetime, date
 from core_lib.configurations.global_configuration import GlobalConfiguration
 from core_lib.request_builder import RequestBuilder
+from tests.core_lib.models.attributes_and_elements_model import AttributesAndElementsModel
 from tests.core_lib.models.days import Days
 from tests.core_lib.models.person import Employee, Person
 from tests.core_lib.test_helper.base_uri_callable import Server, BaseUriCallable
@@ -23,6 +24,11 @@ class Base:
                                            birthtime=datetime(2010, 2, 13, 5, 30, 15),
                                            age=12,
                                            additional_properties={'key1': 'value1', 'key2': 'value2'})])
+
+    @staticmethod
+    def attributes_and_elements_model():
+        return AttributesAndElementsModel(string_attr='String', number_attr='Number',
+                                          string_element='Hey! I am being tested.', number_element=5000)
 
     @staticmethod
     def read_file(file_name):
