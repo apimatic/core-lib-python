@@ -64,8 +64,11 @@ class ResponseHandler:
         # applying deserializer if configured
         deserialized_value = self.apply_deserializer(response)
 
+        # applying api_response if configured
+        deserialized_value = self.apply_api_response(response, deserialized_value)
+
         # applying convertor if configured
-        deserialized_value = self.apply_convertor(response, deserialized_value)
+        deserialized_value = self.apply_convertor(deserialized_value)
 
         return deserialized_value
 
@@ -81,7 +84,7 @@ class ResponseHandler:
                 if actual_status_code == expected_status_code:
                     raise error_case.get_exception_type()(error_case.get_description(), response)
 
-        if response.status_code < 200 or response.status_code > 208:
+        if (response.status_code < 200 or response.status_code > 208) and global_errors.get('default'):
             error_case = global_errors['default']
             raise error_case.get_exception_type()(error_case.get_description(), response)
 
@@ -91,7 +94,7 @@ class ResponseHandler:
         return self._deserializer(response.text, self._deserialize_into)
 
     def apply_deserializer(self, response):
-        if self.is_xml_response:
+        if self._is_xml_response:
             return self.apply_xml_deserializer(response)
         elif self._deserialize_into:
             return self._deserializer(response.text, self._deserialize_into)
@@ -102,9 +105,14 @@ class ResponseHandler:
         else:
             return response.text
 
-    def apply_convertor(self, response, deserialized_value):
+    def apply_api_response(self, response, deserialized_value):
         if self._is_api_response:
-            return ApiResponse(response, body=deserialized_value)
+            return ApiResponse(response, body=deserialized_value,
+                               errors=deserialized_value.get('errors') if type(deserialized_value) is dict else None)
+
+        return deserialized_value
+
+    def apply_convertor(self, deserialized_value):
         if self._convertor:
             return self._convertor(deserialized_value)
 

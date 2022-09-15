@@ -1,15 +1,22 @@
 import os
+import platform
 from datetime import datetime, date
+from core_interfaces.types.http_method_enum import HttpMethodEnum
 from core_lib.configurations.global_configuration import GlobalConfiguration
+from core_lib.http.request.http_request import HttpRequest
+from core_lib.http.response.http_response import HttpResponse
 from core_lib.request_builder import RequestBuilder
+from core_lib.types.error_case import ErrorCase
 from tests.core_lib.authentications.basic_auth import BasicAuth
 from tests.core_lib.authentications.bearer_auth import BearerAuth
 from tests.core_lib.authentications.custom_header_authentication import CustomHeaderAuthentication
 from tests.core_lib.authentications.custom_query_authentication import CustomQueryAuthentication
+from tests.core_lib.exceptions.global_test_exception import GlobalTestException
+from tests.core_lib.exceptions.nested_model_exception import NestedModelException
 from tests.core_lib.models.attributes_and_elements_model import AttributesAndElementsModel
 from tests.core_lib.models.days import Days
 from tests.core_lib.models.person import Employee, Person
-from tests.core_lib.test_helper.base_uri_callable import Server, BaseUriCallable
+from tests.core_lib.callables.base_uri_callable import Server, BaseUriCallable
 
 
 class Base:
@@ -47,14 +54,31 @@ class Base:
 
     @staticmethod
     def attributes_and_elements_model():
-        return AttributesAndElementsModel(string_attr='String', number_attr='Number',
+        return AttributesAndElementsModel(string_attr='String', number_attr=10000,
                                           string_element='Hey! I am being tested.', number_element=5000)
 
     @staticmethod
     def read_file(file_name):
         real_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
         file_path = os.path.join(real_path, 'core_lib', 'files', file_name)
-        return open(file_path, "rb+")
+        return open(file_path, "rb")
+
+    @staticmethod
+    def global_errors():
+        return {
+            '400': ErrorCase().description('400 Global').exception_type(GlobalTestException),
+            '412': ErrorCase().description('Precondition Failed').exception_type(NestedModelException),
+            'default': ErrorCase().description('Invalid response').exception_type(GlobalTestException),
+        }
+
+    @staticmethod
+    def request():
+        return HttpRequest(http_method=HttpMethodEnum.GET, query_url='http://localhost:3000/test')
+
+    @staticmethod
+    def response(status_code=200, reason_phrase=None, headers=None, text=None):
+        return HttpResponse(status_code=status_code, reason_phrase=reason_phrase,
+                            headers=headers, text=text, request=Base.request())
 
     @property
     def new_request_builder(self):
@@ -62,7 +86,25 @@ class Base:
 
     @property
     def global_configuration(self):
-        return GlobalConfiguration(None).base_uri_executor(BaseUriCallable().get_base_uri)
+        return GlobalConfiguration(None)\
+            .base_uri_executor(BaseUriCallable().get_base_uri)\
+            .global_errors(self.global_errors())
+
+    @property
+    def global_configuration_with_useragent(self):
+        return self.global_configuration.user_agent(self.user_agent(), self.user_agent_parameters())
+
+    @staticmethod
+    def user_agent():
+        return 'Python|31.8.0|{engine}|{engine-version}|{os-info}'
+
+    @staticmethod
+    def user_agent_parameters():
+        return {
+            'engine': {'value': platform.python_implementation(), 'encode': False},
+            'engine-version': {'value': "", 'encode': False},
+            'os-info': {'value': platform.system(), 'encode': False},
+        }
 
     @property
     def global_configuration_with_auth(self):

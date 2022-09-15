@@ -7,3 +7,4 @@ print(ApiHelper.when_defined(ApiHelper.HttpDateTime.from_datetime, datetime(1994
 print(ApiHelper.when_defined(ApiHelper.RFC3339DateTime.from_datetime, datetime(1994, 2, 13, 5, 30, 15)))
 
 print((ApiHelper.HttpDateTime(datetime(2010, 2, 13, 5, 30, 15)).value, ApiHelper.HttpDateTime(datetime(2010, 2, 13, 5, 30, 15)).value) == (ApiHelper.HttpDateTime(datetime(2010, 2, 13, 5, 30, 15)).value, ApiHelper.HttpDateTime(datetime(2010, 2, 13, 5, 30, 15)).value))
+

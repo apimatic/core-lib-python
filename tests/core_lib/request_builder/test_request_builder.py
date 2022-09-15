@@ -12,7 +12,7 @@ from core_lib.utilities.api_helper import ApiHelper
 from core_lib.utilities.auth_helper import AuthHelper
 from core_lib.utilities.xml_utilities import XmlUtilities
 from tests.core_lib.base import Base
-from tests.core_lib.test_helper.base_uri_callable import Server
+from tests.core_lib.callables.base_uri_callable import Server
 
 
 class TestRequestBuilder(Base):
@@ -210,6 +210,16 @@ class TestRequestBuilder(Base):
             .build(self.global_configuration.global_header('header_param', input_global_header_param_value))
         assert http_request.headers == expected_header_param_value
 
+    def test_useragent_header(self):
+        engines = ['CPython', 'Jython', 'JPython', 'IronPython', 'PyPy', 'RubyPython', 'AnacondaPython']
+        operating_systems = ['Linux', 'Windows', 'Darwin', 'FreeBSD', 'OpenBSD', 'macOS']
+
+        http_request = self.new_request_builder \
+            .build(self.global_configuration_with_useragent)
+        [lang, version, engine, engineVersion, osInfo] = http_request.headers['user-agent'].split('|')
+        assert lang == 'Python' and version == '31.8.0' \
+               and engine in engines and osInfo in operating_systems
+
     @pytest.mark.parametrize('input_form_param_value, expected_form_param_value, array_serialization_format', [
         ('string', [('form_param', 'string')], SerializationFormats.INDEXED),
         (500, [('form_param', 500)], SerializationFormats.INDEXED),
@@ -335,7 +345,7 @@ class TestRequestBuilder(Base):
         ({'key1': 'value1', 'key2': [1, 2, 3, {'key1': 'value1', 'key2': 'value2'}]},
          '{"key1": "value1", "key2": [1, 2, 3, {"key1": "value1", "key2": "value2"}]}'),
         (Base.employee_model(), '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-                                '"1995-02-13T05:30:15", "boss": null, "department": "IT", "dependents": [{"address": '
+                                '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
                                 '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
                                 '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
                                 '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '
@@ -351,7 +361,7 @@ class TestRequestBuilder(Base):
         assert http_request.parameters == expected_body_param_value
 
     @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
-        (Base.attributes_and_elements_model(), '<AttributesAndElements string="String" number="Number">'
+        (Base.attributes_and_elements_model(), '<AttributesAndElements string="String" number="10000">'
                                                '<string>Hey! I am being tested.</string>'
                                                '<number>5000</number>'
                                                '</AttributesAndElements>')
@@ -368,10 +378,10 @@ class TestRequestBuilder(Base):
     @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
         ([Base.attributes_and_elements_model(), Base.attributes_and_elements_model()],
          '<arrayOfModels>'
-         '<item string="String" number="Number">'
+         '<item string="String" number="10000">'
          '<string>Hey! I am being tested.</string>'
          '<number>5000</number></item>'
-         '<item string="String" number="Number">'
+         '<item string="String" number="10000">'
          '<string>Hey! I am being tested.</string>'
          '<number>5000</number></item>'
          '</arrayOfModels>')
@@ -411,7 +421,7 @@ class TestRequestBuilder(Base):
                                  (Base.read_file('apimatic.png'), 'image/png', Base.employee_model(),
                                   'application/json', Base.read_file('apimatic.png'), 'image/png',
                                   '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-                                  '"1995-02-13T05:30:15", "boss": null, "department": "IT", "dependents": [{"address": '
+                                  '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
                                   '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
                                   '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
                                   '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '
@@ -455,7 +465,7 @@ class TestRequestBuilder(Base):
                                  (FileWrapper(Base.read_file('apimatic.png'), 'image/png'), Base.employee_model(),
                                   'application/json', Base.read_file('apimatic.png'), 'image/png',
                                   '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-                                  '"1995-02-13T05:30:15", "boss": null, "department": "IT", "dependents": [{"address": '
+                                  '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
                                   '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
                                   '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
                                   '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '

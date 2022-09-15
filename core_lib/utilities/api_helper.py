@@ -162,7 +162,6 @@ class ApiHelper(object):
 
         return dateutil.parser.parse(deserialized_response).date()
 
-
     @staticmethod
     def datetime_deserialize(response, datetime_format):
         """JSON Deserialization of a given string.
@@ -175,7 +174,11 @@ class ApiHelper(object):
                 JSON serialized string.
 
         """
-        deserialized_response = ApiHelper.json_deserialize(response)
+        if isinstance(response, str):
+            deserialized_response = ApiHelper.json_deserialize(response)
+        else:
+            deserialized_response = response
+
         if DateTimeFormat.HTTP_DATE_TIME == datetime_format:
             if isinstance(deserialized_response, list):
                 return [element.datetime for element in
@@ -497,7 +500,8 @@ class ApiHelper(object):
                                                                                                "additional_properties") else \
                             value[key]
                 else:
-                    dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value, "additional_properties") else value
+                    dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value,
+                                                                                 "additional_properties") else value
 
         # Return the result
         return dictionary

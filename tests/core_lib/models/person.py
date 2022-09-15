@@ -131,7 +131,6 @@ class Employee(Person):
         joining_day (Days): TODO: type description here.
         salary (int): TODO: type description here.
         working_days (list of Days): TODO: type description here.
-        boss (Person): TODO: type description here.
 
     """
 
@@ -141,7 +140,6 @@ class Employee(Person):
         "age": 'age',
         "birthday": 'birthday',
         "birthtime": 'birthtime',
-        "boss": 'boss',
         "department": 'department',
         "dependents": 'dependents',
         "hired_at": 'hiredAt',
@@ -153,16 +151,13 @@ class Employee(Person):
         "person_type": 'personType'
     }
 
-    _nullables = [
-        'boss',
-    ]
+    _nullables = []
 
     def __init__(self,
                  address=None,
                  age=None,
                  birthday=None,
                  birthtime=None,
-                 boss=None,
                  department=None,
                  dependents=None,
                  hired_at=None,
@@ -182,7 +177,6 @@ class Employee(Person):
         self.joining_day = joining_day
         self.salary = salary
         self.working_days = working_days
-        self.boss = boss
 
         # Add additional model properties to the instance
         self.additional_properties = additional_properties
@@ -213,9 +207,7 @@ class Employee(Person):
         if dictionary is None:
             return None
 
-        discriminators = {
-            'Boss': Boss.from_dictionary
-        }
+        discriminators = {}
         unboxer = discriminators.get(dictionary.get('personType'))
 
         # Delegate unboxing to another function if a discriminator
@@ -229,7 +221,6 @@ class Employee(Person):
         age = dictionary.get("age") if dictionary.get("age") else None
         birthday = dateutil.parser.parse(dictionary.get('birthday')).date() if dictionary.get('birthday') else None
         birthtime = ApiHelper.RFC3339DateTime.from_value(dictionary.get("birthtime")).datetime if dictionary.get("birthtime") else None
-        boss = Person.from_dictionary(dictionary.get('boss')) if dictionary.get('boss') else None
         department = dictionary.get("department") if dictionary.get("department") else None
         dependents = None
         if dictionary.get('dependents') is not None:
@@ -250,7 +241,6 @@ class Employee(Person):
                    age,
                    birthday,
                    birthtime,
-                   boss,
                    department,
                    dependents,
                    hired_at,
