@@ -45,35 +45,6 @@ class AttributesAndElementsModel(object):
         self.number_element = number_element 
 
     @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
-
-        Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
-
-        Returns:
-            object: An instance of this structure class.
-
-        """
-        if dictionary is None:
-            return None
-
-        # Extract variables from the dictionary
-
-        string_attr = dictionary.get("string-attr") if dictionary.get("string-attr") else None
-        number_attr = dictionary.get("number-attr") if dictionary.get("number-attr") else None
-        string_element = dictionary.get("string-element") if dictionary.get("string-element") else None
-        number_element = dictionary.get("number-element") if dictionary.get("number-element") else None
-        # Return an object of this model
-        return cls(string_attr,
-                   number_attr,
-                   string_element,
-                   number_element)
-
-    @classmethod
     def from_element(cls, root):
         """Initialize an instance of this class using an xml.etree.Element.
 
