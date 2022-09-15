@@ -12,5 +12,5 @@ class HeaderAuth(Authentication):
 
     def apply(self, http_request):
         for param in self._auth_params:
-            http_request.headers[param] = self._auth_params[param]
+            http_request.add_header(param, self._auth_params[param])
 
