@@ -1,4 +1,4 @@
 jsonpickle~=1.4, >= 1.4.1
 python-dateutil~=2.8.1
 enum34~=1.1, >=1.1.10
-git+https://github.com/sufyankhanrao/words-api-client.git@master
+git+https://github.com/apimatic/core-interfaces-python.git@main
