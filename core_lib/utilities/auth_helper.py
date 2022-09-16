@@ -13,9 +13,12 @@ class AuthHelper:
             return encoded
 
     @staticmethod
-    def get_token_expiry(expires_in):
-        utc_now = calendar.timegm(datetime.now().utctimetuple())
-        return utc_now + int(expires_in)
+    def get_token_expiry(current_timestamp, expires_in):
+        return current_timestamp + int(expires_in)
+
+    @staticmethod
+    def get_current_utc_timestamp():
+        return calendar.timegm(datetime.now().utctimetuple())
 
     @staticmethod
     def is_token_expired(token_expiry):
