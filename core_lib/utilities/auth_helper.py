@@ -6,9 +6,9 @@ from datetime import datetime
 class AuthHelper:
 
     @staticmethod
-    def apply_base64_encoding(username, password, delimiter=':'):
-        if username and password:
-            joined = "{}{}{}".format(username, delimiter, password)
+    def get_base64_encoded_value(*props, delimiter=':'):
+        if props:
+            joined = delimiter.join(props)
             encoded = base64.b64encode(str.encode(joined)).decode('iso-8859-1')
             return encoded
 

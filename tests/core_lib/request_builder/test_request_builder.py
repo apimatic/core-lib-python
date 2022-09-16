@@ -503,7 +503,7 @@ class TestRequestBuilder(Base):
 
     @pytest.mark.parametrize('input_auth_scheme, expected_auth_header_key, expected_auth_header_value', [
         (Single('basic_auth'), 'Authorization', 'Basic {}'.format(
-            AuthHelper.apply_base64_encoding('test_username', 'test_password'))),
+            AuthHelper.get_base64_encoded_value('test_username', 'test_password'))),
         (Single('bearer_auth'), 'Authorization', 'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42'),
         (Single('custom_header_auth'), 'token', 'Qaws2W233WedeRe4T56G6Vref2')
     ])

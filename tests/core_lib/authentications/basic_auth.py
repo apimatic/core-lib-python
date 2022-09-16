@@ -22,7 +22,7 @@ class BasicAuth(HeaderAuth):
         auth_params = {}
         if basic_auth_user_name and basic_auth_password:
             auth_params = {'Authorization': "Basic {}".format(
-                AuthHelper.apply_base64_encoding(basic_auth_user_name, basic_auth_password))}
+                AuthHelper.get_base64_encoded_value(basic_auth_user_name, basic_auth_password))}
         super().__init__(auth_params=auth_params)
         self._basic_auth_user_name = basic_auth_user_name
         self._basic_auth_password = basic_auth_password
