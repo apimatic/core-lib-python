@@ -13,13 +13,12 @@ class AuthHelper:
             return encoded
 
     @staticmethod
-    def set_token_expiry(token):
-        if hasattr(token, 'expires_in'):
-            utc_now = calendar.timegm(datetime.now().utctimetuple())
-            token.expiry = (utc_now + int(token.expires_in))
+    def get_token_expiry(expires_in):
+        utc_now = calendar.timegm(datetime.now().utctimetuple())
+        return utc_now + int(expires_in)
 
     @staticmethod
-    def is_token_expired(token):
+    def is_token_expired(token_expiry):
         """ Checks if OAuth token has expired.
 
         Returns:
@@ -27,4 +26,4 @@ class AuthHelper:
 
         """
         utc_now = calendar.timegm(datetime.now().utctimetuple())
-        return hasattr(token, 'expiry') and token.expiry is not None and token.expiry < utc_now
+        return token_expiry is not None and token_expiry < utc_now
