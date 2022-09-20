@@ -13,7 +13,11 @@ from tests.core_lib.authentications.custom_header_authentication import CustomHe
 from tests.core_lib.authentications.custom_query_authentication import CustomQueryAuthentication
 from tests.core_lib.exceptions.global_test_exception import GlobalTestException
 from tests.core_lib.exceptions.nested_model_exception import NestedModelException
-from tests.core_lib.models.attributes_and_elements_model import AttributesAndElementsModel
+from tests.core_lib.models.cat_model import CatModel
+from tests.core_lib.models.dog_model import DogModel
+from tests.core_lib.models.one_of_xml import OneOfXML
+from tests.core_lib.models.wolf_model import WolfModel
+from tests.core_lib.models.xml_model import XMLModel
 from tests.core_lib.models.days import Days
 from tests.core_lib.models.person import Employee, Person
 from tests.core_lib.callables.base_uri_callable import Server, BaseUriCallable
@@ -53,9 +57,22 @@ class Base:
         return CustomQueryAuthentication(api_key='W233WedeRe4T56G6Vref2', token='Qaws2W233WedeRe4T56G6Vref2')
 
     @staticmethod
-    def attributes_and_elements_model():
-        return AttributesAndElementsModel(string_attr='String', number_attr=10000,
-                                          string_element='Hey! I am being tested.', number_element=5000)
+    def xml_model():
+        return XMLModel(string_attr='String', number_attr=10000, boolean_attr=False,
+                        string_element='Hey! I am being tested.', number_element=5000,
+                        boolean_element=False, elements=['a', 'b', 'c'])
+
+    @staticmethod
+    def one_of_xml_dog_model():
+        return OneOfXML(value=DogModel(barks=True))
+
+    @staticmethod
+    def one_of_xml_cat_model():
+        return OneOfXML(value=[CatModel(meows=True), CatModel(meows=False)])
+
+    @staticmethod
+    def one_of_xml_wolf_model():
+        return OneOfXML(value=[WolfModel(howls=True), WolfModel(howls=False)])
 
     @staticmethod
     def read_file(file_name):
@@ -80,20 +97,6 @@ class Base:
         return HttpResponse(status_code=status_code, reason_phrase=reason_phrase,
                             headers=headers, text=text, request=Base.request())
 
-    @property
-    def new_request_builder(self):
-        return RequestBuilder().path('/test').server(Server.DEFAULT)
-
-    @property
-    def global_configuration(self):
-        return GlobalConfiguration(None)\
-            .base_uri_executor(BaseUriCallable().get_base_uri)\
-            .global_errors(self.global_errors())
-
-    @property
-    def global_configuration_with_useragent(self):
-        return self.global_configuration.user_agent(self.user_agent(), self.user_agent_parameters())
-
     @staticmethod
     def user_agent():
         return 'Python|31.8.0|{engine}|{engine-version}|{os-info}'
@@ -105,6 +108,20 @@ class Base:
             'engine-version': {'value': "", 'encode': False},
             'os-info': {'value': platform.system(), 'encode': False},
         }
+
+    @property
+    def new_request_builder(self):
+        return RequestBuilder().path('/test').server(Server.DEFAULT)
+
+    @property
+    def global_configuration(self):
+        return GlobalConfiguration(None) \
+            .base_uri_executor(BaseUriCallable().get_base_uri) \
+            .global_errors(self.global_errors())
+
+    @property
+    def global_configuration_with_useragent(self):
+        return self.global_configuration.user_agent(self.user_agent(), self.user_agent_parameters())
 
     @property
     def global_configuration_with_auth(self):

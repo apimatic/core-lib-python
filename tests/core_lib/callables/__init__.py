@@ -1,3 +1,3 @@
 __all__ = [
-    'callable.py'
+    'base_uri_callable'
 ]

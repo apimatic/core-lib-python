@@ -564,7 +564,7 @@ class ApiHelper(object):
         @classmethod
         def from_value(cls, value):
             dtime = datetime.datetime.utcfromtimestamp(float(value))
-            return cls(dtime, float(value))
+            return cls(dtime, int(value))
 
     class RFC3339DateTime(CustomDate):
 

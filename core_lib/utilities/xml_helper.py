@@ -14,7 +14,7 @@ import dateutil.parser
 from core_lib.utilities.api_helper import ApiHelper
 
 
-class XmlUtilities:
+class XmlHelper:
     """This class hold utility methods for xml serialization and
         deserialization.
     """
@@ -30,7 +30,7 @@ class XmlUtilities:
         root = ET.Element(root_element_name)
 
         if value is not None:
-            XmlUtilities.add_to_element(root, value)
+            XmlHelper.add_to_element(root, value)
 
         return ET.tostring(root).decode()
 
@@ -46,7 +46,7 @@ class XmlUtilities:
         """
         root = ET.Element(root_element_name)
 
-        XmlUtilities.add_list_as_subelement(root, value, array_item_name)
+        XmlHelper.add_list_as_subelement(root, value, array_item_name)
 
         return ET.tostring(root).decode()
 
@@ -60,7 +60,7 @@ class XmlUtilities:
         """
         root = ET.Element(root_element_name)
 
-        XmlUtilities.add_dict_as_subelement(root, value)
+        XmlHelper.add_dict_as_subelement(root, value)
 
         return ET.tostring(root).decode()
 
@@ -110,7 +110,7 @@ class XmlUtilities:
         """
         if value is not None:
             tag = ET.SubElement(root, name)
-            XmlUtilities.add_to_element(tag, value)
+            XmlHelper.add_to_element(tag, value)
 
     @staticmethod
     def add_list_as_subelement(root, items, item_name,
@@ -133,7 +133,7 @@ class XmlUtilities:
 
             for item in items:
                 sub_elem = ET.SubElement(parent, item_name)
-                XmlUtilities.add_to_element(sub_elem, item)
+                XmlHelper.add_to_element(sub_elem, item)
 
     @staticmethod
     def add_dict_as_subelement(root, items, dictionary_name=None):
@@ -154,9 +154,9 @@ class XmlUtilities:
 
             for key, value in items.items():
                 if isinstance(value, list):
-                    XmlUtilities.add_list_as_subelement(parent, value, key)
+                    XmlHelper.add_list_as_subelement(parent, value, key)
                 else:
-                    XmlUtilities.add_as_subelement(parent, value, key)
+                    XmlHelper.add_as_subelement(parent, value, key)
 
     @staticmethod
     def deserialize_xml(xml, clazz):
@@ -175,7 +175,7 @@ class XmlUtilities:
 
         root = ET.fromstring(xml)
 
-        return XmlUtilities.value_from_xml_element(root, clazz)
+        return XmlHelper.value_from_xml_element(root, clazz)
 
     @staticmethod
     def deserialize_xml_to_list(xml, item_name, clazz):
@@ -199,7 +199,7 @@ class XmlUtilities:
         if root is None:
             return None
 
-        return XmlUtilities.list_from_xml_element(root, item_name, clazz)
+        return XmlHelper.list_from_xml_element(root, item_name, clazz)
 
     @staticmethod
     def deserialize_xml_to_dict(xml, clazz):
@@ -217,7 +217,7 @@ class XmlUtilities:
             return None
 
         root = ET.fromstring(xml)
-        return XmlUtilities.dict_from_xml_element(root, clazz)
+        return XmlHelper.dict_from_xml_element(root, clazz)
 
     @staticmethod
     def value_from_xml_attribute(attribute, clazz):
@@ -233,7 +233,7 @@ class XmlUtilities:
 
         if clazz in [int, float, str, bool, datetime.date] or\
                 issubclass(clazz, ApiHelper.CustomDate):
-            conversion_function = XmlUtilities.converter(clazz)
+            conversion_function = XmlHelper.converter(clazz)
         else:
             conversion_function = str(clazz)
 
@@ -254,7 +254,7 @@ class XmlUtilities:
         # These classes can be cast directly.
         if clazz in [int, float, str, bool, datetime.date] or\
                 issubclass(clazz, ApiHelper.CustomDate):
-            conversion_function = XmlUtilities.converter(clazz)
+            conversion_function = XmlHelper.converter(clazz)
             value = element.text
         else:
             conversion_function = clazz.from_element
@@ -276,6 +276,9 @@ class XmlUtilities:
             wrapping_element_name (str): The name of the wrapping element for
                 the xml element array.
         """
+        if root is None:
+            return None
+
         if wrapping_element_name is None:
             elements = root.findall(item_name)
         elif root.find(wrapping_element_name) is None:
@@ -286,7 +289,7 @@ class XmlUtilities:
         if elements is None:
             return None
 
-        return [XmlUtilities.value_from_xml_element(element, clazz) for
+        return [XmlHelper.value_from_xml_element(element, clazz) for
                 element in elements]
 
     @staticmethod
@@ -303,7 +306,7 @@ class XmlUtilities:
 
         entries = list(element)
 
-        conversion_function = XmlUtilities.converter(clazz)
+        conversion_function = XmlHelper.converter(clazz)
         return {entry.tag: conversion_function(entry.text) for
                 entry in entries}
 
@@ -354,12 +357,12 @@ class XmlUtilities:
                     elements = root.find(wrapping_element_name)\
                         .findall(element_name)
                 if elements is not None and len(elements) > 0:
-                    return XmlUtilities.list_from_xml_element(
+                    return XmlHelper.list_from_xml_element(
                         root, element_name, clazz, wrapping_element_name)
             else:
                 element = root.find(element_name)
                 if element is not None:
-                    return XmlUtilities.value_from_xml_element(element, clazz)
+                    return XmlHelper.value_from_xml_element(element, clazz)
 
         return None
 
@@ -378,7 +381,7 @@ class XmlUtilities:
         arr = []
         for elem in root.iter():
             if elem.tag in mapping_data:
-                arr.append(XmlUtilities.value_from_xml_element(
+                arr.append(XmlHelper.value_from_xml_element(
                     elem, mapping_data[elem.tag][0]))
         if len(arr) > 0:
             return arr

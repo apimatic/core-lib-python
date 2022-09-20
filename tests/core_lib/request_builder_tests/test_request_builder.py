@@ -10,7 +10,7 @@ from core_lib.types.parameter import Parameter
 from core_lib.types.xml_attributes import XmlAttributes
 from core_lib.utilities.api_helper import ApiHelper
 from core_lib.utilities.auth_helper import AuthHelper
-from core_lib.utilities.xml_utilities import XmlUtilities
+from core_lib.utilities.xml_helper import XmlHelper
 from tests.core_lib.base import Base
 from tests.core_lib.callables.base_uri_callable import Server
 
@@ -361,9 +361,15 @@ class TestRequestBuilder(Base):
         assert http_request.parameters == expected_body_param_value
 
     @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
-        (Base.attributes_and_elements_model(), '<AttributesAndElements string="String" number="10000">'
+        (Base.xml_model(), '<AttributesAndElements string="String" number="10000" boolean="false">'
                                                '<string>Hey! I am being tested.</string>'
                                                '<number>5000</number>'
+                                               '<boolean>false</boolean>'
+                                               '<elements>'
+                                               '<item>a</item>'
+                                               '<item>b</item>'
+                                               '<item>c</item>'
+                                               '</elements>'
                                                '</AttributesAndElements>')
     ])
     def test_xml_body_param_with_serializer(self, input_body_param_value, expected_body_param_value):
@@ -371,19 +377,33 @@ class TestRequestBuilder(Base):
             .xml_attributes(XmlAttributes()
                             .value(input_body_param_value)
                             .root_element_name('AttributesAndElements')) \
-            .body_serializer(XmlUtilities.serialize_to_xml) \
+            .body_serializer(XmlHelper.serialize_to_xml) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 
     @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
-        ([Base.attributes_and_elements_model(), Base.attributes_and_elements_model()],
+        ([Base.xml_model(), Base.xml_model()],
          '<arrayOfModels>'
-         '<item string="String" number="10000">'
+         '<item string="String" number="10000" boolean="false">'
          '<string>Hey! I am being tested.</string>'
-         '<number>5000</number></item>'
-         '<item string="String" number="10000">'
+         '<number>5000</number>'
+         '<boolean>false</boolean>'
+         '<elements>'
+         '<item>a</item>'
+         '<item>b</item>'
+         '<item>c</item>'
+         '</elements>'
+         '</item>'
+         '<item string="String" number="10000" boolean="false">'
          '<string>Hey! I am being tested.</string>'
-         '<number>5000</number></item>'
+         '<number>5000</number>'
+         '<boolean>false</boolean>'
+         '<elements>'
+         '<item>a</item>'
+         '<item>b</item>'
+         '<item>c</item>'
+         '</elements>'
+         '</item>'
          '</arrayOfModels>')
     ])
     def test_xml_array_body_param_with_serializer(self, input_body_param_value, expected_body_param_value):
@@ -392,7 +412,7 @@ class TestRequestBuilder(Base):
                             .value(input_body_param_value)
                             .root_element_name('arrayOfModels')
                             .array_item_name('item')) \
-            .body_serializer(XmlUtilities.serialize_list_to_xml) \
+            .body_serializer(XmlHelper.serialize_list_to_xml) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 

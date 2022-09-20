@@ -4,14 +4,14 @@ import pytest
 from core_lib.response_handler import ResponseHandler
 from core_lib.types.datetime_format import DateTimeFormat
 from core_lib.utilities.api_helper import ApiHelper
-from core_lib.utilities.xml_utilities import XmlUtilities
+from core_lib.utilities.xml_helper import XmlHelper
 from tests.core_lib.base import Base
 from tests.core_lib.exceptions.global_test_exception import GlobalTestException
 from tests.core_lib.exceptions.local_test_exception import LocalTestException
 from tests.core_lib.exceptions.nested_model_exception import NestedModelException
 from tests.core_lib.models.api_response import ApiResponse
-from tests.core_lib.models.attributes_and_elements_model import AttributesAndElementsModel
 from tests.core_lib.models.person import Employee
+from tests.core_lib.models.xml_model import XMLModel
 
 
 class TestResponseHandler(Base):
@@ -123,40 +123,60 @@ class TestResponseHandler(Base):
         assert ApiHelper.json_serialize(http_response) == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
-        (Base.response(text=XmlUtilities.serialize_list_to_xml(
-            [Base.attributes_and_elements_model(), Base.attributes_and_elements_model()], 'arrayOfModels', 'item')),
+        (Base.response(text=XmlHelper.serialize_list_to_xml(
+            [Base.xml_model(), Base.xml_model()], 'arrayOfModels', 'item')),
          '<arrayOfModels>'
-         '<item string="String" number="10000">'
+         '<item string="String" number="10000" boolean="false">'
          '<string>Hey! I am being tested.</string>'
-         '<number>5000</number></item>'
-         '<item string="String" number="10000">'
+         '<number>5000</number>'
+         '<boolean>false</boolean>'
+         '<elements>'
+         '<item>a</item>'
+         '<item>b</item>'
+         '<item>c</item>'
+         '</elements>'
+         '</item>'
+         '<item string="String" number="10000" boolean="false">'
          '<string>Hey! I am being tested.</string>'
-         '<number>5000</number></item>'
+         '<number>5000</number>'
+         '<boolean>false</boolean>'
+         '<elements>'
+         '<item>a</item>'
+         '<item>b</item>'
+         '<item>c</item>'
+         '</elements>'
+         '</item>'
          '</arrayOfModels>'),
     ])
     def test_xml_response_body_with_item_name(self, input_http_response, expected_response_body):
         http_response = ResponseHandler() \
             .is_xml_response(True) \
-            .deserializer(XmlUtilities.deserialize_xml_to_list) \
-            .deserialize_into(AttributesAndElementsModel) \
+            .deserializer(XmlHelper.deserialize_xml_to_list) \
+            .deserialize_into(XMLModel) \
             .xml_item_name('item') \
             .handle(input_http_response, self.global_errors())
-        assert XmlUtilities.serialize_list_to_xml(http_response, 'arrayOfModels', 'item') == expected_response_body
+        assert XmlHelper.serialize_list_to_xml(http_response, 'arrayOfModels', 'item') == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
-        (Base.response(text=XmlUtilities.serialize_to_xml(Base.attributes_and_elements_model(), 'AttributesAndElements')),
-         '<AttributesAndElements string="String" number="10000">'
+        (Base.response(text=XmlHelper.serialize_to_xml(Base.xml_model(), 'AttributesAndElements')),
+         '<AttributesAndElements string="String" number="10000" boolean="false">'
          '<string>Hey! I am being tested.</string>'
          '<number>5000</number>'
+         '<boolean>false</boolean>'
+         '<elements>'
+         '<item>a</item>'
+         '<item>b</item>'
+         '<item>c</item>'
+         '</elements>'
          '</AttributesAndElements>'),
     ])
     def test_xml_response_body_without_item_name(self, input_http_response, expected_response_body):
         http_response = ResponseHandler() \
             .is_xml_response(True) \
-            .deserializer(XmlUtilities.deserialize_xml) \
-            .deserialize_into(AttributesAndElementsModel) \
+            .deserializer(XmlHelper.deserialize_xml) \
+            .deserialize_into(XMLModel) \
             .handle(input_http_response, self.global_errors())
-        assert XmlUtilities.serialize_to_xml(http_response, 'AttributesAndElements') == expected_response_body
+        assert XmlHelper.serialize_to_xml(http_response, 'AttributesAndElements') == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
         (Base.response(text='[1, 2, 3, 4]'), '[1, 2, 3, 4]'),

@@ -1,7 +1,11 @@
 __all__ = [
     'person',
     'days',
-    'attributes_and_elements_model',
+    'xml_model',
     'validate',
-    'api_response'
+    'api_response',
+    'one_of_xml',
+    'cat_model',
+    'dog_model',
+    'wolf_model',
 ]
