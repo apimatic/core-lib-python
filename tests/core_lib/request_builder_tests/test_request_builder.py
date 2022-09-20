@@ -196,18 +196,39 @@ class TestRequestBuilder(Base):
                    .global_header('header_param', input_global_header_param_value))
         assert http_request.headers == expected_global_header_param_value
 
+    @pytest.mark.parametrize('input_additional_header_param_value, expected_additional_header_param_value', [
+        ('my-string', {'header_param': 'my-string'}),
+        (5000, {'header_param': 5000}),
+        (5000.12, {'header_param': 5000.12}),
+        (str(date(1998, 2, 13)), {'header_param': '1998-02-13'}),
+        (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         {'header_param': 761117415}),
+        (ApiHelper.HttpDateTime.from_datetime(datetime(1998, 2, 13, 5, 30, 15)),
+         {'header_param': 'Fri, 13 Feb 1998 00:30:15 GMT'}),
+        (ApiHelper.RFC3339DateTime.from_datetime(datetime(1998, 2, 13, 5, 30, 15)),
+         {'header_param': '1998-02-13T05:30:15'}),
+        ([100, 200, 300, 400], {'header_param': [100, 200, 300, 400]})
+    ])
+    def test_additional_headers(self, input_additional_header_param_value, expected_additional_header_param_value):
+        http_request = self.new_request_builder \
+            .build(self.global_configuration
+                   .additional_header('header_param', input_additional_header_param_value))
+        assert http_request.headers == expected_additional_header_param_value
+
     @pytest.mark.parametrize('input_global_header_param_value,'
                              'input_local_header_param_value,'
+                             'input_additional_header_param_value,'
                              'expected_header_param_value', [
-                                 ('global_string', 'local_string', {'header_param': 'local_string'})
+                                 ('global_string', 'local_string', 'additional_string', {'header_param': 'additional_string'})
                              ])
     def test_headers_precedence(self, input_global_header_param_value, input_local_header_param_value,
-                                expected_header_param_value):
+                                input_additional_header_param_value, expected_header_param_value):
         http_request = self.new_request_builder \
             .header_param(Parameter()
                           .key('header_param')
                           .value(input_local_header_param_value)) \
-            .build(self.global_configuration.global_header('header_param', input_global_header_param_value))
+            .build(self.global_configuration.global_header('header_param', input_global_header_param_value)
+                   .additional_header('header_param', input_additional_header_param_value))
         assert http_request.headers == expected_header_param_value
 
     def test_useragent_header(self):

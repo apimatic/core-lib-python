@@ -17,7 +17,7 @@ from tests.core_lib.models.xml_model import XMLModel
 class TestResponseHandler(Base):
 
     def test_nullify_404(self):
-        http_response = ResponseHandler().is_nullify404(True).handle(self.response(status_code=404),
+        http_response = self.new_response_handler.is_nullify404(True).handle(self.response(status_code=404),
                                                                      self.global_errors())
         assert http_response is None
 
@@ -28,18 +28,18 @@ class TestResponseHandler(Base):
     ])
     def test_global_error(self, http_response, expected_exception_type, expected_error_message):
         with pytest.raises(expected_exception_type) as error:
-            ResponseHandler().handle(http_response, self.global_errors())
+            self.new_response_handler.handle(http_response, self.global_errors())
         assert error.value.reason == expected_error_message
 
     def test_local_error(self):
         with pytest.raises(LocalTestException) as error:
-            ResponseHandler().local_error(404, 'Not Found', LocalTestException) \
+            self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
                 .handle(self.response(status_code=404), self.global_errors())
         assert error.value.reason == 'Not Found'
 
     def test_local_error_with_body(self):
         with pytest.raises(LocalTestException) as error:
-            ResponseHandler().local_error(404, 'Not Found', LocalTestException) \
+            self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
                 .handle(self.response(status_code=404,
                                       text='{"ServerCode": 5001, '
                                            '"ServerMessage": "Test message from server", '
@@ -51,7 +51,7 @@ class TestResponseHandler(Base):
 
     def test_global_error_with_body(self):
         with pytest.raises(NestedModelException) as error:
-            ResponseHandler().local_error(404, 'Not Found', LocalTestException) \
+            self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
                 .handle(self.response(status_code=412,
                                       text='{"ServerCode": 5001, '
                                            '"ServerMessage": "Test message from server", '
@@ -70,13 +70,13 @@ class TestResponseHandler(Base):
 
     def test_local_error_precedence(self):
         with pytest.raises(LocalTestException) as error:
-            ResponseHandler().local_error(400, '400 Local', LocalTestException) \
+            self.new_response_handler.local_error(400, '400 Local', LocalTestException) \
                 .handle(self.response(status_code=400), self.global_errors())
         assert error.value.reason == '400 Local'
 
     def test_global_error_precedence(self):
         with pytest.raises(GlobalTestException) as error:
-            ResponseHandler().local_error(404, 'Not Found', LocalTestException) \
+            self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
                 .handle(self.response(status_code=400), self.global_errors())
         assert error.value.reason == '400 Global'
 
@@ -86,7 +86,7 @@ class TestResponseHandler(Base):
         (Base.response(text=500.124), 500.124)
     ])
     def test_simple_response_body(self, input_http_response, expected_response_body):
-        http_response = ResponseHandler().handle(input_http_response, self.global_errors())
+        http_response = self.new_response_handler.handle(input_http_response, self.global_errors())
         assert http_response == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, input_response_convertor, expected_response_body_type, '
@@ -96,7 +96,7 @@ class TestResponseHandler(Base):
                              ])
     def test_simple_response_body_with_convertor(self, input_http_response, input_response_convertor,
                                                  expected_response_body_type, expected_response_body):
-        http_response = ResponseHandler().convertor(input_response_convertor).handle(input_http_response, self.global_errors())
+        http_response = self.new_response_handler.convertor(input_response_convertor).handle(input_http_response, self.global_errors())
         assert type(http_response) == expected_response_body_type and http_response == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
@@ -104,7 +104,7 @@ class TestResponseHandler(Base):
          ApiHelper.json_serialize(Base.employee_model()))
     ])
     def test_custom_type_response_body(self, input_http_response, expected_response_body):
-        http_response = ResponseHandler() \
+        http_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
             .deserialize_into(Employee.from_dictionary) \
             .handle(input_http_response, self.global_errors())
@@ -117,7 +117,7 @@ class TestResponseHandler(Base):
          '{"key1": "value1", "key2": [1, 2, 3, {"key1": "value1", "key2": "value2"}]}')
     ])
     def test_json_response_body(self, input_http_response, expected_response_body):
-        http_response = ResponseHandler() \
+        http_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
             .handle(input_http_response, self.global_errors())
         assert ApiHelper.json_serialize(http_response) == expected_response_body
@@ -149,7 +149,7 @@ class TestResponseHandler(Base):
          '</arrayOfModels>'),
     ])
     def test_xml_response_body_with_item_name(self, input_http_response, expected_response_body):
-        http_response = ResponseHandler() \
+        http_response = self.new_response_handler \
             .is_xml_response(True) \
             .deserializer(XmlHelper.deserialize_xml_to_list) \
             .deserialize_into(XMLModel) \
@@ -171,7 +171,7 @@ class TestResponseHandler(Base):
          '</AttributesAndElements>'),
     ])
     def test_xml_response_body_without_item_name(self, input_http_response, expected_response_body):
-        http_response = ResponseHandler() \
+        http_response = self.new_response_handler \
             .is_xml_response(True) \
             .deserializer(XmlHelper.deserialize_xml) \
             .deserialize_into(XMLModel) \
@@ -185,7 +185,7 @@ class TestResponseHandler(Base):
          '{"key1": "value1", "key2": [1, 2, 3, {"key1": "value1", "key2": "value2"}]}')
     ])
     def test_api_response(self, input_http_response, expected_response_body):
-        api_response = ResponseHandler() \
+        api_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
             .is_api_response(True) \
             .handle(input_http_response, self.global_errors())
@@ -196,7 +196,7 @@ class TestResponseHandler(Base):
          '{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"], "cursor": "Test cursor"}', ['e1', 'e2'])
     ])
     def test_api_response_convertor(self, input_http_response, expected_response_body, expected_error_list):
-        api_response = ResponseHandler() \
+        api_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
             .is_api_response(True) \
             .convertor(ApiResponse.create) \
@@ -211,7 +211,7 @@ class TestResponseHandler(Base):
          '{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"]}', ['e1', 'e2'])
     ])
     def test_api_response_with_errors(self, input_http_response, expected_response_body, expected_error_list):
-        api_response = ResponseHandler() \
+        api_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
             .is_api_response(True) \
             .handle(input_http_response, self.global_errors())
@@ -243,7 +243,7 @@ class TestResponseHandler(Base):
 
     ])
     def test_date_time_response_body(self, input_http_response, input_date_time_format, expected_response_body):
-        http_response = ResponseHandler() \
+        http_response = self.new_response_handler \
             .deserializer(ApiHelper.datetime_deserialize) \
             .datetime_format(input_date_time_format) \
             .handle(input_http_response, self.global_errors())
@@ -255,7 +255,7 @@ class TestResponseHandler(Base):
          [date(1994, 2, 13), date(1994, 2, 13)])
     ])
     def test_date_response_body(self, input_http_response, expected_response_body):
-        http_response = ResponseHandler() \
+        http_response = self.new_response_handler \
             .deserializer(ApiHelper.date_deserialize) \
             .handle(input_http_response, self.global_errors())
         assert http_response == expected_response_body

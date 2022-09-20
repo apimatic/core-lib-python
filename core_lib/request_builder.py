@@ -1,4 +1,5 @@
 from core_lib.http.request.http_request import HttpRequest
+from core_lib.logger.endpoint_logger import EndpointLogger
 from core_lib.types.array_serialization_format import SerializationFormats
 from core_lib.types.xml_attributes import XmlAttributes
 from core_lib.utilities.api_helper import ApiHelper
@@ -30,6 +31,8 @@ class RequestBuilder:
         self._auth = None
         self._array_serialization_format = SerializationFormats.INDEXED
         self._xml_attributes = None
+        self._endpoint_name_for_logging = None
+        self._endpoint_logger = None
 
     def server(self, server):
         self._server = server
@@ -99,7 +102,16 @@ class RequestBuilder:
         self._xml_attributes = xml_attributes
         return self
 
+    def endpoint_name_for_logging(self, endpoint_name_for_logging):
+        self._endpoint_name_for_logging = endpoint_name_for_logging
+        return self
+
+    def endpoint_logger(self, endpoint_logger):
+        self._endpoint_logger = endpoint_logger
+        return self
+
     def build(self, global_configuration):
+        self._endpoint_logger.info('Preparing query URL for {}.'.format(self._endpoint_name_for_logging))
         _url = self.process_url(global_configuration)
 
         _request_headers = self.process_request_headers(global_configuration)
@@ -135,13 +147,26 @@ class RequestBuilder:
             if self._query_params else _query_builder
 
     def process_request_headers(self, global_configuration):
+        request_headers = self._header_params
         global_headers = global_configuration.get_global_headers()
+        additional_headers = global_configuration.get_additional_headers()
+
+        if global_headers or self._header_params or additional_headers:
+            self._endpoint_logger.info('Preparing headers for {}.'.format(self._endpoint_name_for_logging))
+
         if global_headers:
             prepared_headers = {key: str(value) for key, value in self._header_params.items()}
-            return {**global_headers, **prepared_headers}
-        return self._header_params
+            request_headers = {**global_headers, **prepared_headers}
+
+        if additional_headers:
+            request_headers.update(additional_headers)
+
+        return request_headers
 
     def process_body_params(self):
+        if self._xml_attributes or self._form_params or self._additional_form_params or self._body_param:
+            self._endpoint_logger.info('Preparing body for {}.'.format(self._endpoint_name_for_logging))
+
         if self._xml_attributes:
             return self.process_xml_parameters(self._body_serializer)
         elif self._form_params or self._additional_form_params:
@@ -174,6 +199,9 @@ class RequestBuilder:
         return self._body_param
 
     def process_multipart_params(self):
+        if self._multipart_params:
+            self._endpoint_logger.info('Preparing multipart params for {}.'.format(self._endpoint_name_for_logging))
+
         multipart_params = {}
         for multipart_param in self._multipart_params:
             param_value = multipart_param.get_value()
@@ -187,6 +215,7 @@ class RequestBuilder:
 
     def apply_auth(self, auth_managers, http_request):
         if self._auth:
+            self._endpoint_logger.info('Applying auth for {}.'.format(self._endpoint_name_for_logging))
             if self._auth.with_auth_managers(auth_managers).is_valid():
                 self._auth.apply(http_request)
             else:

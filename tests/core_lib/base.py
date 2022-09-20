@@ -5,7 +5,9 @@ from core_interfaces.types.http_method_enum import HttpMethodEnum
 from core_lib.configurations.global_configuration import GlobalConfiguration
 from core_lib.http.request.http_request import HttpRequest
 from core_lib.http.response.http_response import HttpResponse
+from core_lib.logger.endpoint_logger import EndpointLogger
 from core_lib.request_builder import RequestBuilder
+from core_lib.response_handler import ResponseHandler
 from core_lib.types.error_case import ErrorCase
 from tests.core_lib.authentications.basic_auth import BasicAuth
 from tests.core_lib.authentications.bearer_auth import BearerAuth
@@ -111,7 +113,12 @@ class Base:
 
     @property
     def new_request_builder(self):
-        return RequestBuilder().path('/test').server(Server.DEFAULT)
+        return RequestBuilder().path('/test').endpoint_name_for_logging('Dummy Endpoint').endpoint_logger(EndpointLogger()).server(Server.DEFAULT)
+
+    @property
+    def new_response_handler(self):
+        return ResponseHandler().endpoint_name_for_logging('Dummy Endpoint').endpoint_logger(
+            EndpointLogger())
 
     @property
     def global_configuration(self):

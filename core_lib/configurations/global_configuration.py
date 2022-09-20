@@ -12,6 +12,9 @@ class GlobalConfiguration:
     def get_global_headers(self):
         return self._global_headers
 
+    def get_additional_headers(self):
+        return self._additional_headers
+
     def get_auth_managers(self):
         return self._auth_managers
 
@@ -24,6 +27,7 @@ class GlobalConfiguration:
         self._http_client_configuration = http_client_configuration
         self._global_errors = None
         self._global_headers = {}
+        self._additional_headers = {}
         self._auth_managers = None
         self._base_uri_executor = None
 
@@ -37,6 +41,14 @@ class GlobalConfiguration:
 
     def global_header(self, key, value):
         self._global_headers[key] = value
+        return self
+
+    def additional_headers(self, additional_headers):
+        self._additional_headers = additional_headers
+        return self
+
+    def additional_header(self, key, value):
+        self._additional_headers[key] = value
         return self
 
     def auth_managers(self, auth_managers):

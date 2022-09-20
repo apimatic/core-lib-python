@@ -27,7 +27,6 @@ setup(
     ],
     tests_require=[
         'pytest~=7.1.3',
-        'pytest-cov~=3.0.0',
-        'pytest-mock~=3.8.2'
+        'pytest-cov~=3.0.0'
     ]
 )
