@@ -1,7 +1,6 @@
 from datetime import datetime, date
 
 import pytest
-from core_lib.response_handler import ResponseHandler
 from core_lib.types.datetime_format import DateTimeFormat
 from core_lib.utilities.api_helper import ApiHelper
 from core_lib.utilities.xml_helper import XmlHelper
@@ -18,7 +17,7 @@ class TestResponseHandler(Base):
 
     def test_nullify_404(self):
         http_response = self.new_response_handler.is_nullify404(True).handle(self.response(status_code=404),
-                                                                     self.global_errors())
+                                                                             self.global_errors())
         assert http_response is None
 
     @pytest.mark.parametrize('http_response, expected_exception_type, expected_error_message', [
@@ -96,7 +95,8 @@ class TestResponseHandler(Base):
                              ])
     def test_simple_response_body_with_convertor(self, input_http_response, input_response_convertor,
                                                  expected_response_body_type, expected_response_body):
-        http_response = self.new_response_handler.convertor(input_response_convertor).handle(input_http_response, self.global_errors())
+        http_response = self.new_response_handler.convertor(input_response_convertor).handle(input_http_response,
+                                                                                             self.global_errors())
         assert type(http_response) == expected_response_body_type and http_response == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [

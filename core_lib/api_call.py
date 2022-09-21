@@ -7,18 +7,18 @@ class ApiCall:
 
     @property
     def new_builder(self):
-        return ApiCall(self.global_configuration, logger=self.endpoint_logger)
+        return ApiCall(self.global_configuration, logger=self.endpoint_logger.logger)
 
     def __init__(
             self,
             global_configuration,
-            endpoint_logger=EndpointLogger()
+            logger=None
     ):
         self.global_configuration = global_configuration
         self.request_builder = None
         self.response_handler = ResponseHandler()
         self.endpoint_configuration = EndpointConfiguration()
-        self.endpoint_logger = endpoint_logger
+        self.endpoint_logger = EndpointLogger(logger)
         self._endpoint_name_for_logging = None
 
     def request(self, request_builder):
@@ -63,7 +63,7 @@ class ApiCall:
                 .endpoint_name_for_logging(self._endpoint_name_for_logging) \
                 .handle(_http_response, self.global_configuration.get_global_errors())
         except Exception as e:
-            self.logger.error(e)
+            self.endpoint_logger.error(e)
             raise
 
     def update_http_callback_with_request(self, _http_callback, _http_client_configuration, _http_request):

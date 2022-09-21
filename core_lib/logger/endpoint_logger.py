@@ -1,9 +1,12 @@
 
 class EndpointLogger:
 
-    def __init__(self, logger=None):
+    @property
+    def logger(self):
+        return self._logger
+
+    def __init__(self, logger):
         self._logger = logger
-        self._endpoint_name = None
 
     def info(self, info_message):
         if self._logger:

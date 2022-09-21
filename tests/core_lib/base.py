@@ -1,3 +1,4 @@
+import logging
 import os
 import platform
 from datetime import datetime, date
@@ -113,12 +114,16 @@ class Base:
 
     @property
     def new_request_builder(self):
-        return RequestBuilder().path('/test').endpoint_name_for_logging('Dummy Endpoint').endpoint_logger(EndpointLogger()).server(Server.DEFAULT)
+        return RequestBuilder().path('/test')\
+            .endpoint_name_for_logging('Dummy Endpoint')\
+            .endpoint_logger(EndpointLogger(None))\
+            .server(Server.DEFAULT)
 
     @property
     def new_response_handler(self):
-        return ResponseHandler().endpoint_name_for_logging('Dummy Endpoint').endpoint_logger(
-            EndpointLogger())
+        return ResponseHandler()\
+            .endpoint_name_for_logging('Dummy Endpoint')\
+            .endpoint_logger(EndpointLogger(None))
 
     @property
     def global_configuration(self):
