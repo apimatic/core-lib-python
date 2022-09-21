@@ -13,5 +13,5 @@ You will need Python 3.7-3.9 to support this package.
 Simply run the command below to install the core library in your SDK. The core library has been added as a dependency in the requirements.txt file
 
 ```php
-pip install -r requirements.txt"
+pip install -r requirements.txt
 ```
