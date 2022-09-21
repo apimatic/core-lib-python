@@ -1,24 +1,8 @@
-# -*- coding: utf-8 -*-
-
-import requests
-import tempfile
 
 
-class TestHelper(object):
-    """A Helper Class for various functions associated with API testing.
-    
-    This class contains static and class methods for operations that need to be
-    performed during API testing. All of the methods inside this class are
-    static or class methods, there is no need to ever initialise an instance of this
-    class.    
-
-    Attributes:
-        cache (Set): Class variable which stores hashes of file URLs so we don't 
-            download the same file twice in a test session.
-
+class ComparisonHelper:
+    """A Helper Class used for the comparison of expected and actual API response.
     """
-
-    cache = {}
 
     @staticmethod
     def match_headers(expected_headers,
@@ -36,7 +20,7 @@ class TestHelper(object):
  
         """
         if ((len(received_headers) < len(expected_headers)) or
-                ((allow_extra == False) and (len(expected_headers) != len(received_headers)))):
+                ((allow_extra is False) and (len(expected_headers) != len(received_headers)))):
             return False
 
         received_headers = {k.lower(): v for k, v in received_headers.items()}
@@ -77,7 +61,7 @@ class TestHelper(object):
                 if key not in received_body:
                     return False
                 if check_values or type(expected_body[key]) == dict:
-                    if TestHelper.match_body(expected_body[key], received_body[key],
+                    if ComparisonHelper.match_body(expected_body[key], received_body[key],
                                              check_values, check_order, check_count) is False:
                         return False
         elif type(expected_body) == list:
@@ -90,7 +74,7 @@ class TestHelper(object):
                 for i, expected_element in enumerate(expected_body):
                     matches = [j for j, received_element
                                in enumerate(received_body)
-                               if TestHelper.match_body(expected_element, received_element,
+                               if ComparisonHelper.match_body(expected_element, received_element,
                                                         check_values, check_order, check_count)]
                     if len(matches) == 0:
                         return False
@@ -102,20 +86,3 @@ class TestHelper(object):
             return False
         return True
 
-    @classmethod
-    def get_file(cls, url):
-        """Class method which takes a URL, downloads the file (if not 
-        already downloaded for this test session) and returns a file object for 
-        the file in read-binary mode.
-        
-        Args:
-            url (string): The URL of the required file.
-        Returns:
-            FileObject: The file object of the required file (opened with "rb").
- 
-        """
-        if url not in cls.cache:
-            cls.cache[url] = tempfile.NamedTemporaryFile()
-            cls.cache[url].write(requests.get(url).content)
-        cls.cache[url].seek(0)
-        return cls.cache[url]
