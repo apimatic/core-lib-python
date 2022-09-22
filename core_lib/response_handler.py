@@ -1,5 +1,4 @@
 from core_lib.http.response.api_response import ApiResponse
-from core_lib.logger.endpoint_logger import EndpointLogger
 from core_lib.types.error_case import ErrorCase
 
 

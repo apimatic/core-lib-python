@@ -1,9 +1,7 @@
-
 class FileWrapper:
-
     """A wrapper to allow passing in content type for file uploads."""
 
-    def __init__(self, file, content_type='application/octet-stream'):
+    def __init__(self, file, content_type):
         self._file_stream = file
         self._content_type = content_type
 

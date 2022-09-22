@@ -1,7 +1,5 @@
 from core_lib.http.request.http_request import HttpRequest
-from core_lib.logger.endpoint_logger import EndpointLogger
 from core_lib.types.array_serialization_format import SerializationFormats
-from core_lib.types.xml_attributes import XmlAttributes
 from core_lib.utilities.api_helper import ApiHelper
 
 
