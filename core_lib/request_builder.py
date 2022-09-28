@@ -26,6 +26,7 @@ class RequestBuilder:
         self._additional_query_params = {}
         self._multipart_params = []
         self._body_param = None
+        self._should_wrap_body_param = None
         self._body_serializer = None
         self._auth = None
         self._array_serialization_format = SerializationFormats.INDEXED
@@ -87,6 +88,10 @@ class RequestBuilder:
             self._body_param[body_param.get_key()] = body_param.get_value()
         else:
             self._body_param = body_param.get_value()
+        return self
+
+    def should_wrap_body_param(self, should_wrap_body_param):
+        self._should_wrap_body_param = should_wrap_body_param
         return self
 
     def body_serializer(self, body_serializer):
@@ -178,6 +183,8 @@ class RequestBuilder:
             self.add_additional_form_params()
             return ApiHelper.form_encode_parameters(self._form_params, self._array_serialization_format)
         elif self._body_param and self._body_serializer:
+            if self._should_wrap_body_param:
+                return self._body_serializer(self.resolve_body_param(), self._should_wrap_body_param)
             return self._body_serializer(self.resolve_body_param())
         elif self._body_param and not self._body_serializer:
             return self.resolve_body_param()
