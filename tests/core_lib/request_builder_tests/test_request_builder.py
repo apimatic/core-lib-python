@@ -156,6 +156,15 @@ class TestRequestBuilder(Base):
             .build(self.global_configuration)
         assert http_request.query_url == 'http://localhost:3000/test?{}'.format(expected_query_param_value)
 
+    @pytest.mark.parametrize('input_additional_query_params_value, expected_additional_query_params_value', [
+        ({'key1': 'value1', 'key2': 'value2'}, 'key1=value1&key2=value2')
+    ])
+    def test_additional_query_params(self, input_additional_query_params_value, expected_additional_query_params_value):
+        http_request = self.new_request_builder \
+            .additional_query_params(input_additional_query_params_value) \
+            .build(self.global_configuration)
+        assert http_request.query_url == 'http://localhost:3000/test?{}'.format(expected_additional_query_params_value)
+
     @pytest.mark.parametrize('input_local_header_param_value, expected_local_header_param_value', [
         ('string', {'header_param': 'string'}),
         (500, {'header_param': 500}),

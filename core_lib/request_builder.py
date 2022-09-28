@@ -23,6 +23,7 @@ class RequestBuilder:
         self._query_params = {}
         self._form_params = {}
         self._additional_form_params = {}
+        self._additional_query_params = {}
         self._multipart_params = []
         self._body_param = None
         self._body_serializer = None
@@ -67,6 +68,10 @@ class RequestBuilder:
 
     def additional_form_params(self, additional_form_params):
         self._additional_form_params = additional_form_params
+        return self
+
+    def additional_query_params(self, additional_query_params):
+        self._additional_query_params = additional_query_params
         return self
 
     def multipart_param(self, multipart_param):
@@ -140,6 +145,8 @@ class RequestBuilder:
                                                              self._template_params) if self._template_params else None
 
     def get_updated_url_with_query_params(self, _query_builder):
+        if self._additional_query_params:
+            self.add_additional_query_params()
         return ApiHelper.append_url_with_query_parameters(_query_builder,
                                                           self._query_params, self._array_serialization_format)\
             if self._query_params else _query_builder
@@ -187,6 +194,10 @@ class RequestBuilder:
         if self._additional_form_params:
             for form_param in self._additional_form_params:
                 self._form_params[form_param] = self._additional_form_params[form_param]
+
+    def add_additional_query_params(self):
+        for query_param in self._additional_query_params:
+            self._query_params[query_param] = self._additional_query_params[query_param]
 
     def resolve_body_param(self):
         if ApiHelper.is_file_wrapper_instance(self._body_param):
