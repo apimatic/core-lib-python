@@ -4,7 +4,7 @@ This project contains core logic and the utilities for the APIMatic's Python SDK
 
 ## Introduction
 
-The Core logic for APImatic's Python SDK can be found here: (instert link later)
+The Core logic for APIMatic's Python SDK can be found here: (instert link later)
 
 
 ## Install the Package
