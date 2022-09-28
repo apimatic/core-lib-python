@@ -20,7 +20,7 @@ class Parameter:
         self._value = None
         self._is_required = False
         self._should_encode = False
-        self._default_content_type = False
+        self._default_content_type = None
 
     def key(self, key):
         self._key = key
