@@ -165,8 +165,6 @@ class XmlHelper:
 
         Args:
             xml (str): An xml document to deserialize.
-            root_element_name (str): The name of the xml document's root
-                element.
             clazz (class): The class that the deserialized object should
                 belong to.
         """
@@ -184,8 +182,6 @@ class XmlHelper:
 
         Args:
             xml (str): An xml document to deserialize.
-            root_element_name (str): The name of the xml document's root
-                element.
             item_name (str): The name of the elements that need to be extracted
                 into a list.
             clazz (class): The class that the deserialized object should
