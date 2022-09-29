@@ -529,7 +529,7 @@ class TestApiHelper(Base):
         assert ApiHelper.datetime_deserialize(input_http_response, input_date_time_format) == expected_response_body
 
     @pytest.mark.parametrize('input_file_wrapper, is_file_instance', [
-        (FileWrapper(Base.read_file('apimatic.png')), True),
+        (FileWrapper(Base.read_file('apimatic.png'), 'image/png'), True),
         ('I am not a file', False)
     ])
     def test_is_file_wrapper_instance(self, input_file_wrapper, is_file_instance):
