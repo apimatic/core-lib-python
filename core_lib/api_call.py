@@ -29,7 +29,7 @@ class ApiCall:
         self._response_handler = response_handler
         return self
 
-    def configuration(self, endpoint_configuration):
+    def endpoint_configuration(self, endpoint_configuration):
         self._endpoint_configuration = endpoint_configuration
         return self
 
