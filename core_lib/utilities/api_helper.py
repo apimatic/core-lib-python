@@ -334,7 +334,7 @@ class ApiHelper(object):
         if parameters is None:
             return url
         parameters = ApiHelper.process_complex_types_parameters(parameters, array_serialization)
-        for index, value in enumerate(parameters):
+        for value in parameters:
             key = value[0]
             val = value[1]
             seperator = '&' if '?' in url else '?'
@@ -434,13 +434,14 @@ class ApiHelper(object):
         return retval
 
     @staticmethod
-    def to_dictionary(obj):
+    def to_dictionary(obj, should_ignore_null_values=False):
         """Creates a dictionary representation of a class instance. The
         keys are taken from the API description and may differ from language
         specific variable names of properties.
 
         Args:
             obj: The object to be converted into a dictionary.
+            should_ignore_null_values: Flag to ignore null values from the object dictionary
 
         Returns:
             dictionary: A dictionary form of the model with properties in
@@ -453,8 +454,8 @@ class ApiHelper(object):
         nullable_fields = obj._nullables if hasattr(obj, "_nullables") else []
 
         # Loop through all properties in this model
-
-        for name in obj._names:
+        names = {k: v for k, v in obj.__dict__.items() if v is not None} if should_ignore_null_values else obj._names
+        for name in names:
             value = getattr(obj, name, ApiHelper.SKIP)
 
             if value is ApiHelper.SKIP:
@@ -470,16 +471,18 @@ class ApiHelper(object):
                 dictionary[obj._names[name]] = list()
                 for item in value:
                     dictionary[obj._names[name]].append(
-                        ApiHelper.to_dictionary(item) if hasattr(item, "_names") else item)
+                        ApiHelper.to_dictionary(item, should_ignore_null_values) if hasattr(item, "_names") else item)
             elif isinstance(value, dict):
                 # Loop through each item
                 dictionary[obj._names[name]] = dict()
                 for key in value:
-                    dictionary[obj._names[name]][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
-                                                                                                       "_names") else \
+                    dictionary[obj._names[name]][key] = ApiHelper.to_dictionary(value[key],
+                                                                                should_ignore_null_values) if hasattr(
+                        value[key],
+                        "_names") else \
                         value[key]
             else:
-                dictionary[obj._names[name]] = ApiHelper.to_dictionary(value) if hasattr(value, "_names") else value
+                dictionary[obj._names[name]] = ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value, "_names") else value
 
         # Loop through all additional properties in this model
         if hasattr(obj, "additional_properties"):
@@ -490,16 +493,16 @@ class ApiHelper(object):
                     dictionary[name] = list()
                     for item in value:
                         dictionary[name].append(
-                            ApiHelper.to_dictionary(item) if hasattr(item, "additional_properties") else item)
+                            ApiHelper.to_dictionary(item, should_ignore_null_values) if hasattr(item, "additional_properties") else item)
                 elif isinstance(value, dict):
                     # Loop through each item
                     dictionary[name] = dict()
                     for key in value:
-                        dictionary[name][key] = ApiHelper.to_dictionary(value[key]) if hasattr(value[key],
+                        dictionary[name][key] = ApiHelper.to_dictionary(value[key], should_ignore_null_values) if hasattr(value[key],
                                                                                                "additional_properties") else \
                             value[key]
                 else:
-                    dictionary[name] = ApiHelper.to_dictionary(value) if hasattr(value,
+                    dictionary[name] = ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value,
                                                                                  "additional_properties") else value
 
         # Return the result

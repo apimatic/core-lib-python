@@ -319,6 +319,38 @@ class TestApiHelper(Base):
     def test_to_dictionary(self, obj, expected_value):
         assert jsonpickle.encode(ApiHelper.to_dictionary(obj), False) == expected_value
 
+    @pytest.mark.parametrize('obj, should_ignore_null_values, expected_value', [
+        (Base.employee_model_additional_dictionary(), True,
+         '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
+         '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
+         '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
+         '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
+         '"key1": {"inner_key1": "inner_val1", "inner_key2": "inner_val2"}, "key2": '
+         '["value2", "value3"]}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '
+         '"joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, '
+         '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}'),
+        (ApiHelper.json_deserialize('{"Grand_Parent_Required_Nullable":{"key1": "value1", "key2": "value2"},'
+                                    '"Grand_Parent_Required":"not nullable and required","class":23,'
+                                    '"Parent_Optional_Nullable_With '
+                                    '_Default_Value":"Has default value","Parent_Required_Nullable":nul'
+                                    'l,"Parent_Required":"not nullable and required","Optional_Nullable'
+                                    '":"setted optionalNullable","Optional_Nullable_With_Default_Value"'
+                                    ':"With default value","Required_Nullable":null,"Required":"not nul'
+                                    'lable and required","Optional":"not nullable and optional","Child_'
+                                    'Class_Array":null}', ChildClassModel.from_dictionary), True,
+         '{"Required_Nullable": null, "Required": "not nullable and required", '
+         '"Parent_Required_Nullable": null, "Parent_Required": "not nullable and '
+         'required", "Grand_Parent_Required_Nullable": {"key1": "value1", "key2": '
+         '"value2"}, "Grand_Parent_Required": "not nullable and required", '
+         '"Optional_Nullable": "setted optionalNullable", '
+         '"Optional_Nullable_With_Default_Value": "With default value", "Optional": '
+         '"not nullable and optional", "Child_Class_Array": null, "class": 23, '
+         '"Parent_Optional_Nullable_With_Default_Value": "Has default value"}'
+         ),
+    ])
+    def test_to_dictionary_for_object(self, obj, should_ignore_null_values, expected_value):
+        assert jsonpickle.encode(ApiHelper.to_dictionary(obj), False) == expected_value
+
     @pytest.mark.parametrize('obj, name', [
         (ApiHelper.json_deserialize('{"Grand_Parent_Required_Nullable":{"key1": "value1", "key2": "value2"},'
                                     '"Grand_Parent_Required":"not nullable and required","class":23,'
