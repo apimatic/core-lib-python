@@ -28,5 +28,5 @@ class AuthHelper:
             bool: True if token has expired, False otherwise.
 
         """
-        utc_now = calendar.timegm(datetime.now().utctimetuple())
+        utc_now = AuthHelper.get_current_utc_timestamp()
         return token_expiry is not None and token_expiry < utc_now
