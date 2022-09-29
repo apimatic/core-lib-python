@@ -167,7 +167,8 @@ class ApiHelper(object):
         """JSON Deserialization of a given string.
 
         Args:
-            json (str): The JSON serialized string to deserialize.
+            response: the response to deserialize
+           datetime_format: The date time format to deserialize into
 
         Returns:
             dict: A dictionary representing the data contained in the
@@ -249,10 +250,7 @@ class ApiHelper(object):
         """
         tuples = []
 
-        if sys.version_info[0] < 3:
-            serializable_types = (str, int, long, float, bool, datetime.date, ApiHelper.CustomDate)
-        else:
-            serializable_types = (str, int, float, bool, datetime.date, ApiHelper.CustomDate)
+        serializable_types = (str, int, float, bool, datetime.date, ApiHelper.CustomDate)
 
         if isinstance(array[0], serializable_types):
             if formatting == SerializationFormats.UN_INDEXED:
@@ -270,7 +268,8 @@ class ApiHelper(object):
 
                 elif formatting == SerializationFormats.TSV:
                     tuples += [(key, "\t".join(str(x) for x in array))]
-
+                else:
+                    raise ValueError("Invalid format provided.")
             else:
                 raise ValueError("Invalid format provided.")
         else:
@@ -335,7 +334,7 @@ class ApiHelper(object):
         if parameters is None:
             return url
         parameters = ApiHelper.process_complex_types_parameters(parameters, array_serialization)
-        for index, value in enumerate(parameters):
+        for value in parameters:
             key = value[0]
             val = value[1]
             seperator = '&' if '?' in url else '?'

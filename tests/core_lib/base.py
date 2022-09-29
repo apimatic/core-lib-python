@@ -44,6 +44,30 @@ class Base:
                                            additional_properties={'key1': 'value1', 'key2': 'value2'})])
 
     @staticmethod
+    def person_model():
+        return Person(name='Bob', uid=1234567, address='street abc', birthday=date(1995, 2, 13),
+                      birthtime=datetime(1995, 2, 13, 5, 30, 15), age=27,
+                      additional_properties={'key1': 'value1', 'key2': 'value2'},
+                      )
+
+    @staticmethod
+    def employee_model_additional_dictionary():
+        return Employee(name='Bob', uid=1234567, address='street abc', department='IT', birthday=str(date(1995, 2, 13)),
+                        birthtime=datetime(1995, 2, 13, 5, 30, 15), age=27,
+                        additional_properties={'key1': 'value1', 'key2': 'value2'},
+                        hired_at=datetime(2010, 2, 13, 5, 30, 15), joining_day=Days.MONDAY,
+                        working_days=[Days.MONDAY, Days.TUESDAY], salary=30000,
+                        dependents=[Person(name='John',
+                                           uid=7654321,
+                                           address='street abc',
+                                           birthday=str(date(2010, 2, 13)),
+                                           birthtime=datetime(2010, 2, 13, 5, 30, 15),
+                                           age=12,
+                                           additional_properties={
+                                               'key1': {'inner_key1': 'inner_val1', 'inner_key2': 'inner_val2'},
+                                               'key2': ['value2', 'value3']})])
+
+    @staticmethod
     def basic_auth():
         return BasicAuth(basic_auth_user_name='test_username', basic_auth_password='test_password')
 
@@ -100,6 +124,20 @@ class Base:
         return HttpResponse(status_code=status_code, reason_phrase=reason_phrase,
                             headers=headers, text=text, request=Base.request())
 
+    @property
+    def new_request_builder(self):
+        return RequestBuilder().path('/test').server(Server.DEFAULT)
+
+    @property
+    def global_configuration(self):
+        return GlobalConfiguration(None) \
+            .base_uri_executor(BaseUriCallable().get_base_uri) \
+            .global_errors(self.global_errors())
+
+    @property
+    def global_configuration_with_useragent(self):
+        return self.global_configuration.user_agent(self.user_agent(), self.user_agent_parameters())
+
     @staticmethod
     def user_agent():
         return 'Python|31.8.0|{engine}|{engine-version}|{os-info}'
@@ -146,3 +184,10 @@ class Base:
         return self.global_configuration.auth_managers(
             {'basic_auth': BasicAuth(None, None), 'bearer_auth': BearerAuth(None),
              'custom_header_auth': CustomHeaderAuthentication(None)})
+
+    @staticmethod
+    def wrapped_parameters():
+        return {
+            'bodyScalar': True,
+            'bodyNonScalar': Base.employee_model(),
+        }
