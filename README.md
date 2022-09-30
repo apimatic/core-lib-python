@@ -18,9 +18,9 @@ pip install -r requirements.txt
 ## API Call Classes
 | Name                                                                        | Description                                                           |
 |-----------------------------------------------------------------------------|-----------------------------------------------------------------------|
-| [`RequestBuilder`](core-lib-python/core_lib/request_builder.py)             | Used to build an API Request                                          |
-| [`APICall`](ore-lib-python/core_lib/api_call.py)                            | Used to create an API Call object                                     |
-| [`ResponseHandler`](core-lib-python/core_lib/response_handler.py )          | Used to handle the response returned by the server                    |
+| [`RequestBuilder`](core_lib/request_builder.py)             | Used to build an API Request                                          |
+| [`APICall`](core_lib/api_call.py)                            | Used to create an API Call object                                     |
+| [`ResponseHandler`](core_lib/response_handler.py )          | Used to handle the response returned by the server                    |
 
 
 ## Authentication
