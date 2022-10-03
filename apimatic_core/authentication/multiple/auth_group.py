@@ -1,5 +1,5 @@
-from core_interfaces.types.authentication import Authentication
-from core_lib.authentication.multiple.single_auth import Single
+from apimatic_core_interfaces.types.authentication import Authentication
+from apimatic_core.authentication.multiple.single_auth import Single
 
 
 class AuthGroup(Authentication):

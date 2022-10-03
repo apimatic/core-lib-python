@@ -1,4 +1,4 @@
-from core_lib.utilities.api_helper import ApiHelper
+from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class GlobalConfiguration:

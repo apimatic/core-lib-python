@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 import datetime
 import dateutil.parser
 
-from core_lib.utilities.api_helper import ApiHelper
+from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class XmlHelper:

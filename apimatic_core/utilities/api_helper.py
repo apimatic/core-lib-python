@@ -10,9 +10,9 @@ from time import mktime
 
 import jsonpickle
 import dateutil.parser
-from core_lib.types.datetime_format import DateTimeFormat
-from core_lib.types.file_wrapper import FileWrapper
-from core_lib.types.array_serialization_format import SerializationFormats
+from apimatic_core.types.datetime_format import DateTimeFormat
+from apimatic_core.types.file_wrapper import FileWrapper
+from apimatic_core.types.array_serialization_format import SerializationFormats
 from requests.utils import quote
 
 

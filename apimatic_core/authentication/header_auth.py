@@ -1,4 +1,4 @@
-from core_interfaces.types.authentication import Authentication
+from apimatic_core_interfaces.types.authentication import Authentication
 
 
 class HeaderAuth(Authentication):

@@ -1,4 +1,4 @@
-from core_lib.authentication.multiple.auth_group import AuthGroup
+from apimatic_core.authentication.multiple.auth_group import AuthGroup
 
 
 class Or(AuthGroup):
