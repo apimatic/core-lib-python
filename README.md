@@ -1,6 +1,6 @@
-# core-lib-python
+# apimatic-core
 This project contains core logic and the utilities for the APIMatic's Python SDK
-# Getting Started with CoreLib Python
+# Getting Started with apimatic-core Library Python
 
 ## Introduction
 
