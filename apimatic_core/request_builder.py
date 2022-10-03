@@ -1,6 +1,6 @@
-from core_lib.http.request.http_request import HttpRequest
-from core_lib.types.array_serialization_format import SerializationFormats
-from core_lib.utilities.api_helper import ApiHelper
+from apimatic_core.http.request.http_request import HttpRequest
+from apimatic_core.types.array_serialization_format import SerializationFormats
+from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class RequestBuilder:

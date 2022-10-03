@@ -1,6 +1,6 @@
-from core_lib.configurations.endpoint_configuration import EndpointConfiguration
-from core_lib.logger.endpoint_logger import EndpointLogger
-from core_lib.response_handler import ResponseHandler
+from apimatic_core.configurations.endpoint_configuration import EndpointConfiguration
+from apimatic_core.logger.endpoint_logger import EndpointLogger
+from apimatic_core.response_handler import ResponseHandler
 
 
 class ApiCall:

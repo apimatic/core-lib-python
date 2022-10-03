@@ -1,5 +1,5 @@
-from core_lib.http.response.api_response import ApiResponse
-from core_lib.types.error_case import ErrorCase
+from apimatic_core.http.response.api_response import ApiResponse
+from apimatic_core.types.error_case import ErrorCase
 
 
 class ResponseHandler:

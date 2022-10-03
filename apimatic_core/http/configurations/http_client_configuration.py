@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from core_lib.factories.http_response_factory import HttpResponseFactory
+from apimatic_core.factories.http_response_factory import HttpResponseFactory
 
 
 class HttpClientConfiguration(object):

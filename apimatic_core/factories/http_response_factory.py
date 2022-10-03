@@ -1,5 +1,5 @@
-from core_interfaces.factories.response_factory import ResponseFactory
-from core_lib.http.response.http_response import HttpResponse
+from apimatic_core_interfaces.factories.response_factory import ResponseFactory
+from apimatic_core.http.response.http_response import HttpResponse
 
 
 class HttpResponseFactory(ResponseFactory):
