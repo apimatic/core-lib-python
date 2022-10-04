@@ -2,6 +2,8 @@ import logging
 import os
 import platform
 from datetime import datetime, date
+
+from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
 from apimatic_core.http.request.http_request import HttpRequest
@@ -124,6 +126,17 @@ class Base:
         return HttpResponse(status_code=status_code, reason_phrase=reason_phrase,
                             headers=headers, text=text, request=Base.request())
 
+    @staticmethod
+    def get_http_datetime(datetime_value, should_return_string=True):
+        if should_return_string:
+            return str(ApiHelper.HttpDateTime.from_datetime(datetime_value))
+        return ApiHelper.HttpDateTime.from_datetime(datetime_value)
+
+    @staticmethod
+    def get_rfc3339_datetime(datetime_value, should_return_string=True):
+        if should_return_string:
+            return str(ApiHelper.RFC3339DateTime.from_datetime(datetime_value))
+        return ApiHelper.RFC3339DateTime.from_datetime(datetime_value)
     @property
     def new_request_builder(self):
         return RequestBuilder().path('/test').server(Server.DEFAULT)

@@ -96,9 +96,9 @@ class TestRequestBuilder(Base):
         (date(1994, 2, 13), 'query_param=1994-02-13', SerializationFormats.INDEXED),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=761117415', SerializationFormats.INDEXED),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         'query_param={}'.format(quote(str(ApiHelper.HttpDateTime.from_datetime(
-             datetime(1994, 2, 13, 5, 30, 15))), safe='')), SerializationFormats.INDEXED),
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15), False),
+         'query_param={}'.format(quote(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')),
+         SerializationFormats.INDEXED),
         (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=1994-02-13T05%3A30%3A15', SerializationFormats.INDEXED),
         ([1, 2, 3, 4], 'query_param[0]=1&query_param[1]=2&query_param[2]=3&query_param[3]=4',
@@ -129,18 +129,21 @@ class TestRequestBuilder(Base):
          'query_param[address]=street%20abc'
          '&query_param[age]=27'
          '&query_param[birthday]=1995-02-13'
-         '&query_param[birthtime]=1995-02-13T05%3A30%3A15'
+         '&query_param[birthtime]={}'.format(quote(
+             Base.get_rfc3339_datetime(datetime(1995, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[department]=IT'
          '&query_param[dependents][0][address]=street%20abc'
          '&query_param[dependents][0][age]=12'
          '&query_param[dependents][0][birthday]=2010-02-13'
-         '&query_param[dependents][0][birthtime]=2010-02-13T05%3A30%3A15'
+         '&query_param[dependents][0][birthtime]={}'.format(quote(
+             Base.get_rfc3339_datetime(datetime(2010, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[dependents][0][name]=John'
          '&query_param[dependents][0][uid]=7654321'
          '&query_param[dependents][0][personType]=Per'
          '&query_param[dependents][0][key1]=value1'
          '&query_param[dependents][0][key2]=value2'
-         '&query_param[hiredAt]=Sat%2C%2013%20Feb%202010%2000%3A30%3A15%20GMT'
+         '&query_param[hiredAt]={}'.format(quote(
+             Base.get_http_datetime(datetime(2010, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[joiningDay]=Monday'
          '&query_param[name]=Bob'
          '&query_param[salary]=30000'
