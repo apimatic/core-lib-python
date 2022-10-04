@@ -1,4 +1,4 @@
-from datetime import datetime, date, timezone
+from datetime import datetime, date
 import pytest
 from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
 from apimatic_core.authentication.multiple.and_auth_group import And
@@ -14,6 +14,7 @@ from apimatic_core.utilities.xml_helper import XmlHelper
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.callables.base_uri_callable import Server
 from requests.utils import quote
+
 
 class TestRequestBuilder(Base):
 
@@ -95,9 +96,9 @@ class TestRequestBuilder(Base):
         (date(1994, 2, 13), 'query_param=1994-02-13', SerializationFormats.INDEXED),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=761117415', SerializationFormats.INDEXED),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15, tzinfo=timezone.utc)),
+        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param={}'.format(quote(str(ApiHelper.HttpDateTime.from_datetime(
-             datetime(1994, 2, 13, 5, 30, 15,))), safe='')) , SerializationFormats.INDEXED),
+             datetime(1994, 2, 13, 5, 30, 15))), safe='')), SerializationFormats.INDEXED),
         (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=1994-02-13T05%3A30%3A15', SerializationFormats.INDEXED),
         ([1, 2, 3, 4], 'query_param[0]=1&query_param[1]=2&query_param[2]=3&query_param[3]=4',
@@ -229,7 +230,8 @@ class TestRequestBuilder(Base):
                              'input_local_header_param_value,'
                              'input_additional_header_param_value,'
                              'expected_header_param_value', [
-                                 ('global_string', 'local_string', 'additional_string', {'header_param': 'additional_string'})
+                                 ('global_string', 'local_string', 'additional_string',
+                                  {'header_param': 'additional_string'})
                              ])
     def test_headers_precedence(self, input_global_header_param_value, input_local_header_param_value,
                                 input_additional_header_param_value, expected_header_param_value):
@@ -393,15 +395,15 @@ class TestRequestBuilder(Base):
 
     @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
         (Base.xml_model(), '<AttributesAndElements string="String" number="10000" boolean="false">'
-                                               '<string>Hey! I am being tested.</string>'
-                                               '<number>5000</number>'
-                                               '<boolean>false</boolean>'
-                                               '<elements>'
-                                               '<item>a</item>'
-                                               '<item>b</item>'
-                                               '<item>c</item>'
-                                               '</elements>'
-                                               '</AttributesAndElements>')
+                           '<string>Hey! I am being tested.</string>'
+                           '<number>5000</number>'
+                           '<boolean>false</boolean>'
+                           '<elements>'
+                           '<item>a</item>'
+                           '<item>b</item>'
+                           '<item>c</item>'
+                           '</elements>'
+                           '</AttributesAndElements>')
     ])
     def test_xml_body_param_with_serializer(self, input_body_param_value, expected_body_param_value):
         http_request = self.new_request_builder \
