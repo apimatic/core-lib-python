@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 import pytest
 from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
 from apimatic_core.authentication.multiple.and_auth_group import And
@@ -95,7 +95,7 @@ class TestRequestBuilder(Base):
         (date(1994, 2, 13), 'query_param=1994-02-13', SerializationFormats.INDEXED),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=761117415', SerializationFormats.INDEXED),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15, tzinfo=timezone.utc)),
          'query_param=Sun%2C%2013%20Feb%201994%2000%3A30%3A15%20GMT', SerializationFormats.INDEXED),
         (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=1994-02-13T05%3A30%3A15', SerializationFormats.INDEXED),
