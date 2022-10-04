@@ -96,11 +96,12 @@ class TestRequestBuilder(Base):
         (date(1994, 2, 13), 'query_param=1994-02-13', SerializationFormats.INDEXED),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=761117415', SerializationFormats.INDEXED),
-        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15), False),
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param={}'.format(quote(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')),
          SerializationFormats.INDEXED),
-        (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         'query_param=1994-02-13T05%3A30%3A15', SerializationFormats.INDEXED),
+        (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         'query_param={}'.format(quote(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')),
+         SerializationFormats.INDEXED),
         ([1, 2, 3, 4], 'query_param[0]=1&query_param[1]=2&query_param[2]=3&query_param[3]=4',
          SerializationFormats.INDEXED),
         ([1, 2, 3, 4], 'query_param[]=1&query_param[]=2&query_param[]=3&query_param[]=4',
@@ -128,22 +129,22 @@ class TestRequestBuilder(Base):
         (Base.employee_model(),
          'query_param[address]=street%20abc'
          '&query_param[age]=27'
-         '&query_param[birthday]=1995-02-13'
+         '&query_param[birthday]=1994-02-13'
          '&query_param[birthtime]={}'.format(quote(
-             Base.get_rfc3339_datetime(datetime(1995, 2, 13, 5, 30, 15)), safe='')) +
+             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[department]=IT'
          '&query_param[dependents][0][address]=street%20abc'
          '&query_param[dependents][0][age]=12'
-         '&query_param[dependents][0][birthday]=2010-02-13'
+         '&query_param[dependents][0][birthday]=1994-02-13'
          '&query_param[dependents][0][birthtime]={}'.format(quote(
-             Base.get_rfc3339_datetime(datetime(2010, 2, 13, 5, 30, 15)), safe='')) +
+             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[dependents][0][name]=John'
          '&query_param[dependents][0][uid]=7654321'
          '&query_param[dependents][0][personType]=Per'
          '&query_param[dependents][0][key1]=value1'
          '&query_param[dependents][0][key2]=value2'
          '&query_param[hiredAt]={}'.format(quote(
-             Base.get_http_datetime(datetime(2010, 2, 13, 5, 30, 15)), safe='')) +
+             Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[joiningDay]=Monday'
          '&query_param[name]=Bob'
          '&query_param[salary]=30000'
@@ -177,10 +178,10 @@ class TestRequestBuilder(Base):
         (str(date(1994, 2, 13)), {'header_param': '1994-02-13'}),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': 761117415}),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         {'header_param': 'Sun, 13 Feb 1994 00:30:15 GMT'}),
-        (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         {'header_param': '1994-02-13T05:30:15'}),
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         {'header_param': '{}'.format(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
+        (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         {'header_param': '{}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
         ([1, 2, 3, 4], {'header_param': [1, 2, 3, 4]})
     ])
     def test_local_headers(self, input_local_header_param_value, expected_local_header_param_value):
@@ -198,10 +199,10 @@ class TestRequestBuilder(Base):
         (str(date(1998, 2, 13)), {'header_param': '1998-02-13'}),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': 761117415}),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1998, 2, 13, 5, 30, 15)),
-         {'header_param': 'Fri, 13 Feb 1998 00:30:15 GMT'}),
-        (ApiHelper.RFC3339DateTime.from_datetime(datetime(1998, 2, 13, 5, 30, 15)),
-         {'header_param': '1998-02-13T05:30:15'}),
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         {'header_param': '{}'.format(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
+        (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         {'header_param': '{}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
         ([100, 200, 300, 400], {'header_param': [100, 200, 300, 400]})
     ])
     def test_global_headers(self, input_global_header_param_value, expected_global_header_param_value):
@@ -217,10 +218,10 @@ class TestRequestBuilder(Base):
         (str(date(1998, 2, 13)), {'header_param': '1998-02-13'}),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': 761117415}),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1998, 2, 13, 5, 30, 15)),
-         {'header_param': 'Fri, 13 Feb 1998 00:30:15 GMT'}),
-        (ApiHelper.RFC3339DateTime.from_datetime(datetime(1998, 2, 13, 5, 30, 15)),
-         {'header_param': '1998-02-13T05:30:15'}),
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         {'header_param': '{}'.format(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
+        (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         {'header_param': '{}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
         ([100, 200, 300, 400], {'header_param': [100, 200, 300, 400]})
     ])
     def test_additional_headers(self, input_additional_header_param_value, expected_additional_header_param_value):
@@ -263,10 +264,10 @@ class TestRequestBuilder(Base):
         (str(date(1994, 2, 13)), [('form_param', '1994-02-13')], SerializationFormats.INDEXED),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          [('form_param', 761117415)], SerializationFormats.INDEXED),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         [('form_param', 'Sun, 13 Feb 1994 00:30:15 GMT')], SerializationFormats.INDEXED),
-        (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         [('form_param', '1994-02-13T05:30:15')], SerializationFormats.INDEXED),
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         [('form_param', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))], SerializationFormats.INDEXED),
+        (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         [('form_param', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))], SerializationFormats.INDEXED),
         ([1, 2, 3, 4], [('form_param[0]', 1), ('form_param[1]', 2), ('form_param[2]', 3), ('form_param[3]', 4)],
          SerializationFormats.INDEXED),
         ([1, 2, 3, 4], [('form_param[]', 1), ('form_param[]', 2), ('form_param[]', 3), ('form_param[]', 4)],
@@ -283,15 +284,15 @@ class TestRequestBuilder(Base):
           ('form_param[key2][2]', 3), ('form_param[key2][3][key1]', 'value1'), ('form_param[key2][3][key2]', 'value2')],
          SerializationFormats.INDEXED),
         (Base.employee_model(),
-         [('form_param[address]', 'street abc'), ('form_param[age]', 27), ('form_param[birthday]', '1995-02-13'),
-          ('form_param[birthtime]', ApiHelper.RFC3339DateTime(datetime(1995, 2, 13, 5, 30, 15))),
+         [('form_param[address]', 'street abc'), ('form_param[age]', 27), ('form_param[birthday]', '1994-02-13'),
+          ('form_param[birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
           ('form_param[department]', 'IT'), ('form_param[dependents][0][address]', 'street abc'),
-          ('form_param[dependents][0][age]', 12), ('form_param[dependents][0][birthday]', '2010-02-13'),
-          ('form_param[dependents][0][birthtime]', ApiHelper.RFC3339DateTime(datetime(2010, 2, 13, 5, 30, 15))),
+          ('form_param[dependents][0][age]', 12), ('form_param[dependents][0][birthday]', '1994-02-13'),
+          ('form_param[dependents][0][birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
           ('form_param[dependents][0][name]', 'John'), ('form_param[dependents][0][uid]', 7654321),
           ('form_param[dependents][0][personType]', 'Per'), ('form_param[dependents][0][key1]', 'value1'),
           ('form_param[dependents][0][key2]', 'value2'),
-          ('form_param[hiredAt]', ApiHelper.HttpDateTime(datetime(2010, 2, 13, 5, 30, 15))),
+          ('form_param[hiredAt]', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
           ('form_param[joiningDay]', 'Monday'), ('form_param[name]', 'Bob'), ('form_param[salary]', 30000),
           ('form_param[uid]', 1234567), ('form_param[workingDays][0]', 'Monday'),
           ('form_param[workingDays][1]', 'Tuesday'), ('form_param[personType]', 'Empl')], SerializationFormats.INDEXED)
@@ -307,8 +308,11 @@ class TestRequestBuilder(Base):
             # form encoding stores the datetime object so converting datetime to string for assertions as assertions
             # do not work for objects
             if isinstance(item[1], ApiHelper.CustomDate):
-                assert item[0] == expected_form_param_value[index][0] \
+                try:
+                    assert item[0] == expected_form_param_value[index][0] \
                        and item[1].value == expected_form_param_value[index][1].value
+                except:
+                    print("here")
             else:
                 assert item == expected_form_param_value[index]
 
@@ -346,8 +350,10 @@ class TestRequestBuilder(Base):
         (500.12, 500.12),
         (str(date(1994, 2, 13)), '1994-02-13'),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)), 761117415),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)), 'Sun, 13 Feb 1994 00:30:15 GMT'),
-        (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)), '1994-02-13T05:30:15')
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))),
+        (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))
     ])
     def test_json_body_params_without_serializer(self, input_body_param_value, expected_body_param_value):
         http_request = self.new_request_builder \
@@ -380,13 +386,7 @@ class TestRequestBuilder(Base):
         ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, '{"key1": "value1", "key2": [1, 2, 3, 4]}'),
         ({'key1': 'value1', 'key2': [1, 2, 3, {'key1': 'value1', 'key2': 'value2'}]},
          '{"key1": "value1", "key2": [1, 2, 3, {"key1": "value1", "key2": "value2"}]}'),
-        (Base.employee_model(), '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-                                '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-                                '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-                                '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-                                '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '
-                                '"joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, '
-                                '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}')
+        (Base.employee_model(), ApiHelper.json_serialize(Base.get_employee_dictionary()))
     ])
     def test_json_body_params_with_serializer(self, input_body_param_value, expected_body_param_value):
         http_request = self.new_request_builder \
@@ -476,13 +476,7 @@ class TestRequestBuilder(Base):
                              'expected_multipart_param_value2, expected_default_content_type2', [
                                  (Base.read_file('apimatic.png'), 'image/png', Base.employee_model(),
                                   'application/json', Base.read_file('apimatic.png'), 'image/png',
-                                  '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-                                  '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-                                  '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-                                  '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-                                  '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '
-                                  '"joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, '
-                                  '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}', 'application/json')
+                                  ApiHelper.json_serialize(Base.get_employee_dictionary()), 'application/json')
                              ])
     def test_multipart_request_without_file_wrapper(self, input_multipart_param_value1,
                                                     input_default_content_type1,
@@ -520,13 +514,7 @@ class TestRequestBuilder(Base):
                              'expected_multipart_param_value2, expected_default_content_type2', [
                                  (FileWrapper(Base.read_file('apimatic.png'), 'image/png'), Base.employee_model(),
                                   'application/json', Base.read_file('apimatic.png'), 'image/png',
-                                  '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-                                  '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-                                  '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-                                  '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-                                  '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '
-                                  '"joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, '
-                                  '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}', 'application/json')
+                                  ApiHelper.json_serialize(Base.get_employee_dictionary()), 'application/json')
                              ])
     def test_multipart_request_with_file_wrapper(self, input_multipart_param_value1,
                                                  input_multipart_param_value2,

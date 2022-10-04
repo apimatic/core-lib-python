@@ -32,43 +32,70 @@ class Base:
 
     @staticmethod
     def employee_model():
-        return Employee(name='Bob', uid=1234567, address='street abc', department='IT', birthday=str(date(1995, 2, 13)),
-                        birthtime=datetime(1995, 2, 13, 5, 30, 15), age=27,
+        return Employee(name='Bob', uid=1234567, address='street abc', department='IT', birthday=str(date(1994, 2, 13)),
+                        birthtime=datetime(1994, 2, 13, 5, 30, 15), age=27,
                         additional_properties={'key1': 'value1', 'key2': 'value2'},
-                        hired_at=datetime(2010, 2, 13, 5, 30, 15), joining_day=Days.MONDAY,
+                        hired_at=datetime(1994, 2, 13, 5, 30, 15), joining_day=Days.MONDAY,
                         working_days=[Days.MONDAY, Days.TUESDAY], salary=30000,
                         dependents=[Person(name='John',
                                            uid=7654321,
                                            address='street abc',
-                                           birthday=str(date(2010, 2, 13)),
-                                           birthtime=datetime(2010, 2, 13, 5, 30, 15),
+                                           birthday=str(date(1994, 2, 13)),
+                                           birthtime=datetime(1994, 2, 13, 5, 30, 15),
                                            age=12,
                                            additional_properties={'key1': 'value1', 'key2': 'value2'})])
 
     @staticmethod
     def person_model():
-        return Person(name='Bob', uid=1234567, address='street abc', birthday=date(1995, 2, 13),
-                      birthtime=datetime(1995, 2, 13, 5, 30, 15), age=27,
+        return Person(name='Bob', uid=1234567, address='street abc', birthday=date(1994, 2, 13),
+                      birthtime=datetime(1994, 2, 13, 5, 30, 15), age=27,
                       additional_properties={'key1': 'value1', 'key2': 'value2'},
                       )
 
     @staticmethod
     def employee_model_additional_dictionary():
-        return Employee(name='Bob', uid=1234567, address='street abc', department='IT', birthday=str(date(1995, 2, 13)),
-                        birthtime=datetime(1995, 2, 13, 5, 30, 15), age=27,
+        return Employee(name='Bob', uid=1234567, address='street abc', department='IT', birthday=str(date(1994, 2, 13)),
+                        birthtime=datetime(1994, 2, 13, 5, 30, 15), age=27,
                         additional_properties={'key1': 'value1', 'key2': 'value2'},
-                        hired_at=datetime(2010, 2, 13, 5, 30, 15), joining_day=Days.MONDAY,
+                        hired_at=datetime(1994, 2, 13, 5, 30, 15), joining_day=Days.MONDAY,
                         working_days=[Days.MONDAY, Days.TUESDAY], salary=30000,
                         dependents=[Person(name='John',
                                            uid=7654321,
                                            address='street abc',
-                                           birthday=str(date(2010, 2, 13)),
-                                           birthtime=datetime(2010, 2, 13, 5, 30, 15),
+                                           birthday=str(date(1994, 2, 13)),
+                                           birthtime=datetime(1994, 2, 13, 5, 30, 15),
                                            age=12,
                                            additional_properties={
                                                'key1': {'inner_key1': 'inner_val1', 'inner_key2': 'inner_val2'},
                                                'key2': ['value2', 'value3']})])
 
+    @staticmethod
+    def get_employee_dictionary():
+        return {"address": "street abc", "age": 27, "birthday": "1994-02-13",
+                "birthtime": Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                "department": "IT", "dependents": [{"address": "street abc", "age": 12, "birthday": "1994-02-13",
+                                                    "birthtime": Base.get_rfc3339_datetime(
+                                                        datetime(1994, 2, 13, 5, 30, 15)),
+                                                    "name": "John", "uid": 7654321, "personType": "Per",
+                                                    "key1": "value1", "key2": "value2"}],
+                "hiredAt": Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567,
+                "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}
+
+    @staticmethod
+    def get_employee_dictionary_with_additional_properties():
+        return {"address": "street abc", "age": 27, "birthday": "1994-02-13",
+                "birthtime": Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                "department": "IT", "dependents": [{"address": "street abc", "age": 12, "birthday": "1994-02-13",
+                                                    "birthtime": Base.get_rfc3339_datetime(
+                                                        datetime(1994, 2, 13, 5, 30, 15)),
+                                                    "name": "John", "uid": 7654321, "personType": "Per",
+                                                    "key1": "value1", "key2": "value2"}],
+                "hiredAt": Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567,
+                "workingDays": ["Monday", "Tuesday"], "personType": "Empl",
+                "additional_properties": {'key1': {'inner_key1': 'inner_val1', 'inner_key2': 'inner_val2'},
+                                          'key2': ['value2', 'value3']}}
     @staticmethod
     def basic_auth():
         return BasicAuth(basic_auth_user_name='test_username', basic_auth_password='test_password')
@@ -128,15 +155,16 @@ class Base:
 
     @staticmethod
     def get_http_datetime(datetime_value, should_return_string=True):
-        if should_return_string:
-            return str(ApiHelper.HttpDateTime.from_datetime(datetime_value))
-        return ApiHelper.HttpDateTime.from_datetime(datetime_value)
+        if should_return_string is True:
+            return ApiHelper.HttpDateTime.from_datetime(datetime_value)
+        return ApiHelper.HttpDateTime(datetime_value)
 
     @staticmethod
     def get_rfc3339_datetime(datetime_value, should_return_string=True):
-        if should_return_string:
-            return str(ApiHelper.RFC3339DateTime.from_datetime(datetime_value))
-        return ApiHelper.RFC3339DateTime.from_datetime(datetime_value)
+        if should_return_string is True:
+            return ApiHelper.RFC3339DateTime.from_datetime(datetime_value)
+        return ApiHelper.RFC3339DateTime(datetime_value)
+
     @property
     def new_request_builder(self):
         return RequestBuilder().path('/test').server(Server.DEFAULT)
@@ -165,15 +193,15 @@ class Base:
 
     @property
     def new_request_builder(self):
-        return RequestBuilder().path('/test')\
-            .endpoint_name_for_logging('Dummy Endpoint')\
-            .endpoint_logger(EndpointLogger(None))\
+        return RequestBuilder().path('/test') \
+            .endpoint_name_for_logging('Dummy Endpoint') \
+            .endpoint_logger(EndpointLogger(None)) \
             .server(Server.DEFAULT)
 
     @property
     def new_response_handler(self):
-        return ResponseHandler()\
-            .endpoint_name_for_logging('Dummy Endpoint')\
+        return ResponseHandler() \
+            .endpoint_name_for_logging('Dummy Endpoint') \
             .endpoint_logger(EndpointLogger(None))
 
     @property
