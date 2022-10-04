@@ -1,6 +1,6 @@
 from datetime import date, datetime
-
 import pytest
+import sys
 from apimatic_core.utilities.api_helper import ApiHelper
 import xml.etree.ElementTree as ET
 from apimatic_core.utilities.xml_helper import XmlHelper
@@ -23,9 +23,11 @@ class TestXMLHelper:
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'UnixDateTime', '<UnixDateTime>761117415</UnixDateTime>'),
         (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         'HttpDateTime', '<HttpDateTime>Sun, 13 Feb 1994 00:30:15 GMT</HttpDateTime>'),
+         'HttpDateTime', '<HttpDateTime>{}</HttpDateTime>'
+         .format(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
         (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         'RFC3339DateTime', '<RFC3339DateTime>1994-02-13T05:30:15</RFC3339DateTime>'),
+         'RFC3339DateTime', '<RFC3339DateTime>{}</RFC3339DateTime>'
+         .format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
         (Base.xml_model(), 'Model',
          '<Model string="String" number="10000" boolean="false">'
          '<string>Hey! I am being tested.</string>'
@@ -39,6 +41,10 @@ class TestXMLHelper:
          '</Model>'),
     ])
     def test_serialize_to_xml(self, input_value, root_element_name, expected_value):
+        if sys.version_info[1] == 7:
+            expected_value = expected_value.replace('string="String" number="10000" boolean="false">',
+                                                    'boolean="false" number="10000" string="String">')
+
         actual_value = XmlHelper.serialize_to_xml(input_value, root_element_name)
         assert actual_value == expected_value
 
@@ -65,21 +71,21 @@ class TestXMLHelper:
                               '<Item>761290215</Item>'
                               '</DateTimes>'),
         ([ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-          ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 14, 5, 30, 15)),
-          ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))],
-         'DateTimes', 'Item', '<DateTimes>'
-                              '<Item>Sun, 13 Feb 1994 00:30:15 GMT</Item>'
-                              '<Item>Mon, 14 Feb 1994 00:30:15 GMT</Item>'
-                              '<Item>Tue, 15 Feb 1994 00:30:15 GMT</Item>'
-                              '</DateTimes>'),
+          ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+          ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))],
+         'DateTimes', 'Item', "<DateTimes>"
+                              f"<Item>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+                              f"<Item>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+                              f"<Item>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+                              "</DateTimes>"),
         ([ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-          ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 14, 5, 30, 15)),
-          ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))],
-         'DateTimes', 'Item', '<DateTimes>'
-                              '<Item>1994-02-13T05:30:15</Item>'
-                              '<Item>1994-02-14T05:30:15</Item>'
-                              '<Item>1994-02-15T05:30:15</Item>'
-                              '</DateTimes>'),
+          ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+          ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))],
+         'DateTimes', 'Item', "<DateTimes>"
+                              f"<Item>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+                              f"<Item>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+                              f"<Item>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+                              "</DateTimes>"),
         ([Base.xml_model(), Base.xml_model(),
           Base.xml_model()], 'Models', 'Item',
          '<Models>'
@@ -116,6 +122,9 @@ class TestXMLHelper:
          '</Models>')
     ])
     def test_serialize_list_to_xml(self, input_value, root_element_name, array_element_name, expected_value):
+        if sys.version_info[1] == 7:
+            expected_value = expected_value.replace('string="String" number="10000" boolean="false">',
+                                                    'boolean="false" number="10000" string="String">')
         actual_value = XmlHelper.serialize_list_to_xml(input_value, root_element_name, array_element_name)
         assert actual_value == expected_value
 
@@ -143,20 +152,20 @@ class TestXMLHelper:
                        '<Item3>761290215</Item3>'
                        '</Dictionary>'),
         ({'Item1': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-          'Item2': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 14, 5, 30, 15)),
-          'Item3': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))},
+          'Item2': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+          'Item3': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))},
          'Dictionary', '<Dictionary>'
-                       '<Item1>Sun, 13 Feb 1994 00:30:15 GMT</Item1>'
-                       '<Item2>Mon, 14 Feb 1994 00:30:15 GMT</Item2>'
-                       '<Item3>Tue, 15 Feb 1994 00:30:15 GMT</Item3>'
+                       f"<Item1>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item1>"
+                       f"<Item2>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item2>"
+                       f"<Item3>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item3>"
                        '</Dictionary>'),
         ({'Item1': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-          'Item2': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 14, 5, 30, 15)),
-          'Item3': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))},
+          'Item2': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+          'Item3': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))},
          'Dictionary', '<Dictionary>'
-                       '<Item1>1994-02-13T05:30:15</Item1>'
-                       '<Item2>1994-02-14T05:30:15</Item2>'
-                       '<Item3>1994-02-15T05:30:15</Item3>'
+                       f"<Item1>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item1>"
+                       f"<Item2>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item2>"
+                       f"<Item3>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item3>"
                        '</Dictionary>'),
         ({'Item1': Base.xml_model(), 'Item2': Base.xml_model(),
           'Item3': Base.xml_model()}, 'Dictionary',
@@ -194,6 +203,9 @@ class TestXMLHelper:
          '</Dictionary>'),
     ])
     def test_serialize_dictionary_to_xml(self, input_value, root_element_name, expected_value):
+        if sys.version_info[1] == 7:
+            expected_value = expected_value.replace('string="String" number="10000" boolean="false">',
+                                                    'boolean="false" number="10000" string="String">')
         actual_value = XmlHelper.serialize_dict_to_xml(input_value, root_element_name)
         assert actual_value == expected_value
 
@@ -278,11 +290,11 @@ class TestXMLHelper:
          ApiHelper.UnixDateTime, 'UnixDateTime',
          XmlHelper.serialize_to_xml(ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
                                     'UnixDateTime')),
-        ('<HttpDateTime>Sun, 13 Feb 1994 00:30:15 GMT</HttpDateTime>',
+        ('<HttpDateTime>{}</HttpDateTime>'.format(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))),
          ApiHelper.HttpDateTime, 'HttpDateTime',
          XmlHelper.serialize_to_xml(ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
                                     'HttpDateTime')),
-        ('<RFC3339DateTime>1994-02-13T05:30:15</RFC3339DateTime>',
+        ('<RFC3339DateTime>{}</RFC3339DateTime>'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))),
          ApiHelper.RFC3339DateTime, 'RFC3339DateTime',
          XmlHelper.serialize_to_xml(ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
                                     'RFC3339DateTime')),
@@ -353,24 +365,24 @@ class TestXMLHelper:
                                           ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))],
                                          'Items', 'Item')),
         ('<Items>'
-         '<Item>Sun, 13 Feb 1994 00:30:15 GMT</Item>'
-         '<Item>Mon, 14 Feb 1994 00:30:15 GMT</Item>'
-         '<Item>Tue, 15 Feb 1994 00:30:15 GMT</Item>'
+         f"<Item>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+         f"<Item>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+         f"<Item>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
          '</Items>', 'Item', ApiHelper.HttpDateTime,
          'Items',
          XmlHelper.serialize_list_to_xml([ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                          ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 14, 5, 30, 15)),
-                                          ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))],
+                                          ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                          ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))],
                                          'Items', 'Item')),
         ('<Items>'
-         '<Item>1994-02-13T05:30:15</Item>'
-         '<Item>1994-02-14T05:30:15</Item>'
-         '<Item>1994-02-15T05:30:15</Item>'
+         f"<Item>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+         f"<Item>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
+         f"<Item>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item>"
          '</Items>', 'Item', ApiHelper.RFC3339DateTime,
          'Items',
          XmlHelper.serialize_list_to_xml([ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                          ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 14, 5, 30, 15)),
-                                          ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))],
+                                          ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                          ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))],
                                          'Items', 'Item')),
         ('<Models>'
          '<Item string="String" number="10000" boolean="false">'
@@ -446,26 +458,26 @@ class TestXMLHelper:
               'Item3': ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))},
              'Items')),
         ('<Items>'
-         '<Item1>Sun, 13 Feb 1994 00:30:15 GMT</Item1>'
-         '<Item2>Mon, 14 Feb 1994 00:30:15 GMT</Item2>'
-         '<Item3>Tue, 15 Feb 1994 00:30:15 GMT</Item3>'
+         f"<Item1>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item1>"
+         f"<Item2>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item2>"
+         f"<Item3>{Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item3>"
          '</Items>', ApiHelper.HttpDateTime,
          'Items',
          XmlHelper.serialize_dict_to_xml(
              {'Item1': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-              'Item2': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 14, 5, 30, 15)),
-              'Item3': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))},
+              'Item2': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+              'Item3': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))},
              'Items')),
         ('<Items>'
-         '<Item1>1994-02-13T05:30:15</Item1>'
-         '<Item2>1994-02-14T05:30:15</Item2>'
-         '<Item3>1994-02-15T05:30:15</Item3>'
+         f"<Item1>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item1>"
+         f"<Item2>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item2>"
+         f"<Item3>{Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))}</Item3>"
          '</Items>', ApiHelper.RFC3339DateTime,
          'Items',
          XmlHelper.serialize_dict_to_xml(
              {'Item1': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-              'Item2': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 14, 5, 30, 15)),
-              'Item3': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 15, 5, 30, 15))},
+              'Item2': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+              'Item3': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))},
              'Items')),
         (None, None, None, None)
     ])

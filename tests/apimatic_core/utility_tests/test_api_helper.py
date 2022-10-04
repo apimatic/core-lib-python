@@ -1,4 +1,3 @@
-
 from datetime import datetime, date
 import jsonpickle
 import pytest
@@ -12,6 +11,7 @@ from tests.apimatic_core.base import Base
 
 from tests.apimatic_core.models.grand_parent_class_model import ChildClassModel
 from tests.apimatic_core.models.person import Employee
+from requests.utils import quote
 
 
 class TestApiHelper(Base):
@@ -19,14 +19,16 @@ class TestApiHelper(Base):
     @pytest.mark.parametrize('expected_value, input_value, is_wrapped', [
         ('value', 'value', False),
         ('true', True, False),
-        ('{"bodyScalar": true, "bodyNonScalar": {"address": "street abc", "age": 27, '
-         '"birthday": "1995-02-13", "birthtime": "1995-02-13T05:30:15", "department": '
-         '"IT", "dependents": [{"address": "street abc", "age": 12, "birthday": '
-         '"2010-02-13", "birthtime": "2010-02-13T05:30:15", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}], '
-         '"hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", "joiningDay": "Monday", "name": '
+        ('{{"bodyScalar": true, "bodyNonScalar": {{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
          '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}', Base.wrapped_parameters(), True),
+         '"Tuesday"], "personType": "Empl"}}}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                                       Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))),
+         Base.wrapped_parameters(), True),
     ])
     def test_get_request_parameter(self, expected_value, input_value, is_wrapped):
         request_param = ApiHelper.get_request_parameter(input_value, is_wrapped)
@@ -34,14 +36,16 @@ class TestApiHelper(Base):
 
     @pytest.mark.parametrize('input_value, expected_value', [
         (None, None),
-        (Base.wrapped_parameters(), '{"bodyScalar": true, "bodyNonScalar": {"address": "street abc", "age": 27, '
-                                    '"birthday": "1995-02-13", "birthtime": "1995-02-13T05:30:15", "department": '
-                                    '"IT", "dependents": [{"address": "street abc", "age": 12, "birthday": '
-                                    '"2010-02-13", "birthtime": "2010-02-13T05:30:15", "name": "John", "uid": '
-                                    '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}], '
-                                    '"hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", "joiningDay": "Monday", "name": '
+        (Base.wrapped_parameters(), '{{"bodyScalar": true, "bodyNonScalar": {{"address": "street abc", "age": 27, '
+                                    '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+                                    '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+                                    '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+                                    '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+                                    '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
                                     '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-                                    '"Tuesday"], "personType": "Empl"}}'),
+                                    '"Tuesday"], "personType": "Empl"}}}}'.format(
+            Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+            Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
     ])
     def test_json_serialize_wrapped_params(self, input_value, expected_value):
         request_param = ApiHelper.json_serialize_wrapped_params(input_value)
@@ -50,29 +54,34 @@ class TestApiHelper(Base):
     @pytest.mark.parametrize('input_value, expected_value', [
         (None, None),
         ([Base.employee_model(), Base.employee_model()],
-         '[{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-         '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-         '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-         '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-         '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 '
-         'GMT", "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": '
-         '1234567, "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}, '
-         '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-         '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-         '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-         '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-         '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 '
-         'GMT", "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": '
-         '1234567, "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}]'),
+         '[{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}, '
+         '{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}]'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                                      Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
         ([1, 2, 3], '[1, 2, 3]'),
         (Base.employee_model(),
-         '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-         '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-         '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-         '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-         '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 '
-         'GMT", "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": '
-         '1234567, "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}'),
+         '{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                                     Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
         (1, '1')
     ])
     def test_json_serialize(self, input_value, expected_value):
@@ -89,23 +98,23 @@ class TestApiHelper(Base):
          ApiHelper.json_serialize([Base.employee_model(), Base.employee_model()])),
         (ApiHelper.json_serialize({'key1': Base.employee_model(), 'key2': Base.employee_model()}),
          Employee.from_dictionary, True,
-         '{"key1": {"department": "IT", "dependents": [{"address": "street abc", '
-         '"age": 12, "birthday": "2010-02-13", "birthtime": "2010-02-13T05:30:15", '
+         '{{"key1": {{"department": "IT", "dependents": [{{"address": "street abc", '
+         '"age": 12, "birthday": "1994-02-13", "birthtime": "{0}", '
          '"name": "John", "uid": 7654321, "person_type": "Per", '
-         '"additional_properties": {"person_type": "Per", "additional_properties": '
-         '{"key1": "value1", "key2": "value2"}}}], "hired_at": null, "joining_day": '
+         '"additional_properties": {{"person_type": "Per", "additional_properties": '
+         '{{"key1": "value1", "key2": "value2"}}}}}}], "hired_at": null, "joining_day": '
          '"Monday", "salary": 30000, "working_days": null, "additional_properties": '
-         '{}, "address": "street abc", "age": 27, "birthday": "1995-02-13", '
-         '"birthtime": "1995-02-13T05:30:15", "name": "Bob", "uid": 1234567, '
-         '"person_type": "Empl"}, "key2": {"department": "IT", "dependents": '
-         '[{"address": "street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-         '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "person_type": "Per", '
-         '"additional_properties": {"person_type": "Per", "additional_properties": '
-         '{"key1": "value1", "key2": "value2"}}}], "hired_at": null, "joining_day": '
+         '{{}}, "address": "street abc", "age": 27, "birthday": "1994-02-13", '
+         '"birthtime": "{0}", "name": "Bob", "uid": 1234567, '
+         '"person_type": "Empl"}}, "key2": {{"department": "IT", "dependents": '
+         '[{{"address": "street abc", "age": 12, "birthday": "1994-02-13", "birthtime": '
+         '"{0}", "name": "John", "uid": 7654321, "person_type": "Per", '
+         '"additional_properties": {{"person_type": "Per", "additional_properties": '
+         '{{"key1": "value1", "key2": "value2"}}}}}}], "hired_at": null, "joining_day": '
          '"Monday", "salary": 30000, "working_days": null, "additional_properties": '
-         '{}, "address": "street abc", "age": 27, "birthday": "1995-02-13", '
-         '"birthtime": "1995-02-13T05:30:15", "name": "Bob", "uid": 1234567, '
-         '"person_type": "Empl"}}'),
+         '{{}}, "address": "street abc", "age": 27, "birthday": "1994-02-13", '
+         '"birthtime": "{0}", "name": "Bob", "uid": 1234567, '
+         '"person_type": "Empl"}}}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
 
     ])
     def test_json_deserialize(self, input_json_value, unboxing_function, as_dict, expected_value):
@@ -176,10 +185,12 @@ class TestApiHelper(Base):
         ({'query_param': date(1994, 2, 13)}, 'query_param=1994-02-13', SerializationFormats.INDEXED),
         ({'query_param': ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))},
          'query_param=761117415', SerializationFormats.INDEXED),
-        ({'query_param': ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))},
-         'query_param=Sun%2C%2013%20Feb%201994%2000%3A30%3A15%20GMT', SerializationFormats.INDEXED),
-        ({'query_param': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))},
-         'query_param=1994-02-13T05%3A30%3A15', SerializationFormats.INDEXED),
+        ({'query_param': Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))},
+         'query_param={}'.format(quote(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')),
+         SerializationFormats.INDEXED),
+        ({'query_param': Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))},
+         'query_param={}'.format(quote(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')),
+         SerializationFormats.INDEXED),
         ({'query_param': [1, 2, 3, 4]}, 'query_param[0]=1&query_param[1]=2&query_param[2]=3&query_param[3]=4',
          SerializationFormats.INDEXED),
         ({'query_param': [1, 2, 3, 4]}, 'query_param[]=1&query_param[]=2&query_param[]=3&query_param[]=4',
@@ -191,7 +202,7 @@ class TestApiHelper(Base):
         ({'query_param': [1, 2, 3, 4]}, 'query_param=1%092%093%094', SerializationFormats.TSV),
         ({'query_param': {'key1': 'value1', 'key2': 'value2'}}, 'query_param[key1]=value1&query_param[key2]=value2',
          SerializationFormats.INDEXED),
-        ({'query_param': 1, 'query_param_none': None,'query_param2': 2}, 'query_param=1&query_param2=2',
+        ({'query_param': 1, 'query_param_none': None, 'query_param2': 2}, 'query_param=1&query_param2=2',
          SerializationFormats.INDEXED),
         ({'query_param': {'key1': 'value1', 'key2': [1, 2, 3, 4]}},
          'query_param[key1]=value1'
@@ -209,19 +220,22 @@ class TestApiHelper(Base):
         ({'query_param': Base.employee_model()},
          'query_param[address]=street%20abc'
          '&query_param[age]=27'
-         '&query_param[birthday]=1995-02-13'
-         '&query_param[birthtime]=1995-02-13T05%3A30%3A15'
+         '&query_param[birthday]=1994-02-13'
+         '&query_param[birthtime]={}'.format(quote(
+             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[department]=IT'
          '&query_param[dependents][0][address]=street%20abc'
          '&query_param[dependents][0][age]=12'
-         '&query_param[dependents][0][birthday]=2010-02-13'
-         '&query_param[dependents][0][birthtime]=2010-02-13T05%3A30%3A15'
+         '&query_param[dependents][0][birthday]=1994-02-13'
+         '&query_param[dependents][0][birthtime]={}'.format(quote(
+             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[dependents][0][name]=John'
          '&query_param[dependents][0][uid]=7654321'
          '&query_param[dependents][0][personType]=Per'
          '&query_param[dependents][0][key1]=value1'
          '&query_param[dependents][0][key2]=value2'
-         '&query_param[hiredAt]=Sat%2C%2013%20Feb%202010%2000%3A30%3A15%20GMT'
+         '&query_param[hiredAt]={}'.format(quote(
+             Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[joiningDay]=Monday'
          '&query_param[name]=Bob'
          '&query_param[salary]=30000'
@@ -280,13 +294,15 @@ class TestApiHelper(Base):
 
     @pytest.mark.parametrize('obj, expected_value', [
         (Base.employee_model(),
-         '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-         '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-         '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-         '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-         '"key1": "value1", "key2": "value2"}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 '
-         'GMT", "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": '
-         '1234567, "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}'),
+         '{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                                     Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
         (ApiHelper.json_deserialize('{"Grand_Parent_Required_Nullable":{"key1": "value1", "key2": "value2"},'
                                     '"Grand_Parent_Required":"not nullable and required","class":23,'
                                     '"Parent_Optional_Nullable_With '
@@ -306,14 +322,16 @@ class TestApiHelper(Base):
          '"Parent_Optional_Nullable_With_Default_Value": "Has default value"}'
          ),
         (Base.employee_model_additional_dictionary(),
-         '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-         '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-         '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-         '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-         '"key1": {"inner_key1": "inner_val1", "inner_key2": "inner_val2"}, "key2": '
-         '["value2", "value3"]}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '
+         '{{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": '
+         '"{0}", "department": "IT", "dependents": [{{"address": '
+         '"street abc", "age": 12, "birthday": "1994-02-13", "birthtime": '
+         '"{0}", "name": "John", "uid": 7654321, "personType": "Per", '
+         '"key1": {{"inner_key1": "inner_val1", "inner_key2": "inner_val2"}}, "key2": '
+         '["value2", "value3"]}}], "hiredAt": "{1}", '
          '"joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, '
-         '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}'),
+         '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}}'.format(
+             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+             Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
 
     ])
     def test_to_dictionary(self, obj, expected_value):
@@ -321,14 +339,16 @@ class TestApiHelper(Base):
 
     @pytest.mark.parametrize('obj, should_ignore_null_values, expected_value', [
         (Base.employee_model_additional_dictionary(), True,
-         '{"address": "street abc", "age": 27, "birthday": "1995-02-13", "birthtime": '
-         '"1995-02-13T05:30:15", "department": "IT", "dependents": [{"address": '
-         '"street abc", "age": 12, "birthday": "2010-02-13", "birthtime": '
-         '"2010-02-13T05:30:15", "name": "John", "uid": 7654321, "personType": "Per", '
-         '"key1": {"inner_key1": "inner_val1", "inner_key2": "inner_val2"}, "key2": '
-         '["value2", "value3"]}], "hiredAt": "Sat, 13 Feb 2010 00:30:15 GMT", '
+         '{{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": '
+         '"{0}", "department": "IT", "dependents": [{{"address": '
+         '"street abc", "age": 12, "birthday": "1994-02-13", "birthtime": '
+         '"{0}", "name": "John", "uid": 7654321, "personType": "Per", '
+         '"key1": {{"inner_key1": "inner_val1", "inner_key2": "inner_val2"}}, "key2": '
+         '["value2", "value3"]}}], "hiredAt": "{1}", '
          '"joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, '
-         '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}'),
+         '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}}'.format(
+             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+             Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
         (ApiHelper.json_deserialize('{"Grand_Parent_Required_Nullable":{"key1": "value1", "key2": "value2"},'
                                     '"Grand_Parent_Required":"not nullable and required","class":23,'
                                     '"Parent_Optional_Nullable_With '
@@ -374,10 +394,10 @@ class TestApiHelper(Base):
         (str(date(1994, 2, 13)), [('form_param', '1994-02-13')], SerializationFormats.INDEXED),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          [('form_param', 761117415)], SerializationFormats.INDEXED),
-        (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         [('form_param', 'Sun, 13 Feb 1994 00:30:15 GMT')], SerializationFormats.INDEXED),
-        (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         [('form_param', '1994-02-13T05:30:15')], SerializationFormats.INDEXED),
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         [('form_param', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))], SerializationFormats.INDEXED),
+        (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         [('form_param', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))], SerializationFormats.INDEXED),
         ([1, 2, 3, 4], [('form_param[0]', 1), ('form_param[1]', 2), ('form_param[2]', 3), ('form_param[3]', 4)],
          SerializationFormats.INDEXED),
         ([1, 2, 3, 4], [('form_param[]', 1), ('form_param[]', 2), ('form_param[]', 3), ('form_param[]', 4)],
@@ -394,15 +414,15 @@ class TestApiHelper(Base):
           ('form_param[key2][2]', 3), ('form_param[key2][3][key1]', 'value1'), ('form_param[key2][3][key2]', 'value2')],
          SerializationFormats.INDEXED),
         (Base.employee_model(),
-         [('form_param[address]', 'street abc'), ('form_param[age]', 27), ('form_param[birthday]', '1995-02-13'),
-          ('form_param[birthtime]', ApiHelper.RFC3339DateTime(datetime(1995, 2, 13, 5, 30, 15))),
+         [('form_param[address]', 'street abc'), ('form_param[age]', 27), ('form_param[birthday]', '1994-02-13'),
+          ('form_param[birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
           ('form_param[department]', 'IT'), ('form_param[dependents][0][address]', 'street abc'),
-          ('form_param[dependents][0][age]', 12), ('form_param[dependents][0][birthday]', '2010-02-13'),
-          ('form_param[dependents][0][birthtime]', ApiHelper.RFC3339DateTime(datetime(2010, 2, 13, 5, 30, 15))),
+          ('form_param[dependents][0][age]', 12), ('form_param[dependents][0][birthday]', '1994-02-13'),
+          ('form_param[dependents][0][birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
           ('form_param[dependents][0][name]', 'John'), ('form_param[dependents][0][uid]', 7654321),
           ('form_param[dependents][0][personType]', 'Per'), ('form_param[dependents][0][key1]', 'value1'),
           ('form_param[dependents][0][key2]', 'value2'),
-          ('form_param[hiredAt]', ApiHelper.HttpDateTime(datetime(2010, 2, 13, 5, 30, 15))),
+          ('form_param[hiredAt]', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
           ('form_param[joiningDay]', 'Monday'), ('form_param[name]', 'Bob'), ('form_param[salary]', 30000),
           ('form_param[uid]', 1234567), ('form_param[workingDays][0]', 'Monday'),
           ('form_param[workingDays][1]', 'Tuesday'), ('form_param[personType]', 'Empl')], SerializationFormats.INDEXED)
@@ -445,36 +465,42 @@ class TestApiHelper(Base):
             assert ApiHelper.when_defined(input_function, input_body) == expected_value
 
     @pytest.mark.parametrize('input_array,formatting, is_query, expected_array', [
-        ([1, True, 'string', 2.36, ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.INDEXED, False, [('test_array[0]', 1),
                                                                          ('test_array[1]', True),
                                                                          ('test_array[2]', 'string'),
                                                                          ('test_array[3]', 2.36),
-                                                                         ('test_array[4]', '1994-02-13T05:30:15'),
+                                                                         ('test_array[4]', Base.get_rfc3339_datetime(
+                                                                             datetime(1994, 2, 13, 5, 30, 15))),
                                                                          ('test_array[5]', '1994-02-13')]),
-        ([1, True, 'string', 2.36, ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.UN_INDEXED, False, [('test_array[]', 1),
                                                                             ('test_array[]', True),
                                                                             ('test_array[]', 'string'),
                                                                             ('test_array[]', 2.36),
-                                                                            ('test_array[]', '1994-02-13T05:30:15'),
+                                                                            ('test_array[]', Base.get_rfc3339_datetime(
+                                                                                datetime(1994, 2, 13, 5, 30, 15))),
                                                                             ('test_array[]', '1994-02-13')]),
-        ([1, True, 'string', 2.36, ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.PLAIN, False, [('test_array', 1),
                                                                        ('test_array', True),
                                                                        ('test_array', 'string'),
                                                                        ('test_array', 2.36),
-                                                                       ('test_array', '1994-02-13T05:30:15'),
+                                                                       ('test_array', Base.get_rfc3339_datetime(
+                                                                           datetime(1994, 2, 13, 5, 30, 15))),
                                                                        ('test_array', '1994-02-13')]),
-        ([1, True, 'string', 2.36, ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.CSV, True,
-         [('test_array', '1,True,string,2.36,1994-02-13T05:30:15,1994-02-13')]),
-        ([1, True, 'string', 2.36, ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         [('test_array',
+           '1,True,string,2.36,{0},1994-02-13'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))))]),
+        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.PSV, True,
-         [('test_array', '1|True|string|2.36|1994-02-13T05:30:15|1994-02-13')]),
-        ([1, True, 'string', 2.36, ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+         [('test_array',
+           '1|True|string|2.36|{0}|1994-02-13'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))))]),
+        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.TSV, True,
-         [('test_array', '1\tTrue\tstring\t2.36\t1994-02-13T05:30:15\t1994-02-13')]),
+         [('test_array', '1\tTrue\tstring\t2.36\t{0}\t1994-02-13'.format(
+             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))))]),
         ([Base.employee_model(), Base.employee_model()], SerializationFormats.INDEXED, False,
          [ApiHelper.json_serialize(Base.employee_model()), ApiHelper.json_serialize(Base.employee_model())]),
 
@@ -489,9 +515,9 @@ class TestApiHelper(Base):
             assert ApiHelper.serialize_array('test_array', input_array, formatting, is_query) == expected_array
 
     @pytest.mark.parametrize('input_array,formatting, is_query', [
-        ([1, True, 'string', 2.36, ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.TSV, False),
-        ([1, True, 'string', 2.36, ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], 'not a serialization format', True)
     ])
     def test_serialize_array_value_error(self, input_array, formatting, is_query):
@@ -536,13 +562,13 @@ class TestApiHelper(Base):
         assert ApiHelper.is_file_wrapper_instance(input_file_wrapper) == is_file_instance
 
     @pytest.mark.parametrize(' input_date, output_date', [
-        (datetime(1994, 2, 13, 5, 30, 15), 'Sun, 13 Feb 1994 00:30:15 GMT'),
+        (datetime(1994, 2, 13, 5, 30, 15), Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))),
     ])
     def test_http_datetime_from_datetime(self, input_date, output_date):
         assert ApiHelper.HttpDateTime.from_datetime(input_date) == output_date
 
     @pytest.mark.parametrize('input_date, output_date', [
-        (datetime(1994, 2, 13, 5, 30, 15), '1994-02-13T05:30:15'),
+        (datetime(1994, 2, 13, 5, 30, 15), Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))),
     ])
     def test_rfc3339_datetime_from_datetime(self, input_date, output_date):
         assert ApiHelper.RFC3339DateTime.from_datetime(input_date) == output_date
@@ -554,7 +580,7 @@ class TestApiHelper(Base):
         assert ApiHelper.UnixDateTime.from_datetime(input_date) == output_date
 
     @pytest.mark.parametrize('input_date, output_date', [
-        ('Sun, 06 Nov 1994 08:49:37 GMT', datetime(1994, 11, 6, 13, 49, 37)),
+        (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), datetime(1994, 2, 13, 5, 30, 15)),
     ])
     def test_http_datetime_from_value(self, input_date, output_date):
         assert ApiHelper.HttpDateTime.from_value(input_date).datetime == output_date
@@ -590,4 +616,3 @@ class TestApiHelper(Base):
     ])
     def test_dynamic_deserialize(self, input_value, output_value):
         assert ApiHelper.dynamic_deserialize(input_value) == output_value
-
