@@ -1,19 +1,14 @@
 # apimatic-core
-This project contains core logic and the utilities for the APIMatic's Python SDK
-# Getting Started with apimatic-core Library Python
-
-## Introduction
-
-The Core logic for APIMatic's Python SDK can be found here: (instert link later)
+The APIMatic Core libraries provide a stable runtime that powers all the functionality of SDKs. This includes functionality like the ability to create HTTP requests, handle responses, apply authentication schemes, convert API responses back to object instances, and validate user and server data.
 
 
-## Install the Package
+## Installation
 You will need Python 3.7-3.9 to support this package.
 
-Simply run the command below to install the core library in your SDK. The core library has been added as a dependency in the requirements.txt file
+Simply run the command below to install the core library in your SDK. The core library will be added as a dependency your SDK.
 
 ```php
-pip install -r requirements.txt
+pip install apimatic-core
 ```
 ## API Call Classes
 | Name                                                        | Description                                                           |
@@ -83,3 +78,5 @@ pip install -r requirements.txt
 | [` FileHelper`](apimatic_core/utilities/file_helper.py)            | A Helper Class for files                                                             |
 | [`XmlHelper`](apimatic_core/utilities/xml_helper.py )              | A Helper class that holds utility methods for xml serialization and deserialization. |
 
+## Links
+* [apimatic-core-interfaces](https://pypi.org/project/apimatic-core-interfaces/)

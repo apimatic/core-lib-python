@@ -8,5 +8,6 @@ __all__ = [
     'http',
     'utilities',
     'factories',
-    'types'
+    'types',
+    'logger'
 ]

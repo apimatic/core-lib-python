@@ -167,7 +167,10 @@ class Base:
 
     @property
     def new_request_builder(self):
-        return RequestBuilder().path('/test').server(Server.DEFAULT)
+        return RequestBuilder().path('/test') \
+            .endpoint_name_for_logging('Dummy Endpoint') \
+            .endpoint_logger(EndpointLogger(None)) \
+            .server(Server.DEFAULT)
 
     @property
     def global_configuration(self):
@@ -177,7 +180,8 @@ class Base:
 
     @property
     def global_configuration_with_useragent(self):
-        return self.global_configuration.user_agent(self.user_agent(), self.user_agent_parameters())
+        return self.global_configuration\
+            .user_agent(self.user_agent(), self.user_agent_parameters())
 
     @staticmethod
     def user_agent():
@@ -190,13 +194,6 @@ class Base:
             'engine-version': {'value': "", 'encode': False},
             'os-info': {'value': platform.system(), 'encode': False},
         }
-
-    @property
-    def new_request_builder(self):
-        return RequestBuilder().path('/test') \
-            .endpoint_name_for_logging('Dummy Endpoint') \
-            .endpoint_logger(EndpointLogger(None)) \
-            .server(Server.DEFAULT)
 
     @property
     def new_response_handler(self):
