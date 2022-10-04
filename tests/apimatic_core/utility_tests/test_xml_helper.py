@@ -1,6 +1,6 @@
 from datetime import date, datetime
-
 import pytest
+import sys
 from apimatic_core.utilities.api_helper import ApiHelper
 import xml.etree.ElementTree as ET
 from apimatic_core.utilities.xml_helper import XmlHelper
@@ -41,6 +41,10 @@ class TestXMLHelper:
          '</Model>'),
     ])
     def test_serialize_to_xml(self, input_value, root_element_name, expected_value):
+        if sys.version_info[1] == 7:
+            expected_value = expected_value.replace('string="String" number="10000" boolean="false">',
+                                                    'boolean="false" number="10000" string="String">')
+
         actual_value = XmlHelper.serialize_to_xml(input_value, root_element_name)
         assert actual_value == expected_value
 
@@ -118,6 +122,9 @@ class TestXMLHelper:
          '</Models>')
     ])
     def test_serialize_list_to_xml(self, input_value, root_element_name, array_element_name, expected_value):
+        if sys.version_info[1] == 7:
+            expected_value = expected_value.replace('string="String" number="10000" boolean="false">',
+                                                    'boolean="false" number="10000" string="String">')
         actual_value = XmlHelper.serialize_list_to_xml(input_value, root_element_name, array_element_name)
         assert actual_value == expected_value
 
@@ -196,6 +203,9 @@ class TestXMLHelper:
          '</Dictionary>'),
     ])
     def test_serialize_dictionary_to_xml(self, input_value, root_element_name, expected_value):
+        if sys.version_info[1] == 7:
+            expected_value = expected_value.replace('string="String" number="10000" boolean="false">',
+                                                    'boolean="false" number="10000" string="String">')
         actual_value = XmlHelper.serialize_dict_to_xml(input_value, root_element_name)
         assert actual_value == expected_value
 

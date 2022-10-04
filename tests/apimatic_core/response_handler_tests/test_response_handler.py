@@ -1,6 +1,6 @@
 from datetime import datetime, date
-
 import pytest
+import sys
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.xml_helper import XmlHelper
@@ -149,6 +149,9 @@ class TestResponseHandler(Base):
          '</arrayOfModels>'),
     ])
     def test_xml_response_body_with_item_name(self, input_http_response, expected_response_body):
+        if sys.version_info[1] == 7:
+            expected_response_body = expected_response_body.replace('string="String" number="10000" boolean="false">',
+                                                                    'boolean="false" number="10000" string="String">')
         http_response = self.new_response_handler \
             .is_xml_response(True) \
             .deserializer(XmlHelper.deserialize_xml_to_list) \
@@ -171,6 +174,9 @@ class TestResponseHandler(Base):
          '</AttributesAndElements>'),
     ])
     def test_xml_response_body_without_item_name(self, input_http_response, expected_response_body):
+        if sys.version_info[1] == 7:
+            expected_response_body = expected_response_body.replace('string="String" number="10000" boolean="false">',
+                                                                    'boolean="false" number="10000" string="String">')
         http_response = self.new_response_handler \
             .is_xml_response(True) \
             .deserializer(XmlHelper.deserialize_xml) \

@@ -1,5 +1,6 @@
 from datetime import datetime, date
 import pytest
+import sys
 from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
 from apimatic_core.authentication.multiple.and_auth_group import And
 from apimatic_core.authentication.multiple.or_auth_group import Or
@@ -310,7 +311,7 @@ class TestRequestBuilder(Base):
             if isinstance(item[1], ApiHelper.CustomDate):
                 try:
                     assert item[0] == expected_form_param_value[index][0] \
-                       and item[1].value == expected_form_param_value[index][1].value
+                           and item[1].value == expected_form_param_value[index][1].value
                 except:
                     print("here")
             else:
@@ -409,6 +410,10 @@ class TestRequestBuilder(Base):
                            '</AttributesAndElements>')
     ])
     def test_xml_body_param_with_serializer(self, input_body_param_value, expected_body_param_value):
+        if sys.version_info[1] == 7:
+            expected_body_param_value = expected_body_param_value.replace(
+                'string="String" number="10000" boolean="false">',
+                'boolean="false" number="10000" string="String">')
         http_request = self.new_request_builder \
             .xml_attributes(XmlAttributes()
                             .value(input_body_param_value)
@@ -443,6 +448,10 @@ class TestRequestBuilder(Base):
          '</arrayOfModels>')
     ])
     def test_xml_array_body_param_with_serializer(self, input_body_param_value, expected_body_param_value):
+        if sys.version_info[1] == 7:
+            expected_body_param_value = expected_body_param_value.replace(
+                'string="String" number="10000" boolean="false">',
+                'boolean="false" number="10000" string="String">')
         http_request = self.new_request_builder \
             .xml_attributes(XmlAttributes()
                             .value(input_body_param_value)
