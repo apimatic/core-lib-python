@@ -13,7 +13,7 @@ from apimatic_core.utilities.auth_helper import AuthHelper
 from apimatic_core.utilities.xml_helper import XmlHelper
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.callables.base_uri_callable import Server
-
+from requests.utils import quote
 
 class TestRequestBuilder(Base):
 
@@ -96,7 +96,8 @@ class TestRequestBuilder(Base):
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=761117415', SerializationFormats.INDEXED),
         (ApiHelper.HttpDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15, tzinfo=timezone.utc)),
-         'query_param=Sun%2C%2013%20Feb%201994%2000%3A30%3A15%20GMT', SerializationFormats.INDEXED),
+         'query_param={}'.format(quote(str(ApiHelper.HttpDateTime.from_datetime(
+             datetime(1994, 2, 13, 5, 30, 15,))), safe='')) , SerializationFormats.INDEXED),
         (ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          'query_param=1994-02-13T05%3A30%3A15', SerializationFormats.INDEXED),
         ([1, 2, 3, 4], 'query_param[0]=1&query_param[1]=2&query_param[2]=3&query_param[3]=4',
