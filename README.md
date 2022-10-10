@@ -1,4 +1,9 @@
 # apimatic-core
+[![PyPI][pypi-version]](https://pypi.org/project/apimatic-core/)
+[![Tests][test-badge]][test-url]
+[![Licence][license-badge]][license-url]
+
+## Introduction
 The APIMatic Core libraries provide a stable runtime that powers all the functionality of SDKs. This includes functionality like the ability to create HTTP requests, handle responses, apply authentication schemes, convert API responses back to object instances, and validate user and server data.
 
 
@@ -80,3 +85,10 @@ pip install apimatic-core
 
 ## Links
 * [apimatic-core-interfaces](https://pypi.org/project/apimatic-core-interfaces/)
+
+
+[pypi-version]: https://img.shields.io/pypi/v/apimatic-core
+[test-badge]: https://github.com/apimatic/core-lib-python/actions/workflows/test-runner.yml/badge.svg
+[test-url]: https://github.com/apimatic/core-lib-python/actions/workflows/test-runner.yml
+[license-badge]: https://img.shields.io/badge/licence-APIMATIC-blue
+[license-url]: LICENSE
