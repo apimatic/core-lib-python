@@ -1,0 +1,33 @@
+name: Pylint
+
+on: 
+  workflow_dispatch
+
+jobs:
+  build:
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.7", "3.8", "3.9"]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install dependencies
+        run: |
+               python -m pip install --upgrade pip
+               pip install pylint
+               pip install pylint-fail-under
+      - name: Analysing the code with pylint
+        run: find . -name '*.py' -print -exec pylint --disable=R,C,W {} \;
+      - name: Fails if pylint score is less than 10.0
+        run: |
+              for file in $(find -name '*.py')
+              do
+               pylint --disable=R,C,W "$file" --fail-under=10;    
+              done
