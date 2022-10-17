@@ -5,11 +5,11 @@ from apimatic_core.utilities.api_helper import ApiHelper
 import xml.etree.ElementTree as ET
 from apimatic_core.utilities.xml_helper import XmlHelper
 from tests.apimatic_core.base import Base
-from tests.apimatic_core.models.cat_model import CatModel
-from tests.apimatic_core.models.dog_model import DogModel
-from tests.apimatic_core.models.one_of_xml import OneOfXML
-from tests.apimatic_core.models.wolf_model import WolfModel
-from tests.apimatic_core.models.xml_model import XMLModel
+from tests.apimatic_core.mocks.models.cat_model import CatModel
+from tests.apimatic_core.mocks.models.dog_model import DogModel
+from tests.apimatic_core.mocks.models.one_of_xml import OneOfXML
+from tests.apimatic_core.mocks.models.wolf_model import WolfModel
+from tests.apimatic_core.mocks.models.xml_model import XMLModel
 
 
 class TestXMLHelper:

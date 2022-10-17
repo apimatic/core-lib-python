@@ -9,8 +9,8 @@ from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.utilities.api_helper import ApiHelper
 from tests.apimatic_core.base import Base
 
-from tests.apimatic_core.models.grand_parent_class_model import ChildClassModel
-from tests.apimatic_core.models.person import Employee
+from tests.apimatic_core.mocks.models.grand_parent_class_model import ChildClassModel
+from tests.apimatic_core.mocks.models.person import Employee
 from requests.utils import quote
 
 

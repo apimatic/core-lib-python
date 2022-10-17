@@ -1,14 +1,6 @@
-# -*- coding: utf-8 -*-
-
-"""
-tester
-
-This file was automatically generated for Stamplay by APIMATIC v3.0 (
- https://www.apimatic.io ).
-"""
 from apimatic_core.utilities.api_helper import ApiHelper
-from tests.apimatic_core.exceptions.api_exception import APIException
-from tests.apimatic_core.models.validate import Validate
+from tests.apimatic_core.mocks.exceptions.api_exception import APIException
+from tests.apimatic_core.mocks.models.validate import Validate
 
 
 class NestedModelException(APIException):

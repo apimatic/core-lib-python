@@ -13,7 +13,7 @@ from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.auth_helper import AuthHelper
 from apimatic_core.utilities.xml_helper import XmlHelper
 from tests.apimatic_core.base import Base
-from tests.apimatic_core.callables.base_uri_callable import Server
+from tests.apimatic_core.mocks.callables.base_uri_callable import Server
 from requests.utils import quote
 
 

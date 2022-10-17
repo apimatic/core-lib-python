@@ -1,5 +1,4 @@
 from enum import Enum
-
 from apimatic_core.utilities.api_helper import ApiHelper
 
 

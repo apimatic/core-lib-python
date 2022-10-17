@@ -5,12 +5,12 @@ from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.xml_helper import XmlHelper
 from tests.apimatic_core.base import Base
-from tests.apimatic_core.exceptions.global_test_exception import GlobalTestException
-from tests.apimatic_core.exceptions.local_test_exception import LocalTestException
-from tests.apimatic_core.exceptions.nested_model_exception import NestedModelException
-from tests.apimatic_core.models.api_response import ApiResponse
-from tests.apimatic_core.models.person import Employee
-from tests.apimatic_core.models.xml_model import XMLModel
+from tests.apimatic_core.mocks.exceptions.global_test_exception import GlobalTestException
+from tests.apimatic_core.mocks.exceptions.local_test_exception import LocalTestException
+from tests.apimatic_core.mocks.exceptions.nested_model_exception import NestedModelException
+from tests.apimatic_core.mocks.models.api_response import ApiResponse
+from tests.apimatic_core.mocks.models.person import Employee
+from tests.apimatic_core.mocks.models.xml_model import XMLModel
 
 
 class TestResponseHandler(Base):

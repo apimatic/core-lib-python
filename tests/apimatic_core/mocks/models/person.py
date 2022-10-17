@@ -1,13 +1,4 @@
-# -*- coding: utf-8 -*-
-
-"""
-tester
-
-This file was automatically generated for Stamplay by APIMATIC v3.0 (
- https://www.apimatic.io ).
-"""
 import dateutil.parser
-
 from apimatic_core.utilities.api_helper import ApiHelper
 
 

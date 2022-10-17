@@ -3,6 +3,8 @@ import os
 import platform
 from datetime import datetime, date
 
+from apimatic_core.api_call import ApiCall
+from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
@@ -12,20 +14,22 @@ from apimatic_core.logger.endpoint_logger import EndpointLogger
 from apimatic_core.request_builder import RequestBuilder
 from apimatic_core.response_handler import ResponseHandler
 from apimatic_core.types.error_case import ErrorCase
-from tests.apimatic_core.authentications.basic_auth import BasicAuth
-from tests.apimatic_core.authentications.bearer_auth import BearerAuth
-from tests.apimatic_core.authentications.custom_header_authentication import CustomHeaderAuthentication
-from tests.apimatic_core.authentications.custom_query_authentication import CustomQueryAuthentication
-from tests.apimatic_core.exceptions.global_test_exception import GlobalTestException
-from tests.apimatic_core.exceptions.nested_model_exception import NestedModelException
-from tests.apimatic_core.models.cat_model import CatModel
-from tests.apimatic_core.models.dog_model import DogModel
-from tests.apimatic_core.models.one_of_xml import OneOfXML
-from tests.apimatic_core.models.wolf_model import WolfModel
-from tests.apimatic_core.models.xml_model import XMLModel
-from tests.apimatic_core.models.days import Days
-from tests.apimatic_core.models.person import Employee, Person
-from tests.apimatic_core.callables.base_uri_callable import Server, BaseUriCallable
+from tests.apimatic_core.mocks.authentications.basic_auth import BasicAuth
+from tests.apimatic_core.mocks.authentications.bearer_auth import BearerAuth
+from tests.apimatic_core.mocks.authentications.custom_header_authentication import CustomHeaderAuthentication
+from tests.apimatic_core.mocks.authentications.custom_query_authentication import CustomQueryAuthentication
+from tests.apimatic_core.mocks.exceptions.global_test_exception import GlobalTestException
+from tests.apimatic_core.mocks.exceptions.nested_model_exception import NestedModelException
+from tests.apimatic_core.mocks.http.http_response_catcher import HttpResponseCatcher
+from tests.apimatic_core.mocks.http.http_client import MockHttpClient
+from tests.apimatic_core.mocks.models.cat_model import CatModel
+from tests.apimatic_core.mocks.models.dog_model import DogModel
+from tests.apimatic_core.mocks.models.one_of_xml import OneOfXML
+from tests.apimatic_core.mocks.models.wolf_model import WolfModel
+from tests.apimatic_core.mocks.models.xml_model import XMLModel
+from tests.apimatic_core.mocks.models.days import Days
+from tests.apimatic_core.mocks.models.person import Employee, Person
+from tests.apimatic_core.mocks.callables.base_uri_callable import Server, BaseUriCallable
 
 
 class Base:
@@ -96,6 +100,7 @@ class Base:
                 "workingDays": ["Monday", "Tuesday"], "personType": "Empl",
                 "additional_properties": {'key1': {'inner_key1': 'inner_val1', 'inner_key2': 'inner_val2'},
                                           'key2': ['value2', 'value3']}}
+
     @staticmethod
     def basic_auth():
         return BasicAuth(basic_auth_user_name='test_username', basic_auth_password='test_password')
@@ -133,7 +138,7 @@ class Base:
     @staticmethod
     def read_file(file_name):
         real_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
-        file_path = os.path.join(real_path, 'apimatic_core', 'files', file_name)
+        file_path = os.path.join(real_path, 'apimatic_core', 'mocks/files', file_name)
         return open(file_path, "rb")
 
     @staticmethod
@@ -165,23 +170,9 @@ class Base:
             return ApiHelper.RFC3339DateTime.from_datetime(datetime_value)
         return ApiHelper.RFC3339DateTime(datetime_value)
 
-    @property
-    def new_request_builder(self):
-        return RequestBuilder().path('/test') \
-            .endpoint_name_for_logging('Dummy Endpoint') \
-            .endpoint_logger(EndpointLogger(None)) \
-            .server(Server.DEFAULT)
-
-    @property
-    def global_configuration(self):
-        return GlobalConfiguration(None) \
-            .base_uri_executor(BaseUriCallable().get_base_uri) \
-            .global_errors(self.global_errors())
-
-    @property
-    def global_configuration_with_useragent(self):
-        return self.global_configuration\
-            .user_agent(self.user_agent(), self.user_agent_parameters())
+    @staticmethod
+    def new_api_call_builder(global_configuration):
+        return ApiCall(global_configuration)
 
     @staticmethod
     def user_agent():
@@ -195,6 +186,36 @@ class Base:
             'os-info': {'value': platform.system(), 'encode': False},
         }
 
+    @staticmethod
+    def wrapped_parameters():
+        return {
+            'bodyScalar': True,
+            'bodyNonScalar': Base.employee_model(),
+        }
+
+    @property
+    def mocked_http_client(self):
+        return MockHttpClient()
+
+    @property
+    def new_request_builder(self):
+        return RequestBuilder().path('/test') \
+            .endpoint_name_for_logging('Dummy Endpoint') \
+            .endpoint_logger(EndpointLogger(None)) \
+            .server(Server.DEFAULT)
+
+    @property
+    def http_client_configuration(self):
+        http_client_configurations = HttpClientConfiguration(http_client_instance=None,
+                                                             override_http_client_configuration=False,
+                                                             http_call_back=HttpResponseCatcher(), timeout=60, max_retries=0,
+                                                             backoff_factor=2,
+                                                             retry_statuses=[408, 413, 429, 500, 502, 503, 504, 521,
+                                                                             522, 524],
+                                                             retry_methods=['GET', 'PUT'])
+        http_client_configurations.set_http_client(self.mocked_http_client)
+        return http_client_configurations
+
     @property
     def new_response_handler(self):
         return ResponseHandler() \
@@ -203,13 +224,14 @@ class Base:
 
     @property
     def global_configuration(self):
-        return GlobalConfiguration(None) \
+        return GlobalConfiguration(self.http_client_configuration) \
             .base_uri_executor(BaseUriCallable().get_base_uri) \
             .global_errors(self.global_errors())
 
     @property
     def global_configuration_with_useragent(self):
-        return self.global_configuration.user_agent(self.user_agent(), self.user_agent_parameters())
+        return self.global_configuration \
+            .user_agent(self.user_agent(), self.user_agent_parameters())
 
     @property
     def global_configuration_with_auth(self):
@@ -222,10 +244,3 @@ class Base:
         return self.global_configuration.auth_managers(
             {'basic_auth': BasicAuth(None, None), 'bearer_auth': BearerAuth(None),
              'custom_header_auth': CustomHeaderAuthentication(None)})
-
-    @staticmethod
-    def wrapped_parameters():
-        return {
-            'bodyScalar': True,
-            'bodyNonScalar': Base.employee_model(),
-        }
