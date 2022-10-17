@@ -5,6 +5,7 @@ from datetime import datetime, date
 
 from apimatic_core.api_call import ApiCall
 from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
+from apimatic_core.http.http_callback import HttpCallBack
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
@@ -50,13 +51,6 @@ class Base:
                                            additional_properties={'key1': 'value1', 'key2': 'value2'})])
 
     @staticmethod
-    def person_model():
-        return Person(name='Bob', uid=1234567, address='street abc', birthday=date(1994, 2, 13),
-                      birthtime=datetime(1994, 2, 13, 5, 30, 15), age=27,
-                      additional_properties={'key1': 'value1', 'key2': 'value2'},
-                      )
-
-    @staticmethod
     def employee_model_additional_dictionary():
         return Employee(name='Bob', uid=1234567, address='street abc', department='IT', birthday=str(date(1994, 2, 13)),
                         birthtime=datetime(1994, 2, 13, 5, 30, 15), age=27,
@@ -85,21 +79,6 @@ class Base:
                 "hiredAt": Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
                 "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567,
                 "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}
-
-    @staticmethod
-    def get_employee_dictionary_with_additional_properties():
-        return {"address": "street abc", "age": 27, "birthday": "1994-02-13",
-                "birthtime": Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                "department": "IT", "dependents": [{"address": "street abc", "age": 12, "birthday": "1994-02-13",
-                                                    "birthtime": Base.get_rfc3339_datetime(
-                                                        datetime(1994, 2, 13, 5, 30, 15)),
-                                                    "name": "John", "uid": 7654321, "personType": "Per",
-                                                    "key1": "value1", "key2": "value2"}],
-                "hiredAt": Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567,
-                "workingDays": ["Monday", "Tuesday"], "personType": "Empl",
-                "additional_properties": {'key1': {'inner_key1': 'inner_val1', 'inner_key2': 'inner_val2'},
-                                          'key2': ['value2', 'value3']}}
 
     @staticmethod
     def basic_auth():
@@ -171,8 +150,8 @@ class Base:
         return ApiHelper.RFC3339DateTime(datetime_value)
 
     @staticmethod
-    def new_api_call_builder(global_configuration):
-        return ApiCall(global_configuration)
+    def new_api_call_builder(global_configuration, logger=None):
+        return ApiCall(global_configuration, logger)
 
     @staticmethod
     def user_agent():
@@ -193,9 +172,15 @@ class Base:
             'bodyNonScalar': Base.employee_model(),
         }
 
-    @property
-    def mocked_http_client(self):
+    @staticmethod
+    def mocked_http_client():
         return MockHttpClient()
+
+    @staticmethod
+    def http_client_configuration(http_callback=HttpResponseCatcher()):
+        http_client_configurations = HttpClientConfiguration(http_call_back=http_callback)
+        http_client_configurations.set_http_client(Base.mocked_http_client())
+        return http_client_configurations
 
     @property
     def new_request_builder(self):
@@ -205,18 +190,6 @@ class Base:
             .server(Server.DEFAULT)
 
     @property
-    def http_client_configuration(self):
-        http_client_configurations = HttpClientConfiguration(http_client_instance=None,
-                                                             override_http_client_configuration=False,
-                                                             http_call_back=HttpResponseCatcher(), timeout=60, max_retries=0,
-                                                             backoff_factor=2,
-                                                             retry_statuses=[408, 413, 429, 500, 502, 503, 504, 521,
-                                                                             522, 524],
-                                                             retry_methods=['GET', 'PUT'])
-        http_client_configurations.set_http_client(self.mocked_http_client)
-        return http_client_configurations
-
-    @property
     def new_response_handler(self):
         return ResponseHandler() \
             .endpoint_name_for_logging('Dummy Endpoint') \
@@ -224,9 +197,23 @@ class Base:
 
     @property
     def global_configuration(self):
-        return GlobalConfiguration(self.http_client_configuration) \
+        return GlobalConfiguration(self.http_client_configuration()) \
             .base_uri_executor(BaseUriCallable().get_base_uri) \
             .global_errors(self.global_errors())
+
+    @property
+    def global_configuration_without_http_callback(self):
+        return GlobalConfiguration(self.http_client_configuration(None))\
+            .base_uri_executor(BaseUriCallable().get_base_uri)
+
+    @property
+    def global_configuration_unimplemented_http_callback(self):
+        return GlobalConfiguration(self.http_client_configuration(HttpCallBack())) \
+            .base_uri_executor(BaseUriCallable().get_base_uri)
+
+    @property
+    def default_global_configuration(self):
+        return GlobalConfiguration()
 
     @property
     def global_configuration_with_useragent(self):
@@ -244,3 +231,8 @@ class Base:
         return self.global_configuration.auth_managers(
             {'basic_auth': BasicAuth(None, None), 'bearer_auth': BearerAuth(None),
              'custom_header_auth': CustomHeaderAuthentication(None)})
+
+    @property
+    def global_configuration_with_partially_initialized_auth_params(self):
+        return self.global_configuration.auth_managers(
+            {'basic_auth': BasicAuth(None, None), 'custom_header_auth': self.custom_header_auth()})

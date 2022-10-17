@@ -192,20 +192,15 @@ class XmlHelper:
 
         root = ET.fromstring(xml)
 
-        if root is None:
-            return None
-
         return XmlHelper.list_from_xml_element(root, item_name, clazz)
 
     @staticmethod
     def deserialize_xml_to_dict(xml, clazz):
-        """Deserializes an xml document to a list of python objects, each of
+        """Deserializes an xml document to a dictionary of python objects, each of
             the type given by 'clazz'.
 
         Args:
             xml (str): An xml document to deserialize.
-            root_element_name (str): The name of the xml document's root
-                element.
             clazz (class): The class that the values of the dictionary should
                 belong to.
         """
@@ -227,13 +222,9 @@ class XmlHelper:
         if attribute is None:
             return None
 
-        if clazz in [int, float, str, bool, datetime.date] or\
-                issubclass(clazz, ApiHelper.CustomDate):
-            conversion_function = XmlHelper.converter(clazz)
-        else:
-            conversion_function = str(clazz)
+        conversion_function = XmlHelper.converter(clazz)
 
-        return conversion_function(attribute)
+        return conversion_function(attribute) if conversion_function is not None else None
 
     @staticmethod
     def value_from_xml_element(element, clazz):
@@ -275,12 +266,7 @@ class XmlHelper:
         if root is None:
             return None
 
-        if wrapping_element_name is None:
-            elements = root.findall(item_name)
-        elif root.find(wrapping_element_name) is None:
-            elements = None
-        else:
-            elements = root.find(wrapping_element_name).findall(item_name)
+        elements = XmlHelper.get_elements(root, wrapping_element_name, item_name)
 
         if elements is None:
             return None
@@ -340,18 +326,15 @@ class XmlHelper:
             mapping_data (dict): A dictionary mapping possible element names
             for a given field to corresponding types.
         """
+        if not mapping_data:
+            return None
+
         for element_name, tup in mapping_data.items():
             clazz = tup[0]
             is_array = tup[1]
             wrapping_element_name = tup[2]
             if is_array:
-                if wrapping_element_name is None:
-                    elements = root.findall(element_name)
-                elif root.find(wrapping_element_name) is None:
-                    elements = None
-                else:
-                    elements = root.find(wrapping_element_name)\
-                        .findall(element_name)
+                elements = XmlHelper.get_elements(root, wrapping_element_name, element_name)
                 if elements is not None and len(elements) > 0:
                     return XmlHelper.list_from_xml_element(
                         root, element_name, clazz, wrapping_element_name)
@@ -359,8 +342,6 @@ class XmlHelper:
                 element = root.find(element_name)
                 if element is not None:
                     return XmlHelper.value_from_xml_element(element, clazz)
-
-        return None
 
     @staticmethod
     def list_from_multiple_one_of_xml_element(root, mapping_data):
@@ -383,3 +364,13 @@ class XmlHelper:
             return arr
         else:
             return None
+
+    @staticmethod
+    def get_elements(root, wrapping_element_name, item_name):
+
+        if wrapping_element_name is None:
+            return root.findall(item_name)
+        elif root.find(wrapping_element_name) is None:
+            return None
+        else:
+            return root.find(wrapping_element_name).findall(item_name)

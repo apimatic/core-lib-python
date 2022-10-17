@@ -4,5 +4,6 @@ __all__ = [
     'files',
     'authentications',
     'exceptions',
-    'http'
+    'http',
+    'logger'
 ]

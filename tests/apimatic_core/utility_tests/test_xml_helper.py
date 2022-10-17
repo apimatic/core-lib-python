@@ -267,6 +267,8 @@ class TestXMLHelper:
     @pytest.mark.parametrize('input_value, root_element_name, dictionary_name, expected_value', [
         ({'Item1': 50, 'Item2': 60, 'Item3': 70}, 'root', 'Dictionary',
          '<root><Dictionary><Item1>50</Item1><Item2>60</Item2><Item3>70</Item3></Dictionary></root>'),
+        ({'Item': [50, 60, 70]}, 'root', 'Dictionary',
+         '<root><Dictionary><Item>50</Item><Item>60</Item><Item>70</Item></Dictionary></root>'),
         ({'Item1': '50', 'Item2': '60', 'Item3': '70'}, 'root', 'Dictionary',
          '<root><Dictionary><Item1>50</Item1><Item2>60</Item2><Item3>70</Item3></Dictionary></root>'),
         ({'Item1': 50.58, 'Item2': 60.58, 'Item3': 70.58}, 'root', 'Dictionary',
@@ -603,3 +605,10 @@ class TestXMLHelper:
             assert XmlHelper.serialize_list_to_xml(actual_value, root_element_name, item_name) == expected_value
         else:
             assert input_value == expected_value
+
+    @pytest.mark.parametrize('input_mapping_data, expected_output', [
+        ({}, None),
+        (None, None)
+    ])
+    def test_value_from_one_of_xml_elements(self, input_mapping_data, expected_output):
+        assert XmlHelper.value_from_one_of_xml_elements(None, input_mapping_data) == expected_output

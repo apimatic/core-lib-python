@@ -23,9 +23,9 @@ class AuthGroup(Authentication):
     def __init__(self, auth_group):
         self._auth_participants = []
         for auth_participant in auth_group:
-            if isinstance(auth_participant, str):
+            if auth_participant is not None and isinstance(auth_participant, str):
                 self._auth_participants.append(Single(auth_participant))
-            else:
+            elif auth_participant is not None:
                 self._auth_participants.append(auth_participant)
 
         self._mapped_group = []

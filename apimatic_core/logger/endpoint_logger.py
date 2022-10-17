@@ -1,4 +1,3 @@
-
 class EndpointLogger:
 
     @property
@@ -18,4 +17,4 @@ class EndpointLogger:
 
     def error(self, error_message, exc_info=True):
         if self._logger:
-            self._logger.error(self, error_message, exc_info)
+            self._logger.error(error_message, exc_info)

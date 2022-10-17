@@ -196,6 +196,9 @@ class TestResponseHandler(Base):
             .is_api_response(True) \
             .handle(input_http_response, self.global_errors())
         assert ApiHelper.json_serialize(api_response.body) == expected_response_body
+        assert api_response.is_success() is True
+        assert api_response.is_error() is False
+        assert str(api_response) == '<CoreApiResponse {}>'.format(expected_response_body)
 
     @pytest.mark.parametrize('input_http_response, expected_response_body, expected_error_list', [
         (Base.response(text='{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"], "cursor": "Test cursor"}'),

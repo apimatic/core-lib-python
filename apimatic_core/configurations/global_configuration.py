@@ -1,3 +1,4 @@
+from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
@@ -22,13 +23,13 @@ class GlobalConfiguration:
         return self._base_uri_executor(server)
 
     def __init__(
-            self, http_client_configuration
+            self, http_client_configuration=HttpClientConfiguration()
     ):
         self._http_client_configuration = http_client_configuration
         self._global_errors = None
         self._global_headers = {}
         self._additional_headers = {}
-        self._auth_managers = None
+        self._auth_managers = {}
         self._base_uri_executor = None
 
     def global_errors(self, global_errors):
