@@ -1,7 +1,13 @@
 name: Test Runner
 
 on:
-  pull_request
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
 
 jobs:
   test-runner:
@@ -20,6 +26,16 @@ jobs:
         run: pip install -r requirements.txt
       - name: Install test requirements
         run: pip install -r test-requirements.txt
-      - name: Run tests w/ coverage report
+      - name: Run tests
         # Run tox using the version of Python in `PATH`
-        run: pytest --cov apimatic_core/
+        run: coverage run -m pytest
+      - name: Generate coverage report
+        run: coverage xml
+      - name: Upload coverage report
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.10' }}
+        uses: paambaati/codeclimate-action@v3.0.0
+        env:
+          CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_TEST_REPORTER_ID }}
+        with:
+          coverageLocations: |
+            ${{github.workspace}}/coverage.xml:coverage.py
