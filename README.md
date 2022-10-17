@@ -1,6 +1,8 @@
 # apimatic-core
-[![PyPI][pypi-version]](https://pypi.org/project/apimatic-core/)
+[![PyPI][pypi-version]][apimatic-core-pypi-url]
 [![Tests][test-badge]][test-url]
+[![Maintainability][maintainability-url]][code-climate-url]
+[![Test Coverage][test-coverage-url]][code-climate-url]
 [![Licence][license-badge]][license-url]
 
 ## Introduction
@@ -88,7 +90,11 @@ pip install apimatic-core
 
 
 [pypi-version]: https://img.shields.io/pypi/v/apimatic-core
+[apimatic-core-pypi-url]: https://pypi.org/project/apimatic-core/
 [test-badge]: https://github.com/apimatic/core-lib-python/actions/workflows/test-runner.yml/badge.svg
 [test-url]: https://github.com/apimatic/core-lib-python/actions/workflows/test-runner.yml
+[code-climate-url]: https://codeclimate.com/github/apimatic/core-lib-python
+[maintainability-url]: https://api.codeclimate.com/v1/badges/32e7abfdd4d27613ae76/maintainability
+[test-coverage-url]: https://api.codeclimate.com/v1/badges/32e7abfdd4d27613ae76/test_coverage
 [license-badge]: https://img.shields.io/badge/licence-APIMATIC-blue
 [license-url]: LICENSE
