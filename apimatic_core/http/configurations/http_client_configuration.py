@@ -47,11 +47,11 @@ class HttpClientConfiguration(object):
         return self._retry_methods
 
     def __init__(
-            self, http_client_instance,
-            override_http_client_configuration, http_call_back,
-            timeout, max_retries, backoff_factor,
-            retry_statuses,
-            retry_methods
+            self, http_client_instance=None,
+            override_http_client_configuration=False, http_call_back=None,
+            timeout=60, max_retries=0, backoff_factor=2,
+            retry_statuses=[408, 413, 429, 500, 502, 503, 504, 521, 522, 524],
+            retry_methods=['GET', 'PUT']
     ):
         self._http_response_factory = HttpResponseFactory()
 

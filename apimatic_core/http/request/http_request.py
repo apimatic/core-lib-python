@@ -79,3 +79,6 @@ class HttpRequest(object):
             {name: value}
         )
         self.query_url = ApiHelper.clean_url(self.query_url)
+
+    def __repr__(self):
+        return str(self.__dict__)

@@ -13,7 +13,7 @@ from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.auth_helper import AuthHelper
 from apimatic_core.utilities.xml_helper import XmlHelper
 from tests.apimatic_core.base import Base
-from tests.apimatic_core.callables.base_uri_callable import Server
+from tests.apimatic_core.mocks.callables.base_uri_callable import Server
 from requests.utils import quote
 
 
@@ -240,12 +240,14 @@ class TestRequestBuilder(Base):
                              ])
     def test_headers_precedence(self, input_global_header_param_value, input_local_header_param_value,
                                 input_additional_header_param_value, expected_header_param_value):
+        global_headers = {'header_param': input_global_header_param_value}
+        additional_headers = {'header_param': input_additional_header_param_value}
         http_request = self.new_request_builder \
             .header_param(Parameter()
                           .key('header_param')
                           .value(input_local_header_param_value)) \
-            .build(self.global_configuration.global_header('header_param', input_global_header_param_value)
-                   .additional_header('header_param', input_additional_header_param_value))
+            .build(self.global_configuration.global_headers(global_headers)
+                   .additional_headers(additional_headers))
         assert http_request.headers == expected_header_param_value
 
     def test_useragent_header(self):
@@ -394,6 +396,28 @@ class TestRequestBuilder(Base):
             .body_param(Parameter()
                         .value(input_body_param_value)) \
             .body_serializer(ApiHelper.json_serialize) \
+            .build(self.global_configuration)
+        assert http_request.parameters == expected_body_param_value
+
+    @pytest.mark.parametrize('input_body_param_value, input_should_wrap_body_param,'
+                             'input_body_key, expected_body_param_value', [
+                                 (100, False, None, '100'),
+                                 (100, True, 'body', '{"body": 100}'),
+                                 ([1, 2, 3, 4], False, None, '[1, 2, 3, 4]'),
+                                 ([1, 2, 3, 4], True, 'body', '{"body": [1, 2, 3, 4]}'),
+                                 ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, False, None,
+                                  '{"key1": "value1", "key2": [1, 2, 3, 4]}'),
+                                 ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, True, 'body',
+                                  '{"body": {"key1": "value1", "key2": [1, 2, 3, 4]}}')
+                             ])
+    def test_type_combinator_body_param_with_serializer(self, input_body_param_value, input_should_wrap_body_param,
+                                                        input_body_key, expected_body_param_value):
+        http_request = self.new_request_builder \
+            .body_param(Parameter()
+                        .key(input_body_key)
+                        .value(input_body_param_value)) \
+            .body_serializer(ApiHelper.get_request_parameter) \
+            .should_wrap_body_param(input_should_wrap_body_param) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 
@@ -574,17 +598,15 @@ class TestRequestBuilder(Base):
 
         assert http_request.query_url == 'http://localhost:3000/test?token=Qaws2W233WedeRe4T56G6Vref2&api-key=W233WedeRe4T56G6Vref2'
 
-    def test_invalid_key_authentication(self):
+    @pytest.mark.parametrize('input_invalid_auth_scheme', [
+        (Single('invalid')),
+        (Or('invalid_1', 'invalid_2')),
+        (And('invalid_1', 'invalid_2'))
+    ])
+    def test_invalid_key_authentication(self, input_invalid_auth_scheme):
         with pytest.raises(ValueError) as validation_error:
             self.new_request_builder \
-                .auth(Single('invalid')) \
-                .build(self.global_configuration_with_auth)
-        assert validation_error.value.args[0] == 'Auth key is invalid.'
-
-    def test_combine_invalid_key_authentication(self):
-        with pytest.raises(ValueError) as validation_error:
-            self.new_request_builder \
-                .auth(Or('invalid_1', 'invalid_2')) \
+                .auth(input_invalid_auth_scheme) \
                 .build(self.global_configuration_with_auth)
         assert validation_error.value.args[0] == 'Auth key is invalid.'
 
@@ -608,6 +630,12 @@ class TestRequestBuilder(Base):
                                   'Qaws2W233WedeRe4T56G6Vref2'),
                                  (Or('basic_auth', Or('bearer_auth', 'custom_header_auth')), 'Authorization',
                                   'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                                 (Or('basic_auth', Or(None, 'custom_header_auth')), 'Authorization',
+                                  'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk', 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                                 (Or('basic_auth', And(None, 'custom_header_auth')), 'Authorization',
+                                  'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk', 'token',
                                   'Qaws2W233WedeRe4T56G6Vref2'),
                              ])
     def test_success_case_of_multiple_authentications(self, input_auth_scheme, expected_auth_header_key_1,
@@ -648,7 +676,11 @@ class TestRequestBuilder(Base):
         (Or('basic_auth', Or('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
                                                                     '_basic_auth_password is undefined.] or ['
                                                                     'BearerAuth: _access_token is undefined.] or ['
-                                                                    'CustomHeaderAuthentication: token is undefined.]')
+                                                                    'CustomHeaderAuthentication: token is undefined.]'),
+        (Or(None, None), ''),
+        (Or(None, 'basic_auth'), '[BasicAuth: _basic_auth_user_name or _basic_auth_password is undefined.]'),
+        (And(None, None), ''),
+        (And(None, 'basic_auth'), '[BasicAuth: _basic_auth_user_name or _basic_auth_password is undefined.]')
     ])
     def test_failed_case_of_multiple_authentications(self, input_auth_scheme, expected_error_message):
         with pytest.raises(PermissionError) as errors:
@@ -656,3 +688,19 @@ class TestRequestBuilder(Base):
                 .auth(input_auth_scheme) \
                 .build(self.global_configuration_with_uninitialized_auth_params)
         assert errors.value.args[0] == expected_error_message
+
+    @pytest.mark.parametrize('input_auth_scheme, expected_auth_header_key,'
+                             'expected_auth_header_value', [
+                                 (Or('basic_auth', 'custom_header_auth'), 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2'),
+                                 (Or('custom_header_auth', And('basic_auth', 'custom_header_auth')), 'token',
+                                  'Qaws2W233WedeRe4T56G6Vref2')
+                             ])
+    def test_case_of_multiple_authentications(self, input_auth_scheme, expected_auth_header_key,
+                                              expected_auth_header_value):
+        http_request = self.new_request_builder \
+            .auth(input_auth_scheme) \
+            .build(self.global_configuration_with_partially_initialized_auth_params)
+
+        assert http_request.headers[expected_auth_header_key] == expected_auth_header_value
+        assert http_request.headers.get('Authorization') is None

@@ -1,18 +1,10 @@
-# -*- coding: utf-8 -*-
-
-"""
-tester
-
-This file was automatically generated for Stamplay by APIMATIC v3.0 (
- https://www.apimatic.io ).
-"""
 from apimatic_core.utilities.api_helper import ApiHelper
-from tests.apimatic_core.exceptions.api_exception import APIException
+from tests.apimatic_core.mocks.exceptions.global_test_exception import GlobalTestException
 
 
-class GlobalTestException(APIException):
+class LocalTestException(GlobalTestException):
     def __init__(self, reason, response):
-        """Constructor for the GlobalTestException class
+        """Constructor for the LocalTestException class
 
         Args:
             reason (string): The reason (or error message) for the Exception
@@ -20,7 +12,7 @@ class GlobalTestException(APIException):
             response (HttpResponse): The HttpResponse of the API call.
 
         """
-        super(GlobalTestException, self).__init__(reason, response)
+        super(LocalTestException, self).__init__(reason, response)
         dictionary = ApiHelper.json_deserialize(self.response.text)
         if isinstance(dictionary, dict):
             self.unbox(dictionary)
@@ -34,5 +26,5 @@ class GlobalTestException(APIException):
             MUST match property names in the API description.
 
         """
-        self.server_message = dictionary.get("ServerMessage") if dictionary.get("ServerMessage") else None
-        self.server_code = dictionary.get("ServerCode") if dictionary.get("ServerCode") else None
+        super(LocalTestException, self).unbox(dictionary)
+        self.secret_message_for_endpoint = dictionary.get("SecretMessageForEndpoint") if dictionary.get("SecretMessageForEndpoint") else None

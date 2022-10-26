@@ -1,5 +1,4 @@
 
-
 class ApiResponse:
 
     """Http response received.
@@ -37,7 +36,6 @@ class ApiResponse:
         self.request = http_response.request
         self.body = body
         self.errors = errors
-
 
     def is_success(self):
         """ Returns true if status code is between 200-300

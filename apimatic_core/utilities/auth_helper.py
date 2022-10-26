@@ -30,3 +30,12 @@ class AuthHelper:
         """
         utc_now = AuthHelper.get_current_utc_timestamp()
         return token_expiry is not None and token_expiry < utc_now
+
+    @staticmethod
+    def is_valid_auth(auth_params):
+        return auth_params and all(param and auth_params[param] for param in auth_params)
+
+    @staticmethod
+    def apply(auth_params, func):
+        for param in auth_params:
+            func(param, auth_params[param])
