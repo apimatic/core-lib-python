@@ -165,7 +165,8 @@ class RequestBuilder:
             self._endpoint_logger.info('Preparing headers for {}.'.format(self._endpoint_name_for_logging))
 
         if global_headers:
-            prepared_headers = {key: str(value) for key, value in self._header_params.items()}
+            prepared_headers = {key: str(value) if value is not None else value
+                                for key, value in self._header_params.items()}
             request_headers = {**global_headers, **prepared_headers}
 
         if additional_headers:
