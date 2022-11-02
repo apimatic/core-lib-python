@@ -233,12 +233,30 @@ class TestRequestBuilder(Base):
 
     @pytest.mark.parametrize('input_global_header_param_value,'
                              'input_local_header_param_value,'
+                             'expected_header_param_value', [
+                                 ('global_string', None, {'header_param': None}),
+                                 ('global_string', 'local_string', {'header_param': 'local_string'})
+                             ])
+    def test_local_and_global_headers_precedence(self, input_global_header_param_value, input_local_header_param_value,
+                                                 expected_header_param_value):
+        global_headers = {'header_param': input_global_header_param_value}
+        http_request = self.new_request_builder \
+            .header_param(Parameter()
+                          .key('header_param')
+                          .value(input_local_header_param_value)) \
+            .build(self.global_configuration.global_headers(global_headers))
+        assert http_request.headers == expected_header_param_value
+
+    @pytest.mark.parametrize('input_global_header_param_value,'
+                             'input_local_header_param_value,'
                              'input_additional_header_param_value,'
                              'expected_header_param_value', [
                                  ('global_string', 'local_string', 'additional_string',
-                                  {'header_param': 'additional_string'})
+                                  {'header_param': 'additional_string'}),
+                                 ('global_string', 'local_string', None,
+                                  {'header_param': None})
                              ])
-    def test_headers_precedence(self, input_global_header_param_value, input_local_header_param_value,
+    def test_all_headers_precedence(self, input_global_header_param_value, input_local_header_param_value,
                                 input_additional_header_param_value, expected_header_param_value):
         global_headers = {'header_param': input_global_header_param_value}
         additional_headers = {'header_param': input_additional_header_param_value}
