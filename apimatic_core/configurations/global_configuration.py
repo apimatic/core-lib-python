@@ -26,7 +26,7 @@ class GlobalConfiguration:
             self, http_client_configuration=HttpClientConfiguration()
     ):
         self._http_client_configuration = http_client_configuration
-        self._global_errors = None
+        self._global_errors = {}
         self._global_headers = {}
         self._additional_headers = {}
         self._auth_managers = {}
