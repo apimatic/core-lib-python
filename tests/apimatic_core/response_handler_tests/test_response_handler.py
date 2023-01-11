@@ -36,6 +36,13 @@ class TestResponseHandler(Base):
                 .handle(self.response(status_code=404), self.global_errors())
         assert error.value.reason == 'Not Found'
 
+    def test_default_local_error(self):
+        with pytest.raises(LocalTestException) as error:
+            self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
+                .local_error('default', 'Response Not OK', LocalTestException) \
+                .handle(self.response(status_code=412), self.global_errors())
+        assert error.value.reason == 'Response Not OK'
+
     def test_local_error_with_body(self):
         with pytest.raises(LocalTestException) as error:
             self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
@@ -47,6 +54,23 @@ class TestResponseHandler(Base):
         assert error.value.server_code == 5001 \
                and error.value.server_message == 'Test message from server' \
                and error.value.secret_message_for_endpoint == 'This is test error message'
+
+    def test_local_error_template_message(self):
+        with pytest.raises(LocalTestException) as error:
+            self.new_response_handler.local_error_template(404, 'error_code => {$statusCode}, '
+                                                                'header => {$response.header.accept}, '
+                                                                'body => {$response.body#/ServerCode} - '
+                                                                '{$response.body#/ServerMessage} - '
+                                                                '{$response.body#/SecretMessageForEndpoint}',
+                                                           LocalTestException) \
+                .handle(self.response(status_code=404, text='{"ServerCode": 5001, "ServerMessage": '
+                                                            '"Test message from server", "SecretMessageForEndpoint": '
+                                                            '"This is test error message"}',
+                                      headers={'accept': 'application/json'}),
+                        self.global_errors_with_template_message())
+        assert error.value.reason == 'error_code => 404, ' \
+                                     'header => application/json, ' \
+                                     'body => 5001 - Test message from server - This is test error message'
 
     def test_global_error_with_body(self):
         with pytest.raises(NestedModelException) as error:
@@ -66,6 +90,17 @@ class TestResponseHandler(Base):
                and error.value.model.field == 'Test field' \
                and error.value.model.name == 'Test name' \
                and error.value.model.address == 'Test address'
+
+    def test_global_error_template_message(self):
+        with pytest.raises(NestedModelException) as error:
+            self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
+                .handle(self.response(status_code=412,
+                                      text='{"ServerCode": 5001, "ServerMessage": "Test message from server", "model": '
+                                           '{ "field": "Test field", "name": "Test name", "address": "Test address"}}'),
+                        self.global_errors_with_template_message())
+
+        assert error.value.reason == 'global error message -> error_code => 412, header => ,' \
+                                     ' body => 5001 - Test message from server - Test name'
 
     def test_local_error_precedence(self):
         with pytest.raises(LocalTestException) as error:

@@ -123,9 +123,23 @@ class Base:
     @staticmethod
     def global_errors():
         return {
-            '400': ErrorCase().description('400 Global').exception_type(GlobalTestException),
-            '412': ErrorCase().description('Precondition Failed').exception_type(NestedModelException),
-            'default': ErrorCase().description('Invalid response').exception_type(GlobalTestException),
+            '400': ErrorCase().error_message('400 Global').exception_type(GlobalTestException),
+            '412': ErrorCase().error_message('Precondition Failed').exception_type(NestedModelException),
+            'default': ErrorCase().error_message('Invalid response').exception_type(GlobalTestException),
+        }
+
+    @staticmethod
+    def global_errors_with_template_message():
+        return {
+            '400': ErrorCase()
+            .error_message_template('error_code => {$statusCode}, header => {$response.header.accept}, '
+                                    'body => {$response.body#/ServerCode} - {$response.body#/ServerMessage}')
+            .exception_type(GlobalTestException),
+            '412': ErrorCase()
+            .error_message_template('global error message -> error_code => {$statusCode}, header => '
+                                    '{$response.header.accept}, body => {$response.body#/ServerCode} - '
+                                    '{$response.body#/ServerMessage} - {$response.body#/model/name}')
+            .exception_type(NestedModelException)
         }
 
     @staticmethod
