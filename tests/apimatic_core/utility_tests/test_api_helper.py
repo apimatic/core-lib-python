@@ -612,7 +612,51 @@ class TestApiHelper(Base):
         ('{"method": "GET", "body": {}, "uploadCount": 0}', {'body': {}, 'method': 'GET', 'uploadCount': 0}),
         ('I am a string', 'I am a string'),
         (None, None)
-
     ])
     def test_dynamic_deserialize(self, input_value, output_value):
         assert ApiHelper.dynamic_deserialize(input_value) == output_value
+
+    @pytest.mark.parametrize('input_placeholders, input_values, input_template, expected_message', [
+        ({}, '400', 'Test template -- {$statusCode}', 'Test template -- {$statusCode}'),
+        ({'{$statusCode}'}, '400', 'Test template -- {$statusCode}', 'Test template -- 400'),
+        ({'{$response.header.accept}'}, {'accept': 'application/json'},
+         'Test template -- {$response.header.accept}', 'Test template -- application/json'),
+        ({'{$response.header.accept}'}, {'retry-after': 60},
+         'Test template -- {$response.header.accept}', 'Test template -- '),
+        ({'{accept}'}, {'accept': 'application/json'},
+         'Test template -- {accept}', 'Test template -- application/json')
+    ])
+    def test_resolve_template_placeholders(self, input_placeholders, input_values, input_template, expected_message):
+        actual_message = ApiHelper.resolve_template_placeholders(input_placeholders, input_values, input_template)
+        assert actual_message == expected_message
+
+    @pytest.mark.parametrize('input_placeholders, input_value, input_template, expected_message', [
+        ({},
+         {"scalar": 123.2,
+          "object": {"keyA": {"keyC": True, "keyD": 34}, "keyB": "some string", "arrayScalar": ["value1", "value2"],
+                     "arrayObjects":[{"key1": 123, "key2": False}, {"key3": 1234, "key4": None}]}},
+         'Test template -- {$response.body#/scalar}, {$response.body#/object/arrayObjects/0/key2}',
+         'Test template -- {$response.body#/scalar}, {$response.body#/object/arrayObjects/0/key2}'),
+        ({'{$response.body#/scalar}', '{$response.body#/object/arrayObjects/0/key2}'},
+         {"scalar": 123.2,
+          "object": {"keyA": {"keyC": True, "keyD": 34}, "keyB": "some string", "arrayScalar": ["value1", "value2"],
+                     "arrayObjects":[{"key1": 123, "key2": False}, {"key3": 1234, "key4": None}]}},
+         'Test template -- {$response.body#/scalar}, {$response.body#/object/arrayObjects/0/key2}',
+         'Test template -- 123.2, False'),
+        ({'{$response.body#/scalar}', '{$response.body#/object/arrayObjects/0/key2}'},
+         {"object": {"keyA": {"keyC": True, "keyD": 34}, "keyB": "some string", "arrayScalar": ["value1", "value2"],
+                     "arrayObjects": [{"key1": 123, "key2": False}, {"key3": 1234, "key4": None}]}},
+         'Test template -- {$response.body#/scalar}, {$response.body#/object/arrayObjects/0/key2}',
+         'Test template -- , False'),
+        ({'{/scalar}', '{/object/arrayObjects/0/key2}'},
+         {"scalar": 123.2,
+          "object": {"keyA": {"keyC": True, "keyD": 34}, "keyB": "some string", "arrayScalar": ["value1", "value2"],
+                     "arrayObjects": [{"key1": 123, "key2": False}, {"key3": 1234, "key4": None}]}},
+         'Test template -- {/scalar}, {/object/arrayObjects/0/key2}',
+         'Test template -- 123.2, False'),
+    ])
+    def test_resolve_template_placeholders_using_json_pointer(self, input_placeholders, input_value, input_template,
+                                                              expected_message):
+        actual_message = ApiHelper.resolve_template_placeholders_using_json_pointer(input_placeholders, input_value,
+                                                                                    input_template)
+        assert actual_message == expected_message
