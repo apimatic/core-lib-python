@@ -174,20 +174,20 @@ class ResponseHandler:
     def validate_against_error_cases(self, response, error_cases):
         actual_status_code = str(response.status_code)
         # Handling global level error case if configured
-        global_error_case = error_cases.get(actual_status_code) if error_cases else None
-        if global_error_case:
-            raise global_error_case.get_exception_type()(self.get_error_message(global_error_case, response), response)
+        error_case = error_cases.get(actual_status_code) if error_cases else None
+        if error_case:
+            raise error_case.get_exception_type()(self.get_error_message(error_case, response), response)
 
         # Handling global level error case for default range if configured
-        default_range_global_error_case = [error_cases[status_code] for status_code, error_case in error_cases.items()
-                                           if re.match(r'^[{}]XX$'.format(actual_status_code[0]),
-                                                       status_code)] if error_cases else None
-        if default_range_global_error_case:
-            raise default_range_global_error_case[0] \
-                .get_exception_type()(self.get_error_message(default_range_global_error_case[0], response), response)
+        default_range_error_case = [error_cases[status_code] for status_code, error_case in error_cases.items()
+                                    if re.match(r'^[{}]XX$'.format(actual_status_code[0]),
+                                                status_code)] if error_cases else None
+        if default_range_error_case:
+            raise default_range_error_case[0] \
+                .get_exception_type()(self.get_error_message(default_range_error_case[0], response), response)
 
         # Handling default global level error case if configured
-        global_error_default_case = error_cases.get('default') if error_cases else None
-        if global_error_default_case:
-            raise global_error_default_case.get_exception_type()(self.get_error_message(global_error_default_case,
-                                                                                        response), response)
+        default_error_case = error_cases.get('default') if error_cases else None
+        if default_error_case:
+            raise default_error_case.get_exception_type()(self.get_error_message(default_error_case, response),
+                                                          response)
