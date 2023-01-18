@@ -648,12 +648,18 @@ class TestApiHelper(Base):
                      "arrayObjects": [{"key1": 123, "key2": False}, {"key3": 1234, "key4": None}]}},
          'Test template -- {$response.body#/scalar}, {$response.body#/object/arrayObjects/0/key2}',
          'Test template -- , False'),
-        ({'{/scalar}', '{/object/arrayObjects/0/key2}'},
+        ({'{$response.body}'},
          {"scalar": 123.2,
           "object": {"keyA": {"keyC": True, "keyD": 34}, "keyB": "some string", "arrayScalar": ["value1", "value2"],
                      "arrayObjects": [{"key1": 123, "key2": False}, {"key3": 1234, "key4": None}]}},
-         'Test template -- {/scalar}, {/object/arrayObjects/0/key2}',
-         'Test template -- 123.2, False'),
+         'Test template -- {$response.body}',
+         'Test template -- {"scalar": 123.2, "object": {"keyA": {"keyC": true, "keyD": 34}, "keyB": "some string", '
+         '"arrayScalar": ["value1", "value2"], '
+         '"arrayObjects": [{"key1": 123, "key2": false}, {"key3": 1234, "key4": null}]}}'),
+        ({'{$response.body}'},
+         None,
+         'Test template -- {$response.body}',
+         'Test template -- ')
     ])
     def test_resolve_template_placeholders_using_json_pointer(self, input_placeholders, input_value, input_template,
                                                               expected_message):

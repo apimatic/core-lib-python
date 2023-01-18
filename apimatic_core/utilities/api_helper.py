@@ -530,15 +530,17 @@ class ApiHelper(object):
         """
         for placeholder in placeholders:
             extracted_value = ''
-            # pick the 2nd chunk then remove the last character (i.e. `}`) of the string value
-            node_pointer = placeholder.rsplit('#')[1].rstrip('}') if '#' in placeholder \
-                else placeholder.lstrip('{').rstrip('}')
-            try:
-                extracted_value = resolve_pointer(value, node_pointer) if node_pointer else ''
-            except JsonPointerException:
-                pass
 
-            template = template.replace(placeholder, str(extracted_value))
+            if '#' in placeholder:
+                # pick the 2nd chunk then remove the last character (i.e. `}`) of the string value
+                node_pointer = placeholder.rsplit('#')[1].rstrip('}')
+                try:
+                    extracted_value = str(resolve_pointer(value, node_pointer)) if node_pointer else ''
+                except JsonPointerException:
+                    pass
+            elif value is not None:
+                extracted_value = ApiHelper.json_serialize(value)
+            template = template.replace(placeholder, extracted_value)
 
         return template
 

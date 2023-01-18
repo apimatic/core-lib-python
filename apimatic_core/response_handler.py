@@ -21,7 +21,7 @@ class ResponseHandler:
 
         status_code_placeholder = set(filter(lambda element: element == '{$statusCode}', placeholders))
         header_placeholders = set(filter(lambda element: element.startswith('{$response.header'), placeholders))
-        body_placeholders = set(filter(lambda element: element.startswith('{$response.body#'), placeholders))
+        body_placeholders = set(filter(lambda element: element.startswith('{$response.body'), placeholders))
 
         # Handling response code placeholder
         error_message_template = ApiHelper.resolve_template_placeholders(status_code_placeholder,
