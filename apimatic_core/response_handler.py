@@ -129,7 +129,7 @@ class ResponseHandler:
         return deserialized_value
 
     def validate(self, response, global_errors):
-        if response.status_code in range(200, 209):
+        if response.status_code in range(200, 300):
             return
 
         self.validate_against_error_cases(response, self._local_errors)
