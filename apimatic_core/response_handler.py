@@ -1,44 +1,9 @@
 import re
 from apimatic_core.http.response.api_response import ApiResponse
 from apimatic_core.types.error_case import ErrorCase
-from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class ResponseHandler:
-
-    @staticmethod
-    def resolve_error_message_template(error_message_template, response):
-        """Updates all placeholders in the given message template with provided value.
-
-                Args:
-                    error_message_template: The error message template string containing placeholders.
-                    response: The received http response.
-
-                Returns:
-                    string: The resolved template value.
-                """
-        placeholders = re.findall(r'\{\$.*?\}', error_message_template)
-
-        status_code_placeholder = set(filter(lambda element: element == '{$statusCode}', placeholders))
-        header_placeholders = set(filter(lambda element: element.startswith('{$response.header'), placeholders))
-        body_placeholders = set(filter(lambda element: element.startswith('{$response.body'), placeholders))
-
-        # Handling response code placeholder
-        error_message_template = ApiHelper.resolve_template_placeholders(status_code_placeholder,
-                                                                         str(response.status_code),
-                                                                         error_message_template)
-
-        # Handling response header placeholder
-        error_message_template = ApiHelper.resolve_template_placeholders(header_placeholders, response.headers,
-                                                                         error_message_template)
-
-        # Handling response body placeholder
-        response_payload = ApiHelper.json_deserialize(response.text, as_dict=True)
-        error_message_template = ApiHelper.resolve_template_placeholders_using_json_pointer(body_placeholders,
-                                                                                            response_payload,
-                                                                                            error_message_template)
-
-        return error_message_template
 
     def __init__(self):
         self._deserializer = None
@@ -166,28 +131,22 @@ class ResponseHandler:
 
         return deserialized_value
 
-    def get_error_message(self, error_case, response):
-        if error_case.is_error_message_template():
-            return self.resolve_error_message_template(error_case.get_error_message_template(), response)
-        return error_case.get_error_message()
-
-    def validate_against_error_cases(self, response, error_cases):
+    @staticmethod
+    def validate_against_error_cases(response, error_cases):
         actual_status_code = str(response.status_code)
         # Handling global level error case if configured
         error_case = error_cases.get(actual_status_code) if error_cases else None
         if error_case:
-            raise error_case.get_exception_type()(self.get_error_message(error_case, response), response)
+            error_case.raise_exception(response)
 
         # Handling global level error case for default range if configured
         default_range_error_case = [error_cases[status_code] for status_code, error_case in error_cases.items()
                                     if re.match(r'^[{}]XX$'.format(actual_status_code[0]),
                                                 status_code)] if error_cases else None
         if default_range_error_case:
-            raise default_range_error_case[0] \
-                .get_exception_type()(self.get_error_message(default_range_error_case[0], response), response)
+            default_range_error_case[0].raise_exception(response)
 
         # Handling default global level error case if configured
         default_error_case = error_cases.get('default') if error_cases else None
         if default_error_case:
-            raise default_error_case.get_exception_type()(self.get_error_message(default_error_case, response),
-                                                          response)
+            default_error_case.raise_exception(response)
