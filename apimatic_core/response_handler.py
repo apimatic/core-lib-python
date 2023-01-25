@@ -134,19 +134,19 @@ class ResponseHandler:
     @staticmethod
     def validate_against_error_cases(response, error_cases):
         actual_status_code = str(response.status_code)
-        # Handling global level error case if configured
+        # Handling error case when configured as explicit error code
         error_case = error_cases.get(actual_status_code) if error_cases else None
         if error_case:
             error_case.raise_exception(response)
 
-        # Handling global level error case for default range if configured
+        # Handling error case when configured as explicit error codes range
         default_range_error_case = [error_cases[status_code] for status_code, error_case in error_cases.items()
                                     if re.match(r'^[{}]XX$'.format(actual_status_code[0]),
                                                 status_code)] if error_cases else None
         if default_range_error_case:
             default_range_error_case[0].raise_exception(response)
 
-        # Handling default global level error case if configured
+        # Handling default error case if configured
         default_error_case = error_cases.get('default') if error_cases else None
         if default_error_case:
             default_error_case.raise_exception(response)

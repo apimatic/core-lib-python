@@ -661,7 +661,8 @@ class TestApiHelper(Base):
           "object": {"keyA": {"keyC": True, "keyD": 34}, "keyB": "some string", "arrayScalar": ["value1", "value2"],
                      "arrayObjects": [{"key1": 123, "key2": False}, {"key3": 1234, "key4": None}]}},
          'Test template -- {$response.body#/object}',
-         "Test template -- {'keyA': {'keyC': True, 'keyD': 34}, 'keyB': 'some string', 'arrayScalar': ['value1', 'value2'], 'arrayObjects': [{'key1': 123, 'key2': False}, {'key3': 1234, 'key4': None}]}"),
+         'Test template -- {"keyA": {"keyC": true, "keyD": 34}, "keyB": "some string", "arrayScalar": '
+         '["value1", "value2"], "arrayObjects": [{"key1": 123, "key2": false}, {"key3": 1234, "key4": null}]}'),
         ({'{$response.body}'},
          None,
          'Test template -- {$response.body}',

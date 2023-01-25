@@ -535,7 +535,9 @@ class ApiHelper(object):
                 # pick the 2nd chunk then remove the last character (i.e. `}`) of the string value
                 node_pointer = placeholder.rsplit('#')[1].rstrip('}')
                 try:
-                    extracted_value = str(resolve_pointer(value, node_pointer)) if node_pointer else ''
+                    extracted_value = resolve_pointer(value, node_pointer) if node_pointer else ''
+                    extracted_value = ApiHelper.json_serialize(extracted_value) \
+                        if type(extracted_value) in [list, dict] else str(extracted_value)
                 except JsonPointerException:
                     pass
             elif value is not None:
