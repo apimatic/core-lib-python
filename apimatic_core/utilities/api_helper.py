@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-
-
+from collections import abc
 import re
-import sys
 import datetime
 import calendar
 import email.utils as eut
@@ -10,6 +8,8 @@ from time import mktime
 
 import jsonpickle
 import dateutil.parser
+from jsonpointer import JsonPointerException, resolve_pointer
+
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -515,6 +515,61 @@ class ApiHelper(object):
     @staticmethod
     def is_file_wrapper_instance(param):
         return isinstance(param, FileWrapper)
+
+    @staticmethod
+    def resolve_template_placeholders_using_json_pointer(placeholders, value, template):
+        """Updates all placeholders in the given message template with provided value.
+
+        Args:
+            placeholders: The placeholders that need to be searched and replaced in the given template value.
+            value: The dictionary containing the actual values to replace with.
+            template: The template string containing placeholders.
+
+        Returns:
+            string: The resolved template value.
+        """
+        for placeholder in placeholders:
+            extracted_value = ''
+
+            if '#' in placeholder:
+                # pick the 2nd chunk then remove the last character (i.e. `}`) of the string value
+                node_pointer = placeholder.rsplit('#')[1].rstrip('}')
+                try:
+                    extracted_value = resolve_pointer(value, node_pointer) if node_pointer else ''
+                    extracted_value = ApiHelper.json_serialize(extracted_value) \
+                        if type(extracted_value) in [list, dict] else str(extracted_value)
+                except JsonPointerException:
+                    pass
+            elif value is not None:
+                extracted_value = ApiHelper.json_serialize(value)
+            template = template.replace(placeholder, extracted_value)
+
+        return template
+
+    @staticmethod
+    def resolve_template_placeholders(placeholders, values, template):
+        """Updates all placeholders in the given message template with provided value.
+
+                Args:
+                    placeholders: The placeholders that need to be searched and replaced in the given template value.
+                    values: The dictionary|string value which refers to the actual values to replace with.
+                    template: The template string containing placeholders.
+
+                Returns:
+                    string: The resolved template value.
+                """
+        for placeholder in placeholders:
+            if isinstance(values, abc.Mapping):
+                # pick the last chunk then strip the last character (i.e. `}`) of the string value
+                key = placeholder.rsplit('.', maxsplit=1)[-1].rstrip('}') if '.' in placeholder \
+                    else placeholder.lstrip('{').rstrip('}')
+                value_to_replace = str(values.get(key)) if values.get(key) else ''
+                template = template.replace(placeholder, value_to_replace)
+            else:
+                values = str(values) if values is not None else ''
+                template = template.replace(placeholder, values)
+
+        return template
 
     class CustomDate(object):
 

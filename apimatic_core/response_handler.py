@@ -1,12 +1,11 @@
+import re
 from apimatic_core.http.response.api_response import ApiResponse
 from apimatic_core.types.error_case import ErrorCase
 
 
 class ResponseHandler:
 
-    def __init__(
-            self
-    ):
+    def __init__(self):
         self._deserializer = None
         self._convertor = None
         self._deserialize_into = None
@@ -39,8 +38,16 @@ class ResponseHandler:
         self._is_nullify404 = is_nullify404
         return self
 
-    def local_error(self, error_code, description, exception_type):
-        self._local_errors[str(error_code)] = ErrorCase().description(description).exception_type(exception_type)
+    def local_error(self, error_code, error_message, exception_type):
+        self._local_errors[str(error_code)] = ErrorCase()\
+            .error_message(error_message)\
+            .exception_type(exception_type)
+        return self
+
+    def local_error_template(self, error_code, error_message_template, exception_type):
+        self._local_errors[str(error_code)] = ErrorCase()\
+            .error_message_template(error_message_template)\
+            .exception_type(exception_type)
         return self
 
     def datetime_format(self, datetime_format):
@@ -87,20 +94,12 @@ class ResponseHandler:
         return deserialized_value
 
     def validate(self, response, global_errors):
-        actual_status_code = str(response.status_code)
-        if self._local_errors:
-            for expected_status_code, error_case in self._local_errors.items():
-                if actual_status_code == expected_status_code:
-                    raise error_case.get_exception_type()(error_case.get_description(), response)
+        if response.status_code in range(200, 300):
+            return
 
-        if global_errors:
-            for expected_status_code, error_case in global_errors.items():
-                if actual_status_code == expected_status_code:
-                    raise error_case.get_exception_type()(error_case.get_description(), response)
+        self.validate_against_error_cases(response, self._local_errors)
 
-        if (response.status_code < 200 or response.status_code > 208) and global_errors.get('default'):
-            error_case = global_errors['default']
-            raise error_case.get_exception_type()(error_case.get_description(), response)
+        self.validate_against_error_cases(response, global_errors)
 
     def apply_xml_deserializer(self, response):
         if self._xml_item_name:
@@ -131,3 +130,23 @@ class ResponseHandler:
             return self._convertor(deserialized_value)
 
         return deserialized_value
+
+    @staticmethod
+    def validate_against_error_cases(response, error_cases):
+        actual_status_code = str(response.status_code)
+        # Handling error case when configured as explicit error code
+        error_case = error_cases.get(actual_status_code) if error_cases else None
+        if error_case:
+            error_case.raise_exception(response)
+
+        # Handling error case when configured as explicit error codes range
+        default_range_error_case = [error_cases[status_code] for status_code, error_case in error_cases.items()
+                                    if re.match(r'^[{}]XX$'.format(actual_status_code[0]),
+                                                status_code)] if error_cases else None
+        if default_range_error_case:
+            default_range_error_case[0].raise_exception(response)
+
+        # Handling default error case if configured
+        default_error_case = error_cases.get('default') if error_cases else None
+        if default_error_case:
+            default_error_case.raise_exception(response)
