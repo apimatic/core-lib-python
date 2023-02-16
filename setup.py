@@ -19,6 +19,7 @@ setup(
     long_description_content_type="text/markdown",
     author='APIMatic',
     author_email='support@apimatic.io',
+    license='MIT',
     url='https://github.com/apimatic/core-lib-python',
     packages=find_packages(),
     install_requires=[
