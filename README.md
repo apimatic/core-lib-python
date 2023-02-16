@@ -1,7 +1,6 @@
 # apimatic-core
 [![PyPI][pypi-version]][apimatic-core-pypi-url]
 [![Tests][test-badge]][test-url]
-[![Maintainability][maintainability-url]][code-climate-url]
 [![Test Coverage][test-coverage-url]][code-climate-url]
 [![Licence][license-badge]][license-url]
 
