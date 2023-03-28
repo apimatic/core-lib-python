@@ -24,15 +24,15 @@ setup(
     packages=find_packages(),
     install_requires=[
         'apimatic-core-interfaces~=0.1.0',
-        'jsonpickle~=1.4, >= 1.4.1',
+        'jsonpickle~=3.0.1, >= 3.0.1',
         'python-dateutil~=2.8.1',
         'requests~=2.28.1',
         'enum34~=1.1, >=1.1.10',
-        'setuptools~=65.5.1',
+        'setuptools~=66.0.0',
         'jsonpointer~=2.3'
     ],
     tests_require=[
-        'pytest~=7.1.3',
-        'pytest-cov~=3.0.0'
+        'pytest~=7.2.2',
+        'pytest-cov~=4.0.0'
     ]
 )
