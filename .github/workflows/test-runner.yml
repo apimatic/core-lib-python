@@ -16,7 +16,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python: ["3.7", "3.8", "3.9", "3.10"]
+        python: ["3.7", "3.8", "3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Python
@@ -33,7 +33,7 @@ jobs:
       - name: Generate coverage report
         run: coverage xml
       - name: Upload coverage report
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.10' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.11' }}
         uses: paambaati/codeclimate-action@v3.0.0
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_TEST_REPORTER_ID }}
