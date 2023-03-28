@@ -32,7 +32,7 @@ setup(
         'jsonpointer~=2.3'
     ],
     tests_require=[
-        'pytest~=7.2.0',
-        'pytest-cov~=7.1.0'
+        'pytest~=7.2.2',
+        'pytest-cov~=7.2.2'
     ]
 )
