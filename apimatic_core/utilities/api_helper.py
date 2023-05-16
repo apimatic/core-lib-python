@@ -635,3 +635,27 @@ class ApiHelper(object):
         def from_value(cls, value):
             dtime = dateutil.parser.parse(value)
             return cls(dtime, value)
+
+    @classmethod
+    def validate_date_time_case(cls, value, date_time_format):
+
+        if DateTimeFormat.HTTP_DATE_TIME == date_time_format:
+            try:
+                ApiHelper.HttpDateTime.from_value(value).datetime
+                return True
+            except Exception as e:
+                return False
+
+        elif DateTimeFormat.UNIX_DATE_TIME == date_time_format:
+            try:
+                ApiHelper.UnixDateTime.from_value(value).datetime
+                return True
+            except:
+                return False
+
+        elif DateTimeFormat.RFC3339_DATE_TIME == date_time_format:
+            try:
+                ApiHelper.RFC3339DateTime.from_value(value).datetime
+                return True
+            except:
+                return False

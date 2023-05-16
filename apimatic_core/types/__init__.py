@@ -4,5 +4,6 @@ __all__ = [
     'error_case',
     'file_wrapper',
     'array_serialization_format',
-    'xml_attributes'
+    'xml_attributes',
+    'union_types'
 ]
