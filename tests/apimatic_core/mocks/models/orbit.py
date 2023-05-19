@@ -60,3 +60,8 @@ class Orbit(object):
             return None
 
         return dictionary.get("OrbitNumberOfElectrons") is not None
+
+    def __eq__(self, other):
+        if isinstance(self, other.__class__):
+            return self.number_of_electrons == other.number_of_electrons
+        return False

@@ -48,7 +48,7 @@ class UnionTypeContext:
     def is_nullable(self):
         return self._is_nullable
 
-    def is_nullable_or_nullable(self):
+    def is_nullable_or_optional(self):
         return self._is_nullable or self._is_optional
 
     def discriminator(self, discriminator: str):

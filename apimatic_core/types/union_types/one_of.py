@@ -12,7 +12,7 @@ class OneOf(UnionType):
     def validate(self, value):
         context = self._union_type_context
 
-        if value is None and context.is_nullable_or_nullable():
+        if value is None and context.is_nullable_or_optional():
             self.is_valid = True
             return self
 
