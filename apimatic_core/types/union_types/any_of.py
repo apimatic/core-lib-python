@@ -1,6 +1,7 @@
 import copy
 from apimatic_core_interfaces.types.union_type import UnionType
 from apimatic_core.types.union_types.union_type_context import UnionTypeContext
+from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class AnyOf(UnionType):
@@ -41,8 +42,7 @@ class AnyOf(UnionType):
             else:
                 self.is_valid = False
         else:
-            matched_count = sum(union_type.validate(value).is_valid for union_type in self._union_types)
-            self.is_valid = matched_count > 1
+            self.is_valid = ApiHelper.get_matched_count(value, self._union_types, False) > 0
 
         return self
 
@@ -67,7 +67,7 @@ class AnyOf(UnionType):
         return deserialized_value
 
     def get_deserialized_value(self, value):
-        return [union_type.deserialize(value) for union_type in self._union_types if union_type.is_valid][0]
+        return [union_type for union_type in self._union_types if union_type.is_valid][0].deserialize(value)
 
     def validate_array_of_dict_case(self, array_value):
         if array_value is None or not array_value:
@@ -93,9 +93,9 @@ class AnyOf(UnionType):
             nested_cases = []
             for union_type in self._union_types:
                 nested_cases.append(copy.deepcopy(union_type).validate(value))
-            matched_count = sum(processed_inner_type.is_valid for processed_inner_type in nested_cases)
+            matched_count = ApiHelper.get_matched_count(value, nested_cases, False)
             if is_valid:
-                is_valid = matched_count > 1
+                is_valid = matched_count > 0
             self.collection_cases[key] = nested_cases
         return is_valid
 
@@ -109,9 +109,9 @@ class AnyOf(UnionType):
             nested_cases = []
             for union_type in self._union_types:
                 nested_cases.append(copy.deepcopy(union_type).validate(item))
-            matched_count = sum(processed_inner_type.is_valid for processed_inner_type in nested_cases)
+            matched_count = ApiHelper.get_matched_count(item, nested_cases, False)
             if is_valid:
-                is_valid = matched_count > 1
+                is_valid = matched_count > 0
             self.collection_cases.append(nested_cases)
         return is_valid
 

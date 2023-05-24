@@ -1,47 +1,56 @@
-from apimatic_core.types.datetime_format import DateTimeFormat
-
 
 class UnionTypeContext:
 
-    def __init__(self):
-        self._is_array: bool = False
-        self._is_dict: bool = False
-        self._is_array_of_dict: bool = False
-        self._is_optional: bool = False
-        self._is_nullable: bool = False
-        self._discriminator: str | None = None
-        self._discriminator_values: [] = []
-        self._date_time_format: DateTimeFormat | None = None
+    @classmethod
+    def create(cls, is_array=False, is_dict=False, is_array_of_dict=False, is_optional=False, is_nullable=False,
+               discriminator=None, discriminator_value=None, date_time_format=None):
+        return cls().array(is_array).dict(is_dict)\
+            .array_of_dict(is_array_of_dict)\
+            .optional(is_optional)\
+            .nullable(is_nullable)\
+            .discriminator(discriminator)\
+            .discriminator_value(discriminator_value)\
+            .date_time_format(date_time_format)
 
-    def array(self, is_array: bool):
+    def __init__(self):
+        self._is_array = False
+        self._is_dict = False
+        self._is_array_of_dict = False
+        self._is_optional = False
+        self._is_nullable = False
+        self._discriminator = None
+        self._discriminator_value = None
+        self._date_time_format = None
+
+    def array(self, is_array):
         self._is_array = is_array
         return self
 
     def is_array(self):
         return self._is_array
 
-    def dict(self, is_dict: bool):
+    def dict(self, is_dict):
         self._is_dict = is_dict
         return self
 
     def is_dict(self):
         return self._is_dict
 
-    def array_of_dict(self, is_array_of_dict: bool):
+    def array_of_dict(self, is_array_of_dict):
         self._is_array_of_dict = is_array_of_dict
         return self
 
     def is_array_of_dict(self):
         return self._is_array_of_dict
 
-    def optional(self, is_optional: bool):
+    def optional(self, is_optional):
         self._is_optional = is_optional
         return self
 
     def is_optional(self):
         return self._is_optional
 
-    def nullable(self, is_nullable: bool):
+    def nullable(self, is_nullable):
         self._is_nullable = is_nullable
         return self
 
@@ -51,21 +60,21 @@ class UnionTypeContext:
     def is_nullable_or_optional(self):
         return self._is_nullable or self._is_optional
 
-    def discriminator(self, discriminator: str):
+    def discriminator(self, discriminator):
         self._discriminator = discriminator
         return self
 
     def get_discriminator(self):
         return self._discriminator
 
-    def discriminator_values(self, discriminator_values: []):
-        self._discriminator_values = discriminator_values
+    def discriminator_value(self, discriminator_value):
+        self._discriminator_value = discriminator_value
         return self
 
-    def get_discriminator_values(self):
-        return self._discriminator_values
+    def get_discriminator_value(self):
+        return self._discriminator_value
 
-    def date_time_format(self, date_time_format: DateTimeFormat):
+    def date_time_format(self, date_time_format):
         self._date_time_format = date_time_format
         return self
 

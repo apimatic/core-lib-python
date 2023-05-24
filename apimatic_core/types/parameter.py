@@ -21,6 +21,7 @@ class Parameter:
         self._is_required = False
         self._should_encode = False
         self._default_content_type = None
+        self._validator = None
 
     def key(self, key):
         self._key = key
@@ -42,7 +43,14 @@ class Parameter:
         self._default_content_type = default_content_type
         return self
 
+    def validator(self, validator):
+        self._validator = validator
+        return self
+
     def validate(self):
         if self._is_required and self._value is None:
             raise ValueError("Required parameter {} cannot be None.".format(self._key))
+
+        if self._validator is not None and self._validator(self._value):
+            return
 

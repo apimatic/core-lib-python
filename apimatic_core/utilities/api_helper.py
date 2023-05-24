@@ -5,6 +5,7 @@ import datetime
 import calendar
 import email.utils as eut
 from time import mktime
+from typing import Union, List, Dict
 
 import jsonpickle
 import dateutil.parser
@@ -198,6 +199,22 @@ class ApiHelper(object):
                         ApiHelper.json_deserialize(response, ApiHelper.RFC3339DateTime.from_value)]
             else:
                 return ApiHelper.RFC3339DateTime.from_value(response).datetime
+
+    @staticmethod
+    def validate_union_type(union_type, value):
+        union_type_result = union_type.validate(value)
+        if not union_type_result.is_valid:
+            raise ValueError(union_type_result.errors)
+
+        return True
+
+    @staticmethod
+    def deserialize_union_type(union_type, response):
+        union_type_result = union_type.validate(response)
+        if not union_type_result.is_valid:
+            raise ValueError(union_type_result.errors)
+
+        return union_type_result.deserialize(response)
 
     @staticmethod
     def get_content_type(value):
@@ -571,6 +588,27 @@ class ApiHelper(object):
 
         return template
 
+    @staticmethod
+    def get_matched_count(value, union_types, is_for_one_of):
+        matched_count = sum(union_type.validate(value).is_valid for union_type in union_types)
+
+        if is_for_one_of and matched_count == 1:
+            return matched_count
+        elif not is_for_one_of and matched_count > 0:
+            return matched_count
+
+        # Check through normal schema validation flow when discriminator exits but still invalid
+        has_discriminator_cases = all(union_type.get_context().get_discriminator() is not None and
+                                      union_type.get_context().get_discriminator_value() is not None
+                                      for union_type in union_types)
+        if matched_count == 0 and has_discriminator_cases:
+            for union_type in union_types:
+                union_type.get_context().discriminator(None)
+                union_type.get_context().discriminator_value(None)
+            matched_count = sum(union_type.validate(value).is_valid for union_type in union_types)
+
+        return matched_count
+
     class CustomDate(object):
 
         """ A base class for wrapper classes of datetime.
@@ -635,27 +673,3 @@ class ApiHelper(object):
         def from_value(cls, value):
             dtime = dateutil.parser.parse(value)
             return cls(dtime, value)
-
-    @classmethod
-    def validate_date_time_case(cls, value, date_time_format):
-
-        if DateTimeFormat.HTTP_DATE_TIME == date_time_format:
-            try:
-                ApiHelper.HttpDateTime.from_value(value).datetime
-                return True
-            except Exception as e:
-                return False
-
-        elif DateTimeFormat.UNIX_DATE_TIME == date_time_format:
-            try:
-                ApiHelper.UnixDateTime.from_value(value).datetime
-                return True
-            except:
-                return False
-
-        elif DateTimeFormat.RFC3339_DATE_TIME == date_time_format:
-            try:
-                ApiHelper.RFC3339DateTime.from_value(value).datetime
-                return True
-            except:
-                return False
