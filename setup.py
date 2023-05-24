@@ -23,7 +23,7 @@ setup(
     url='https://github.com/apimatic/core-lib-python',
     packages=find_packages(),
     install_requires=[
-        'git+https://github.com/apimatic/core-interfaces-python@add-type-combinator-support',
+        'apimatic-core-interfaces~=0.1.0',
         'jsonpickle~=3.0.1, >= 3.0.1',
         'python-dateutil~=2.8.1',
         'requests~=2.28.1',
