@@ -632,7 +632,26 @@ class TestOneOf:
         ('{"name": "sam", "weight": 5, "type": "deer", "kind": "hunted"}',
          [LeafType(Lion, UnionTypeContext().discriminator('type').discriminator_value('deer')),
           LeafType(Rabbit, UnionTypeContext().discriminator('type').discriminator_value('deer'))],
-         UnionTypeContext(), False)
+         UnionTypeContext(), False),
+
+        ('{"id": 123, "weight": 5, "type": "lion", "kind": "hunter"}',
+         [LeafType(dict, UnionTypeContext().discriminator('type').discriminator_value('lion')),
+          LeafType(dict, UnionTypeContext().discriminator('type').discriminator_value('deer'))],
+         UnionTypeContext(), True),
+        ('{"name": "sam", "weight": 5, "type": "deer", "kind": "hunter"}',
+         [LeafType(dict, UnionTypeContext().discriminator('type').discriminator_value('lion')),
+          LeafType(dict, UnionTypeContext().discriminator('type').discriminator_value('deer'))],
+         UnionTypeContext(), True),
+        ('{"name": "sam", "weight": 5, "type": "deer", "kind": "hunter"}',
+         [LeafType(dict, UnionTypeContext().discriminator('type').discriminator_value('deer')),
+          LeafType(dict, UnionTypeContext().discriminator('type').discriminator_value('deer'))],
+         UnionTypeContext(), False),
+        ('{"name": "sam", "weight": 5, "type": "deer", "kind": "hunter"}',
+         [LeafType(dict, UnionTypeContext().discriminator('type').discriminator_value('lion')),
+          LeafType(dict, UnionTypeContext().discriminator('type').discriminator_value('lion'))],
+         UnionTypeContext(), False),
+        ('{"name": "sam", "weight": 5, "type": "deer", "kind": "hunter"}',
+         [LeafType(dict), LeafType(dict)], UnionTypeContext(), False),
     ])
     def test_one_of_custom_type(self, input_value, input_types, input_context, expected_output):
         union_type = OneOf(input_types, input_context)
