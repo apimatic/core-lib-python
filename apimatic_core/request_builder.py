@@ -184,8 +184,6 @@ class RequestBuilder:
             self.add_additional_form_params()
             return ApiHelper.form_encode_parameters(self._form_params, self._array_serialization_format)
         elif self._body_param is not None and self._body_serializer:
-            if self._should_wrap_body_param:
-                return self._body_serializer(self.resolve_body_param(), self._should_wrap_body_param)
             return self._body_serializer(self.resolve_body_param())
         elif self._body_param is not None and not self._body_serializer:
             return self.resolve_body_param()

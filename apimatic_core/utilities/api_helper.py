@@ -30,26 +30,6 @@ class ApiHelper(object):
     SKIP = '#$%^S0K1I2P3))*'
 
     @staticmethod
-    def get_request_parameter(value, is_wrapped=False):
-        """get the correct serialization method for a oneof/anyof parameter type.
-
-        Args:
-            value: the value of the request parameter
-            is_wrapped: whether parameter are wrapped in object or not
-
-        Returns:
-             A correct serialized value which can be used
-             when sending a request.
-
-        """
-
-        if type(value) is str:
-            return value
-        if is_wrapped:
-            return ApiHelper.json_serialize_wrapped_params(value)
-        return ApiHelper.json_serialize(value)
-
-    @staticmethod
     def json_serialize_wrapped_params(obj):
         """JSON Serialization of a given wrapped object.
 
@@ -80,17 +60,37 @@ class ApiHelper(object):
             str: The JSON serialized string of the object.
 
         """
+
         if obj is None:
             return None
+
+        if isinstance(obj, str):
+            return obj
 
         # Resolve any Names if it's one of our objects that needs to have this called on
         if isinstance(obj, list):
             value = list()
             for item in obj:
-                if hasattr(item, "_names"):
+                if isinstance(item, dict):
+                    value.append(ApiHelper.json_serialize(item, False))
+                elif isinstance(item, list):
+                    value.append(ApiHelper.json_serialize(item, False))
+                elif hasattr(item, "_names"):
                     value.append(ApiHelper.to_dictionary(item))
                 else:
                     value.append(item)
+            obj = value
+        elif isinstance(obj, dict):
+            value = dict()
+            for key, item in obj.items():
+                if isinstance(item, list):
+                    value[key] = ApiHelper.json_serialize(item, False)
+                elif isinstance(item, dict):
+                    value[key] = ApiHelper.json_serialize(item, False)
+                elif hasattr(item, "_names"):
+                    value[key] = ApiHelper.to_dictionary(item)
+                else:
+                    value[key] = item
             obj = value
         else:
             if hasattr(obj, "_names"):
@@ -209,7 +209,10 @@ class ApiHelper(object):
         return True
 
     @staticmethod
-    def deserialize_union_type(union_type, response):
+    def deserialize_union_type(union_type, response, should_deserialize = True):
+        if should_deserialize:
+            response = ApiHelper.json_deserialize(response, as_dict=True)
+
         union_type_result = union_type.validate(response)
         if not union_type_result.is_valid:
             raise ValueError(union_type_result.errors)

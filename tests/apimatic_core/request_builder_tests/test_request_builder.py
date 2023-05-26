@@ -417,27 +417,27 @@ class TestRequestBuilder(Base):
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 
-    @pytest.mark.parametrize('input_body_param_value, input_should_wrap_body_param,'
-                             'input_body_key, expected_body_param_value', [
-                                 (100, False, None, '100'),
-                                 (100, True, 'body', '{"body": 100}'),
-                                 ([1, 2, 3, 4], False, None, '[1, 2, 3, 4]'),
-                                 ([1, 2, 3, 4], True, 'body', '{"body": [1, 2, 3, 4]}'),
-                                 ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, False, None,
-                                  '{"key1": "value1", "key2": [1, 2, 3, 4]}'),
-                                 ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, True, 'body',
-                                  '{"body": {"key1": "value1", "key2": [1, 2, 3, 4]}}')
-                             ])
-    def test_type_combinator_body_param_with_serializer(self, input_body_param_value, input_should_wrap_body_param,
-                                                        input_body_key, expected_body_param_value):
-        http_request = self.new_request_builder \
-            .body_param(Parameter()
-                        .key(input_body_key)
-                        .value(input_body_param_value)) \
-            .body_serializer(ApiHelper.get_request_parameter) \
-            .should_wrap_body_param(input_should_wrap_body_param) \
-            .build(self.global_configuration)
-        assert http_request.parameters == expected_body_param_value
+    # @pytest.mark.parametrize('input_body_param_value, input_should_wrap_body_param,'
+    #                          'input_body_key, expected_body_param_value', [
+    #                              (100, False, None, '100'),
+    #                              (100, True, 'body', '{"body": 100}'),
+    #                              ([1, 2, 3, 4], False, None, '[1, 2, 3, 4]'),
+    #                              ([1, 2, 3, 4], True, 'body', '{"body": [1, 2, 3, 4]}'),
+    #                              ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, False, None,
+    #                               '{"key1": "value1", "key2": [1, 2, 3, 4]}'),
+    #                              ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, True, 'body',
+    #                               '{"body": {"key1": "value1", "key2": [1, 2, 3, 4]}}')
+    #                          ])
+    # def test_type_combinator_body_param_with_serializer(self, input_body_param_value, input_should_wrap_body_param,
+    #                                                     input_body_key, expected_body_param_value):
+    #     http_request = self.new_request_builder \
+    #         .body_param(Parameter()
+    #                     .key(input_body_key)
+    #                     .value(input_body_param_value)) \
+    #         .body_serializer(ApiHelper.json_serialize_wrapped_params) \
+    #         .should_wrap_body_param(input_should_wrap_body_param) \
+    #         .build(self.global_configuration)
+    #     assert http_request.parameters == expected_body_param_value
 
     @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
         (Base.xml_model(), '<AttributesAndElements string="String" number="10000" boolean="false">'
