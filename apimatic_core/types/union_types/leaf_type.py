@@ -205,6 +205,8 @@ class LeafType(UnionType):
             return value
         elif hasattr(self.type_to_match, 'from_dictionary'):
             return self.type_to_match.from_dictionary(value)
+        else:
+            return value
 
         return None
 

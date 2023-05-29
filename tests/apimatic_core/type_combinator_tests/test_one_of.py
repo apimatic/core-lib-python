@@ -8,8 +8,10 @@ from apimatic_core.types.union_types.union_type_context import UnionTypeContext
 from apimatic_core.utilities.api_helper import ApiHelper
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.mocks.models.atom import Atom
+from tests.apimatic_core.mocks.models.days import Days
 from tests.apimatic_core.mocks.models.deer import Deer
 from tests.apimatic_core.mocks.models.lion import Lion
+from tests.apimatic_core.mocks.models.months import Months
 from tests.apimatic_core.mocks.models.orbit import Orbit
 from tests.apimatic_core.mocks.models.rabbit import Rabbit
 
@@ -245,42 +247,26 @@ class TestOneOf:
         assert actual_deserialized_value == expected_deserialized_value_output
 
     @pytest.mark.parametrize(
-        'input_value, input_types, input_context, expected_validity', [
+        'input_value, input_types, input_context, expected_validity, expected_value', [
             (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
              [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME)),
-              LeafType(bool)], UnionTypeContext(), True),
+              LeafType(date)], UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
             (Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37)),
-             [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.HTTP_DATE_TIME)), LeafType(bool)],
-             UnionTypeContext(), True),
+             [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.HTTP_DATE_TIME)), LeafType(date)],
+             UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
             (1480809600,
-             [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.UNIX_DATE_TIME)), LeafType(bool)],
-             UnionTypeContext(), True),
-            (date(1994, 11, 6), [LeafType(date), LeafType(bool)], UnionTypeContext(), True)
+             [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.UNIX_DATE_TIME)), LeafType(date)],
+             UnionTypeContext(), True, datetime.utcfromtimestamp(1480809600)),
+            ('1994-11-06', [LeafType(date), LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME))], UnionTypeContext(),
+             True, date(1994, 11, 6))
         ])
-    def test_one_of_date_and_datetime_validity(self, input_value, input_types, input_context, expected_validity):
+    def test_one_of_date_and_datetime(self, input_value, input_types, input_context, expected_validity, expected_value):
         union_type = OneOf(input_types, input_context)
         union_type_result = union_type.validate(input_value)
         assert union_type_result.is_valid == expected_validity
-
-    @pytest.mark.parametrize(
-        'input_value, input_types, input_context, expected_value, expected_type', [
-            (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
-             [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME)),
-              LeafType(bool)], UnionTypeContext(), datetime(1994, 11, 6, 8, 49, 37), datetime),
-            (Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37)),
-             [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.HTTP_DATE_TIME)), LeafType(bool)],
-             UnionTypeContext(), datetime(1994, 11, 6, 8, 49, 37), datetime),
-            (1480809600,
-             [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.UNIX_DATE_TIME)), LeafType(bool)],
-             UnionTypeContext(), datetime.utcfromtimestamp(1480809600), datetime),
-            ('1994-11-06', [LeafType(date), LeafType(bool)], UnionTypeContext(), date(1994, 11, 6), date)
-        ])
-    def test_one_of_date_and_datetime(self, input_value, input_types, input_context, expected_value, expected_type):
-        union_type = OneOf(input_types, input_context)
-        union_type_result = union_type.validate(input_value)
         actual_deserialized_value = union_type_result.deserialize(input_value)
-        assert isinstance(actual_deserialized_value, expected_type)
         assert actual_deserialized_value == expected_value
+
 
     @pytest.mark.parametrize(
         'input_value, input_types, input_context, expected_is_valid_output, expected_deserialized_value_output', [
@@ -658,5 +644,76 @@ class TestOneOf:
         deserialized_dict_input = ApiHelper.json_deserialize(input_value, as_dict=True)
         union_type_result = union_type.validate(deserialized_dict_input)
         actual_result = union_type_result.is_valid
-        deserialized_value = union_type_result.deserialize(deserialized_dict_input)
         assert actual_result == expected_output
+
+    @pytest.mark.parametrize('input_value, input_types, input_context,  expected_is_valid_output, expected_deserialized_value_output', [
+        # Simple Cases
+        ('Monday',[LeafType(Days, UnionTypeContext()), LeafType(Months, UnionTypeContext())],
+         UnionTypeContext(), True, 'Monday'),
+        (1, [LeafType(Days, UnionTypeContext()), LeafType(Months, UnionTypeContext())],
+         UnionTypeContext(), True, 1),
+        (0, [LeafType(Days, UnionTypeContext()), LeafType(Months, UnionTypeContext())],
+         UnionTypeContext(), False, None),
+        ('Monday_', [LeafType(Days, UnionTypeContext()), LeafType(Months, UnionTypeContext())],
+         UnionTypeContext(), False, None),
+
+        # Outer Array
+        (['Monday', 'Tuesday'], [LeafType(Days), LeafType(Months)], UnionTypeContext().array(True), True,
+         ['Monday', 'Tuesday']),
+        ([1, 2], [LeafType(Days), LeafType(Months)], UnionTypeContext().array(True), True,
+         [1, 2]),
+        ([1, 'Monday'], [LeafType(Days), LeafType(Months)], UnionTypeContext().array(True), True, [1, 'Monday']),
+        (2, [LeafType(Days), LeafType(Months)], UnionTypeContext().array(True), False, None),
+        ('Monday', [LeafType(Days), LeafType(Months)], UnionTypeContext().array(True), False, None),
+        ([['January', 'February']], [LeafType(int), LeafType(str)], UnionTypeContext().array(True), False, None),
+
+        # Inner Array Cases
+        (['Monday', 'Tuesday'], [LeafType(Days, UnionTypeContext().array(True)),
+                          LeafType(Months, UnionTypeContext().array(True))],
+         UnionTypeContext(), True, ['Monday', 'Tuesday']),
+        ([1, 2], [LeafType(Days, UnionTypeContext().array(True)), LeafType(Months, UnionTypeContext().array(True))],
+         UnionTypeContext(), True, [1, 2]),
+        ([1, 'Monday'],
+         [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days, UnionTypeContext().array(True))],
+         UnionTypeContext(), False, None),
+
+        # Partial Array Case
+        ('Monday', [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext(), True, 'Monday'),
+        ([1, 2], [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext(), True, [1, 2]),
+        ([1, 'Monday'], [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext(), False, None),
+        (1, [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext(), False, None),
+
+        # Array of Partial Arrays Cases
+        (['Monday', 'Tuesday'], [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext().array(True), True, ['Monday', 'Tuesday']),
+        ([[1, 2]], [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext().array(True), True, [[1, 2]]),
+        ([[1, 2], 'Monday'], [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext().array(True), True, [[1, 2], 'Monday']),
+        ([[1, 'Monday']], [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext().array(True), False, None),
+        ([1], [LeafType(Months, UnionTypeContext().array(True)), LeafType(Days)],
+         UnionTypeContext().array(True), False, None),
+
+        # Array of Arrays Cases
+        ([['Monday', 'Tuesday'], ['Wednesday', 'Thursday']], [LeafType(Days, UnionTypeContext().array(True)),
+                                            LeafType(Months, UnionTypeContext().array(True))],
+         UnionTypeContext().array(True), True, [['Monday', 'Tuesday'], ['Wednesday', 'Thursday']]),
+        ([[1, 2], [3, 4]], [LeafType(Months, UnionTypeContext().array(True)),
+                                    LeafType(Days, UnionTypeContext().array(True))],
+         UnionTypeContext().array(True), True, [[1, 2], [3, 4]]),
+        ([[1, 2], ['Monday', 'Tuesday']], [LeafType(Months, UnionTypeContext().array(True)),
+                                        LeafType(Days, UnionTypeContext().array(True))],
+         UnionTypeContext().array(True), True, [[1, 2], ['Monday', 'Tuesday']]),
+    ])
+    def test_one_of_enum_type(self, input_value, input_types, input_context, expected_is_valid_output, expected_deserialized_value_output):
+        union_type = OneOf(input_types, input_context)
+        union_type_result = union_type.validate(input_value)
+        actual_is_valid = union_type_result.is_valid
+        actual_deserialized_value = union_type_result.deserialize(input_value)
+        assert actual_is_valid == expected_is_valid_output
+        assert actual_deserialized_value == expected_deserialized_value_output
