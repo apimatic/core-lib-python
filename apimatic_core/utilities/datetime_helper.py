@@ -22,10 +22,10 @@ class DateTimeHelper:
     def validate_date(date_value):
         try:
             if isinstance(date_value, date):
-                dateutil.parser.parse(date_value.isoformat())
+                datetime.strptime(date_value.isoformat(), "%Y-%m-%d")
                 return True
             elif isinstance(date_value, str):
-                dateutil.parser.parse(date_value)
+                datetime.strptime(date_value, "%Y-%m-%d")
                 return True
             else:
                 return False
@@ -43,6 +43,8 @@ class DateTimeHelper:
     @staticmethod
     def is_rfc_3339(datetime_value):
         try:
+            if '.' in datetime_value:
+                datetime_value = datetime_value[:datetime_value.rindex('.')]
             datetime.strptime(datetime_value, "%Y-%m-%dT%H:%M:%S")
             return True
         except (ValueError, AttributeError, TypeError):

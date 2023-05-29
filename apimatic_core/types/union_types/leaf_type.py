@@ -124,23 +124,19 @@ class LeafType(UnionType):
         if discriminator and discriminator_value:
             return self.validate_with_discriminator(discriminator, discriminator_value, value)
 
-        is_native_type = self.type_to_match in UnionType.NATIVE_TYPES
-        if is_native_type or self.type_to_match is dict:
-            return isinstance(value, self.type_to_match)
+        if hasattr(self.type_to_match, 'validate'):
+            return self.type_to_match.validate(value)
+
+        return isinstance(value, self.type_to_match)
+
+    def validate_with_discriminator(self, discriminator, discriminator_value, value):
+        if not isinstance(value, dict) or value.get(discriminator) != discriminator_value:
+            return False
 
         if hasattr(self.type_to_match, 'validate'):
             return self.type_to_match.validate(value)
 
-        return False
-
-    def validate_with_discriminator(self, discriminator, discriminator_value, value):
-        if value.get(discriminator) == discriminator_value:
-            if hasattr(self.type_to_match, 'validate'):
-                return self.type_to_match.validate(value)
-            else:
-                return isinstance(value, self.type_to_match)
-        else:
-            return False
+        return isinstance(value, self.type_to_match)
 
     def validate_date_time(self, value, context):
         if isinstance(value, ApiHelper.RFC3339DateTime):
@@ -149,8 +145,11 @@ class LeafType(UnionType):
             return context.get_date_time_format() == DateTimeFormat.HTTP_DATE_TIME
         elif isinstance(value, ApiHelper.UnixDateTime):
             return context.get_date_time_format() == DateTimeFormat.UNIX_DATE_TIME
-        else:
-            return DateTimeHelper.validate_datetime(value, context.get_date_time_format())
+        elif isinstance(value, datetime) and context.get_date_time_converter():
+            serialized_dt = ApiHelper.json_serialize(ApiHelper.when_defined(context.get_date_time_converter(), value))
+            return DateTimeHelper.validate_datetime(serialized_dt, context.get_date_time_format())
+
+        return DateTimeHelper.validate_datetime(value, context.get_date_time_format())
 
     def deserialize_dict_case(self, dict_value):
         if not isinstance(dict_value, dict):
@@ -201,12 +200,15 @@ class LeafType(UnionType):
 
         if self.type_to_match is date:
             return ApiHelper.date_deserialize(value)
-        elif self.type_to_match is datetime:
+
+        if self.type_to_match is datetime:
             return ApiHelper.datetime_deserialize(
                 value, self._union_type_context.get_date_time_format())
-        elif is_native_type or self.type_to_match is dict:
+
+        if is_native_type or self.type_to_match is dict:
             return value
-        elif hasattr(self.type_to_match, 'from_dictionary'):
+
+        if hasattr(self.type_to_match, 'from_dictionary'):
             return self.type_to_match.from_dictionary(value)
 
         return None

@@ -176,6 +176,9 @@ class ApiHelper(object):
                 JSON serialized string.
 
         """
+        if response is None:
+            return None
+
         if isinstance(response, str):
             deserialized_response = ApiHelper.json_deserialize(response)
         else:
@@ -535,6 +538,28 @@ class ApiHelper(object):
     @staticmethod
     def is_file_wrapper_instance(param):
         return isinstance(param, FileWrapper)
+
+    @staticmethod
+    def is_valid_array(value, type_callable):
+        if isinstance(value, list):
+            return all(ApiHelper.is_valid(item, type_callable(item)) for item in value)
+        elif isinstance(value, dict):
+            return ApiHelper.is_valid_dict(value, type_callable)
+
+        return False
+
+    @staticmethod
+    def is_valid_dict(value, type_callable):
+        if isinstance(value, dict):
+            return all(ApiHelper.is_valid(item, type_callable(item)) for item in value.values())
+        elif isinstance(value, list):
+            return ApiHelper.is_valid_array(value, type_callable)
+
+        return False
+
+    @staticmethod
+    def is_valid(value, type_callable):
+        return value is not None and type_callable(value)
 
     @staticmethod
     def resolve_template_placeholders_using_json_pointer(placeholders, value, template):

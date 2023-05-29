@@ -4,5 +4,6 @@ __all__ = [
     'xml_helper',
     'comparison_helper',
     'file_helper',
-    'datetime_helper'
+    'datetime_helper',
+    'union_type_helper'
 ]

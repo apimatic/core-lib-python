@@ -9,6 +9,7 @@ class TestDateTimeHelper:
 
     @pytest.mark.parametrize('input_dt, input_datetime_format, expected_output', [
         ('1994-11-06T08:49:37', DateTimeFormat.RFC3339_DATE_TIME, True),
+        ('1994-02-13T14:01:54.656647Z', DateTimeFormat.RFC3339_DATE_TIME, True),
         ('Sun, 06 Nov 1994 03:49:37 GMT', DateTimeFormat.HTTP_DATE_TIME, True),
         (1480809600, DateTimeFormat.UNIX_DATE_TIME, True),
         ('1994-11-06T08:49:37', DateTimeFormat.HTTP_DATE_TIME, False),
@@ -25,11 +26,11 @@ class TestDateTimeHelper:
 
     @pytest.mark.parametrize('input_date, expected_output', [
         ('1994-11-06', True),
-        ('1994/11/06', True),
-        ('19941106', True),
-        ('941106', True),
         (date(1994, 11, 6), True),
         (date(94, 11, 6), True),
+        ('1994/11/06', False),
+        ('19941106', False),
+        ('941106', False),
         ('1941106', False),
         ('1994=11=06', False),
         (123, False)
