@@ -23,22 +23,22 @@ class OneOf(UnionType):
 
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
             if isinstance(value, list):
-                self.is_valid = self.validate_array_of_dict_case(value)
+                self.is_valid, self.collection_cases = self.validate_array_of_dict_case(value)
             else:
                 self.is_valid = False
         elif context.is_array() and context.is_dict():
             if isinstance(value, dict):
-                self.is_valid = self.validate_dict_of_array_case(value)
+                self.is_valid, self.collection_cases = self.validate_dict_of_array_case(value)
             else:
                 self.is_valid = False
         elif context.is_array():
             if isinstance(value, list):
-                self.is_valid = self.validate_array_case(value)
+                self.is_valid, self.collection_cases = self.validate_array_case(value)
             else:
                 self.is_valid = False
         elif context.is_dict():
             if isinstance(value, dict):
-                self.is_valid = self.validate_dict_case(value)
+                self.is_valid, self.collection_cases = self.validate_dict_case(value)
             else:
                 self.is_valid = False
         else:
@@ -52,14 +52,17 @@ class OneOf(UnionType):
 
         context = self._union_type_context
 
+        if value is None and context.is_nullable_or_optional():
+            return None
+
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
             deserialized_value = self.deserialize_array_of_dict_case(value)
         elif context.is_array() and context.is_dict():
             deserialized_value = self.deserialize_dict_of_array_case(value)
         elif context.is_array():
-            deserialized_value = self.deserialize_array_case(value)
+            deserialized_value = self.deserialize_array_case(value, self.collection_cases)
         elif context.is_dict():
-            deserialized_value = self.deserialize_dict_case(value)
+            deserialized_value = self.deserialize_dict_case(value, self.collection_cases)
         else:
             deserialized_value = self.get_deserialized_value(value)
 
@@ -71,23 +74,35 @@ class OneOf(UnionType):
     def validate_array_of_dict_case(self, array_value):
         if array_value is None or not array_value:
             return False
-
-        matched_count = sum(self.validate_dict_case(item) for item in array_value)
-        return matched_count == array_value.__len__()
+        collection_cases = []
+        valid_cases = []
+        for item in array_value:
+            case_validity, inner_dictionary = self.validate_dict_case(item)
+            collection_cases.append(inner_dictionary)
+            valid_cases.append(case_validity)
+        is_valid = sum(valid_cases) == array_value.__len__()
+        return tuple((is_valid, collection_cases))
 
     def validate_dict_of_array_case(self, dict_value):
         if dict_value is None or not dict_value:
-            return False
+            return tuple((False, None))
 
-        matched_count = sum(self.validate_array_case(item) for item in dict_value.values())
-        return matched_count == dict_value.__len__()
+        collection_cases = {}
+        valid_cases = []
+        for key, item in dict_value.items():
+            case_validity, inner_array = self.validate_array_case(item)
+            collection_cases[key] = inner_array
+            valid_cases.append(case_validity)
+
+        is_valid = sum(valid_cases) == dict_value.__len__()
+        return tuple((is_valid, collection_cases))
 
     def validate_dict_case(self, dict_value):
         if dict_value is None or not dict_value:
-            return False
+            return tuple((False, None))
 
         is_valid = True
-        self.collection_cases = {}
+        collection_cases = {}
         for key, value in dict_value.items():
             nested_cases = []
             for union_type in self._union_types:
@@ -95,15 +110,15 @@ class OneOf(UnionType):
             matched_count = ApiHelper.get_matched_count(value, nested_cases, True)
             if is_valid:
                 is_valid = matched_count == 1
-            self.collection_cases[key] = nested_cases
-        return is_valid
+            collection_cases[key] = nested_cases
+        return tuple((is_valid, collection_cases))
 
     def validate_array_case(self, array_value):
         if array_value is None or not array_value:
-            return False
+            return tuple((False, None))
 
         is_valid = True
-        self.collection_cases = []
+        collection_cases = []
         for item in array_value:
             nested_cases = []
             for union_type in self._union_types:
@@ -111,14 +126,17 @@ class OneOf(UnionType):
             matched_count = ApiHelper.get_matched_count(item, nested_cases, True)
             if is_valid:
                 is_valid = matched_count == 1
-            self.collection_cases.append(nested_cases)
-        return is_valid
+            collection_cases.append(nested_cases)
+        return tuple((is_valid, collection_cases))
 
     def deserialize_array_of_dict_case(self, array_value):
         if array_value is None:
             return False
+        deserialized_value = []
+        for index, item in enumerate(array_value):
+            deserialized_value.append(self.deserialize_dict_case(item, self.collection_cases[index]))
 
-        return [self.deserialize_dict_case(item) for item in array_value]
+        return deserialized_value
 
     def deserialize_dict_of_array_case(self, dict_value):
         if dict_value is None:
@@ -126,28 +144,30 @@ class OneOf(UnionType):
 
         deserialized_value = {}
         for key, value in dict_value.items():
-            deserialized_value[key] = self.deserialize_array_case(value)
+            deserialized_value[key] = self.deserialize_array_case(value, self.collection_cases[key])
 
         return deserialized_value
 
-    def deserialize_dict_case(self, dict_value):
+    @staticmethod
+    def deserialize_dict_case(dict_value, collection_cases):
         if dict_value is None:
             return False
 
         deserialized_value = {}
         for key, value in dict_value.items():
-            valid_case = [case for case in self.collection_cases[key] if case.is_valid][0]
+            valid_case = [case for case in collection_cases[key] if case.is_valid][0]
             deserialized_value[key] = valid_case.deserialize(value)
 
         return deserialized_value
 
-    def deserialize_array_case(self, array_value):
+    @staticmethod
+    def deserialize_array_case(array_value, collection_cases):
         if array_value is None:
             return False
 
         deserialized_value = []
         for index, item in enumerate(array_value):
-            valid_case = [case for case in self.collection_cases[index] if case.is_valid][0]
+            valid_case = [case for case in collection_cases[index] if case.is_valid][0]
             deserialized_value.append(valid_case.deserialize(item))
 
         return deserialized_value

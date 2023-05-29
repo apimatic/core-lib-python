@@ -16,24 +16,6 @@ from requests.utils import quote
 
 class TestApiHelper(Base):
 
-    @pytest.mark.parametrize('expected_value, input_value, is_wrapped', [
-        ('value', 'value', False),
-        ('true', True, False),
-        ('{{"bodyScalar": true, "bodyNonScalar": {{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                                       Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))),
-         Base.wrapped_parameters(), True),
-    ])
-    def test_get_request_parameter(self, expected_value, input_value, is_wrapped):
-        request_param = ApiHelper.get_request_parameter(input_value, is_wrapped)
-        assert request_param == expected_value
-
     @pytest.mark.parametrize('input_value, expected_value', [
         (None, None),
         (Base.wrapped_parameters(), '{{"bodyScalar": true, "bodyNonScalar": {{"address": "street abc", "age": 27, '
@@ -98,23 +80,17 @@ class TestApiHelper(Base):
          ApiHelper.json_serialize([Base.employee_model(), Base.employee_model()])),
         (ApiHelper.json_serialize({'key1': Base.employee_model(), 'key2': Base.employee_model()}),
          Employee.from_dictionary, True,
-         '{{"key1": {{"department": "IT", "dependents": [{{"address": "street abc", '
-         '"age": 12, "birthday": "1994-02-13", "birthtime": "{0}", '
-         '"name": "John", "uid": 7654321, "person_type": "Per", '
-         '"additional_properties": {{"person_type": "Per", "additional_properties": '
-         '{{"key1": "value1", "key2": "value2"}}}}}}], "hired_at": null, "joining_day": '
-         '"Monday", "salary": 30000, "working_days": null, "additional_properties": '
-         '{{}}, "address": "street abc", "age": 27, "birthday": "1994-02-13", '
-         '"birthtime": "{0}", "name": "Bob", "uid": 1234567, '
-         '"person_type": "Empl"}}, "key2": {{"department": "IT", "dependents": '
-         '[{{"address": "street abc", "age": 12, "birthday": "1994-02-13", "birthtime": '
-         '"{0}", "name": "John", "uid": 7654321, "person_type": "Per", '
-         '"additional_properties": {{"person_type": "Per", "additional_properties": '
-         '{{"key1": "value1", "key2": "value2"}}}}}}], "hired_at": null, "joining_day": '
-         '"Monday", "salary": 30000, "working_days": null, "additional_properties": '
-         '{{}}, "address": "street abc", "age": 27, "birthday": "1994-02-13", '
-         '"birthtime": "{0}", "name": "Bob", "uid": 1234567, '
-         '"person_type": "Empl"}}}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+         '{{"key1": {{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": "{0}", '
+         '"department": "IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": "1994-02-13", '
+         '"birthtime": "{0}", "name": "John", "uid": 7654321, "personType": "Per", "key1": "value1", '
+         '"key2": "value2"}}], "hiredAt": "{1}", "joiningDay": "Monday", "name": "Bob", "salary": 30000, '
+         '"uid": 1234567, "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}}, "key2": '
+         '{{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": "{0}", "department": "IT",'
+         ' "dependents": [{{"address": "street abc", "age": 12, "birthday": "1994-02-13", "birthtime": "{0}", '
+         '"name": "John", "uid": 7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], "hiredAt": "{1}",'
+         ' "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday",'
+         ' "Tuesday"], "personType": "Empl"}}}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                                        Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))))
 
     ])
     def test_json_deserialize(self, input_json_value, unboxing_function, as_dict, expected_value):

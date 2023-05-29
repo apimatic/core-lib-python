@@ -44,6 +44,9 @@ class LeafType(UnionType):
             return None
 
         context = self._union_type_context
+        if value is None and context.is_nullable_or_optional():
+            return None
+
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
             deserialized_value = self.deserialize_array_of_dict_case(value)
         elif context.is_array() and context.is_dict():
