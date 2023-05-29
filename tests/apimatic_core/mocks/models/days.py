@@ -1,5 +1,5 @@
-
-class Days(object):
+from enum import Enum
+class Days(Enum):
 
     """Implementation of the 'Days' enum.
 
@@ -29,3 +29,20 @@ class Days(object):
     FRI_DAY = 'Friday'
 
     SATURDAY = 'Saturday'
+
+    @classmethod
+    def validate(cls, value):
+        """Validates value against enum.
+
+        Args:
+            value: the value to be validated against.
+
+        Returns:
+            boolean : if value is valid for this model.
+
+        """
+        if value is None:
+            return None
+
+        values = [member.value for member in Days]
+        return value in values

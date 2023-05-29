@@ -80,9 +80,15 @@ class Rabbit(object):
             boolean : if value is valid for this model.
 
         """
-        if dictionary is None:
-            return None
+        if isinstance(dictionary, cls):
+            return True
 
-        return dictionary.get("id") is not None and \
-               dictionary.get("weight") is not None and \
-               dictionary.get("type") is not None
+        if not isinstance(dictionary, dict):
+            return False
+
+        return dictionary.get("id") is not None and ApiHelper.is_valid(dictionary.get("id"),
+                                                                       lambda value: isinstance(value, str)) and \
+               dictionary.get("weight") is not None and ApiHelper.is_valid(dictionary.get("weight"),
+                                                                           lambda value: isinstance(value, str)) and \
+               dictionary.get("type") is not None and ApiHelper.is_valid(dictionary.get("type"),
+                                                                         lambda value: isinstance(value, str))

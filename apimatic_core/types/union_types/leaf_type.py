@@ -210,6 +210,8 @@ class LeafType(UnionType):
 
         if hasattr(self.type_to_match, 'from_dictionary'):
             return self.type_to_match.from_dictionary(value)
+        else:
+            return value
 
         return None
 

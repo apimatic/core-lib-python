@@ -1,3 +1,5 @@
+from apimatic_core.utilities.api_helper import ApiHelper
+
 
 class Orbit(object):
 
@@ -56,10 +58,14 @@ class Orbit(object):
             boolean : if value is valid for this model.
 
         """
-        if dictionary is None:
-            return None
+        if isinstance(dictionary, cls):
+            return True
 
-        return dictionary.get("OrbitNumberOfElectrons") is not None
+        if not isinstance(dictionary, dict):
+            return False
+
+        return dictionary.get("OrbitNumberOfElectrons") is not None and \
+               ApiHelper.is_valid(dictionary.get("OrbitNumberOfElectrons"), lambda value: isinstance(value, int))
 
     def __eq__(self, other):
         if isinstance(self, other.__class__):
