@@ -440,6 +440,105 @@ class TestApiHelper(Base):
         else:
             assert ApiHelper.when_defined(input_function, input_body) == expected_value
 
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        (datetime(1994, 2, 13, 5, 30, 15), ApiHelper.RFC3339DateTime,
+         ApiHelper.RFC3339DateTime(datetime(1994, 2, 13, 5, 30, 15))),
+        (datetime(1994, 2, 13, 5, 30, 15), ApiHelper.HttpDateTime, ApiHelper.HttpDateTime),
+        (datetime(1994, 2, 13, 5, 30, 15), ApiHelper.UnixDateTime, ApiHelper.UnixDateTime),
+        (500, ApiHelper.UnixDateTime, int),
+        ('500', ApiHelper.UnixDateTime, str),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            assert isinstance(ApiHelper.apply_datetime_converter(input_value, input_converter), expected_obj)
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        ([datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.RFC3339DateTime,
+         [ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime]),
+        ([datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.HttpDateTime,
+         [ApiHelper.HttpDateTime, ApiHelper.HttpDateTime]),
+        ([datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.UnixDateTime,
+         [ApiHelper.UnixDateTime, ApiHelper.UnixDateTime]),
+        ([500, 1000], ApiHelper.UnixDateTime, [int, int]),
+        (['500', '1000'], ApiHelper.UnixDateTime, [str, str]),
+        (['500', datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.UnixDateTime, [str, ApiHelper.UnixDateTime]),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter_to_list(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            actual_converted_value = ApiHelper.apply_datetime_converter(input_value, input_converter)
+            for index, actual_value in enumerate(actual_converted_value):
+                assert isinstance(actual_value, expected_obj[index])
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        ([[datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)]], ApiHelper.RFC3339DateTime,
+         [[ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime]]),
+        ([[datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)]], ApiHelper.HttpDateTime,
+         [[ApiHelper.HttpDateTime, ApiHelper.HttpDateTime]]),
+        ([[datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)]], ApiHelper.UnixDateTime,
+         [[ApiHelper.UnixDateTime, ApiHelper.UnixDateTime]]),
+        ([[500, 1000]], ApiHelper.UnixDateTime, [[int, int]]),
+        ([['500', '1000']], ApiHelper.UnixDateTime, [[str, str]]),
+        ([['500', datetime(1994, 2, 13, 5, 30, 15)]], ApiHelper.UnixDateTime, [[str, ApiHelper.UnixDateTime]]),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter_to_list_of_list(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            actual_converted_value = ApiHelper.apply_datetime_converter(input_value, input_converter)
+            for outer_index, actual_outer_value in enumerate(actual_converted_value):
+                for index, actual_value in enumerate(actual_outer_value):
+                    assert isinstance(actual_value, expected_obj[outer_index][index])
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        ({'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}, ApiHelper.RFC3339DateTime,
+         [ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime]),
+        ({'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}, ApiHelper.HttpDateTime,
+         [ApiHelper.HttpDateTime, ApiHelper.HttpDateTime]),
+        ({'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}, ApiHelper.UnixDateTime,
+         [ApiHelper.UnixDateTime, ApiHelper.UnixDateTime]),
+        ({'key0': '5000', 'key1': datetime(1994, 2, 13, 5, 30, 15)}, ApiHelper.UnixDateTime,
+         [str, ApiHelper.UnixDateTime]),
+        ({'key0': 5000, 'key1': 10000}, ApiHelper.UnixDateTime, [int, int]),
+        ({'key0': '5000', 'key1': '10000'}, ApiHelper.UnixDateTime, [str, str]),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter_to_dict(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            actual_converted_value = ApiHelper.apply_datetime_converter(input_value, input_converter)
+            for index, actual_value in enumerate(actual_converted_value.values()):
+                assert isinstance(actual_value, expected_obj[index])
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        ({'key': {'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}},
+         ApiHelper.RFC3339DateTime, {'key': [ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime]}),
+        ({'key': {'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}}, ApiHelper.HttpDateTime,
+         {'key': [ApiHelper.HttpDateTime, ApiHelper.HttpDateTime]}),
+        ({'key': {'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}}, ApiHelper.UnixDateTime,
+         {'key': [ApiHelper.UnixDateTime, ApiHelper.UnixDateTime]}),
+        ({'key': {'key0': '5000', 'key1': datetime(1994, 2, 13, 5, 30, 15)}}, ApiHelper.UnixDateTime,
+         {'key': [str, ApiHelper.UnixDateTime]}),
+        ({'key': {'key0': 5000, 'key1': 10000}}, ApiHelper.UnixDateTime, {'key': [int, int]}),
+        ({'key': {'key0': '5000', 'key1': '10000'}}, ApiHelper.UnixDateTime, {'key': [str, str]}),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter_to_dict_of_dict(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            actual_converted_value = ApiHelper.apply_datetime_converter(input_value, input_converter)
+            for outer_key, actual_outer_value in actual_converted_value.items():
+                for index, actual_value in enumerate(actual_outer_value.values()):
+                    assert isinstance(actual_value, expected_obj[outer_key][index])
+
     @pytest.mark.parametrize('input_array,formatting, is_query, expected_array', [
         ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.INDEXED, False, [('test_array[0]', 1),

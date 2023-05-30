@@ -532,6 +532,34 @@ class ApiHelper(object):
         return dictionary
 
     @staticmethod
+    def apply_datetime_converter(value, datetime_converter_obj):
+        if isinstance(value, list):
+            converted_value = []
+            for item in value:
+                if isinstance(value, list) or isinstance(value, dict):
+                    converted_value.append(ApiHelper.apply_datetime_converter(item, datetime_converter_obj))
+                elif isinstance(item, datetime.datetime):
+                    converted_value.append(ApiHelper.when_defined(datetime_converter_obj, item))
+                else:
+                    converted_value.append(item)
+            return converted_value
+        if isinstance(value, dict):
+            converted_value = {}
+            for k, v in value.items():
+                if isinstance(value, list) or isinstance(value, dict):
+                    converted_value[k] = ApiHelper.apply_datetime_converter(v, datetime_converter_obj)
+                elif isinstance(v, datetime.datetime):
+                    converted_value[k] = ApiHelper.when_defined(datetime_converter_obj, v)
+                else:
+                    converted_value[k] = v
+            return converted_value
+        elif isinstance(value, datetime.datetime):
+            return ApiHelper.when_defined(datetime_converter_obj, value)
+
+        return value
+
+
+    @staticmethod
     def when_defined(func, value):
         return func(value) if value else None
 
