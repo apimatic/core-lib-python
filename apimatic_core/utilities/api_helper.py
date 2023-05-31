@@ -458,6 +458,9 @@ class ApiHelper(object):
         optional_fields = obj._optionals if hasattr(obj, "_optionals") else []
         nullable_fields = obj._nullables if hasattr(obj, "_nullables") else []
 
+        if hasattr(obj, 'validate'):
+            obj.validate(obj)
+
         # Loop through all properties in this model
         names = {k: v for k, v in obj.__dict__.items() if v is not None} if should_ignore_null_values else obj._names
         for name in names:
