@@ -24,7 +24,9 @@ from tests.apimatic_core.mocks.exceptions.nested_model_exception import NestedMo
 from tests.apimatic_core.mocks.http.http_response_catcher import HttpResponseCatcher
 from tests.apimatic_core.mocks.http.http_client import MockHttpClient
 from tests.apimatic_core.mocks.models.cat_model import CatModel
+from tests.apimatic_core.mocks.models.complex_type import ComplexType
 from tests.apimatic_core.mocks.models.dog_model import DogModel
+from tests.apimatic_core.mocks.models.inner_complex_type import InnerComplexType
 from tests.apimatic_core.mocks.models.one_of_xml import OneOfXML
 from tests.apimatic_core.mocks.models.wolf_model import WolfModel
 from tests.apimatic_core.mocks.models.xml_model import XMLModel
@@ -251,3 +253,20 @@ class Base:
     def global_configuration_with_partially_initialized_auth_params(self):
         return self.global_configuration.auth_managers(
             {'basic_auth': BasicAuth(None, None), 'custom_header_auth': self.custom_header_auth()})
+
+    @staticmethod
+    def get_complex_type():
+        inner_complex_type = InnerComplexType(boolean_type=True,
+                                              long_type=100003,
+                                              string_type='abc',
+                                              precision_type=55.44,
+                                              string_list_type=['item1', 'item2'],
+                                              additional_properties={'key0': 'abc', 'key1': 400})
+
+        return ComplexType(inner_complex_type=inner_complex_type,
+                           inner_complex_list_type=[inner_complex_type, inner_complex_type],
+                           inner_complex_list_of_map_type=[{'key0': inner_complex_type, 'key1': inner_complex_type}],
+                           inner_complex_map_type={'key0': inner_complex_type, 'key1': inner_complex_type},
+                           inner_complex_map_of_list_type={'key0': [inner_complex_type, inner_complex_type],
+                                                           'key2': [inner_complex_type, inner_complex_type]},
+                           additional_properties={'prop1': [1, 2, 3], 'prop2': {'key0': 'abc', 'key1': 'def'}})

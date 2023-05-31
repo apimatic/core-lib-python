@@ -9,4 +9,12 @@ __all__ = [
     'cat_model',
     'dog_model',
     'wolf_model',
+    'complex_type',
+    'inner_complex_type',
+    'atom',
+    'deer',
+    'lion',
+    'orbit',
+    'rabbit',
+    'grand_parent_class_model'
 ]

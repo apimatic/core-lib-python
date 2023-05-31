@@ -5,12 +5,9 @@ import datetime
 import calendar
 import email.utils as eut
 from time import mktime
-from typing import Union, List, Dict
-
 import jsonpickle
 import dateutil.parser
 from jsonpointer import JsonPointerException, resolve_pointer
-
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -71,9 +68,7 @@ class ApiHelper(object):
         if isinstance(obj, list):
             value = list()
             for item in obj:
-                if isinstance(item, dict):
-                    value.append(ApiHelper.json_serialize(item, False))
-                elif isinstance(item, list):
+                if isinstance(item, dict) or isinstance(item, list):
                     value.append(ApiHelper.json_serialize(item, False))
                 elif hasattr(item, "_names"):
                     value.append(ApiHelper.to_dictionary(item))
@@ -83,9 +78,7 @@ class ApiHelper(object):
         elif isinstance(obj, dict):
             value = dict()
             for key, item in obj.items():
-                if isinstance(item, list):
-                    value[key] = ApiHelper.json_serialize(item, False)
-                elif isinstance(item, dict):
+                if isinstance(item, list) or isinstance(item, dict):
                     value[key] = ApiHelper.json_serialize(item, False)
                 elif hasattr(item, "_names"):
                     value[key] = ApiHelper.to_dictionary(item)
@@ -105,6 +98,8 @@ class ApiHelper(object):
 
         Args:
             json (str): The JSON serialized string to deserialize.
+            unboxing_function (callable): The deserialization funtion to be used.
+            as_dict (bool): The flag to determine to deserialize json as dictionary type
 
         Returns:
             dict: A dictionary representing the data contained in the
@@ -204,21 +199,11 @@ class ApiHelper(object):
                 return ApiHelper.RFC3339DateTime.from_value(response).datetime
 
     @staticmethod
-    def validate_union_type(union_type, value):
-        union_type_result = union_type.validate(value)
-        if not union_type_result.is_valid:
-            raise ValueError(union_type_result.errors)
-
-        return True
-
-    @staticmethod
-    def deserialize_union_type(union_type, response, should_deserialize = True):
+    def deserialize_union_type(union_type, response, should_deserialize=True):
         if should_deserialize:
             response = ApiHelper.json_deserialize(response, as_dict=True)
 
         union_type_result = union_type.validate(response)
-        if not union_type_result.is_valid:
-            raise ValueError(union_type_result.errors)
 
         return union_type_result.deserialize(response)
 
@@ -337,9 +322,7 @@ class ApiHelper(object):
         return url
 
     @staticmethod
-    def append_url_with_query_parameters(url,
-                                         parameters,
-                                         array_serialization="indexed"):
+    def append_url_with_query_parameters(url, parameters, array_serialization="indexed"):
         """Adds query parameters to a URL.
 
         Args:
@@ -400,8 +383,7 @@ class ApiHelper(object):
         return protocol + query_url + parameters
 
     @staticmethod
-    def form_encode_parameters(form_parameters,
-                               array_serialization="indexed"):
+    def form_encode_parameters(form_parameters, array_serialization="indexed"):
         """Form encodes a dictionary of form parameters
 
         Args:
@@ -493,19 +475,25 @@ class ApiHelper(object):
                 # Loop through each item
                 dictionary[obj._names[name]] = list()
                 for item in value:
-                    dictionary[obj._names[name]].append(
-                        ApiHelper.to_dictionary(item, should_ignore_null_values) if hasattr(item, "_names") else item)
+                    if isinstance(item, list) or isinstance(item, dict):
+                        dictionary[obj._names[name]].append(ApiHelper.process_nested_collection(
+                            item, should_ignore_null_values))
+                    else:
+                        dictionary[obj._names[name]].append(ApiHelper.to_dictionary(item, should_ignore_null_values)
+                                                            if hasattr(item, "_names") else item)
             elif isinstance(value, dict):
                 # Loop through each item
                 dictionary[obj._names[name]] = dict()
-                for key in value:
-                    dictionary[obj._names[name]][key] = ApiHelper.to_dictionary(value[key],
-                                                                                should_ignore_null_values) if hasattr(
-                        value[key],
-                        "_names") else \
-                        value[key]
+                for k, v in value.items():
+                    if isinstance(v, list) or isinstance(v, dict):
+                        dictionary[obj._names[name]][k] = ApiHelper.process_nested_collection(
+                            v, should_ignore_null_values)
+                    else:
+                        dictionary[obj._names[name]][k] = ApiHelper.to_dictionary(value[k], should_ignore_null_values) \
+                            if hasattr(value[k], "_names") else value[k]
             else:
-                dictionary[obj._names[name]] = ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value, "_names") else value
+                dictionary[obj._names[name]] = ApiHelper.to_dictionary(value, should_ignore_null_values) if \
+                    hasattr(value, "_names") else value
 
         # Loop through all additional properties in this model
         if hasattr(obj, "additional_properties"):
@@ -532,26 +520,31 @@ class ApiHelper(object):
         return dictionary
 
     @staticmethod
+    def process_nested_collection(value, should_ignore_null_values):
+        if isinstance(value, list):
+            array = []
+            for item in value:
+                array.append(ApiHelper.process_nested_collection(item, should_ignore_null_values))
+            return array
+        elif isinstance(value, dict):
+            dictionary = {}
+            for k, v in value.items():
+                dictionary[k] = ApiHelper.process_nested_collection(v, should_ignore_null_values)
+            return dictionary
+        else:
+            return ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value, "_names") else value
+
+    @staticmethod
     def apply_datetime_converter(value, datetime_converter_obj):
         if isinstance(value, list):
             converted_value = []
             for item in value:
-                if isinstance(value, list) or isinstance(value, dict):
-                    converted_value.append(ApiHelper.apply_datetime_converter(item, datetime_converter_obj))
-                elif isinstance(item, datetime.datetime):
-                    converted_value.append(ApiHelper.when_defined(datetime_converter_obj, item))
-                else:
-                    converted_value.append(item)
+                converted_value.append(ApiHelper.apply_datetime_converter(item, datetime_converter_obj))
             return converted_value
         if isinstance(value, dict):
             converted_value = {}
             for k, v in value.items():
-                if isinstance(value, list) or isinstance(value, dict):
-                    converted_value[k] = ApiHelper.apply_datetime_converter(v, datetime_converter_obj)
-                elif isinstance(v, datetime.datetime):
-                    converted_value[k] = ApiHelper.when_defined(datetime_converter_obj, v)
-                else:
-                    converted_value[k] = v
+                converted_value[k] = ApiHelper.apply_datetime_converter(v, datetime_converter_obj)
             return converted_value
         elif isinstance(value, datetime.datetime):
             return ApiHelper.when_defined(datetime_converter_obj, value)
@@ -568,25 +561,12 @@ class ApiHelper(object):
         return isinstance(param, FileWrapper)
 
     @staticmethod
-    def is_valid_array(value, type_callable):
+    def is_valid_type(value, type_callable):
         if isinstance(value, list):
-            return all(ApiHelper.is_valid(item, type_callable(item)) for item in value)
+            return all(ApiHelper.is_valid_type(item, type_callable) for item in value)
         elif isinstance(value, dict):
-            return ApiHelper.is_valid_dict(value, type_callable)
+            return all(ApiHelper.is_valid_type(item, type_callable) for item in value.values())
 
-        return False
-
-    @staticmethod
-    def is_valid_dict(value, type_callable):
-        if isinstance(value, dict):
-            return all(ApiHelper.is_valid(item, type_callable(item)) for item in value.values())
-        elif isinstance(value, list):
-            return ApiHelper.is_valid_array(value, type_callable)
-
-        return False
-
-    @staticmethod
-    def is_valid(value, type_callable):
         return value is not None and type_callable(value)
 
     @staticmethod
@@ -644,27 +624,6 @@ class ApiHelper(object):
 
         return template
 
-    @staticmethod
-    def get_matched_count(value, union_types, is_for_one_of):
-        matched_count = sum(union_type.validate(value).is_valid for union_type in union_types)
-
-        if is_for_one_of and matched_count == 1:
-            return matched_count
-        elif not is_for_one_of and matched_count > 0:
-            return matched_count
-
-        # Check through normal schema validation flow when discriminator exits but still invalid
-        has_discriminator_cases = all(union_type.get_context().get_discriminator() is not None and
-                                      union_type.get_context().get_discriminator_value() is not None
-                                      for union_type in union_types)
-        if matched_count == 0 and has_discriminator_cases:
-            for union_type in union_types:
-                union_type.get_context().discriminator(None)
-                union_type.get_context().discriminator_value(None)
-            matched_count = sum(union_type.validate(value).is_valid for union_type in union_types)
-
-        return matched_count
-
     class CustomDate(object):
 
         """ A base class for wrapper classes of datetime.
@@ -696,8 +655,7 @@ class ApiHelper(object):
 
         @classmethod
         def from_datetime(cls, date_time):
-            return eut.formatdate(timeval=mktime(date_time.timetuple()),
-                                  localtime=False, usegmt=True)
+            return eut.formatdate(timeval=mktime(date_time.timetuple()), localtime=False, usegmt=True)
 
         @classmethod
         def from_value(cls, value):

@@ -23,6 +23,8 @@ class UnionTypeContext:
         self._discriminator_value = None
         self._date_time_format = None
         self._date_time_converter = None
+        self.path = None
+        self.is_nested = False
 
     def array(self, is_array):
         self._is_array = is_array
