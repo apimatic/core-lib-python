@@ -1,6 +1,9 @@
 from datetime import datetime, date
 import jsonpickle
 import pytest
+from apimatic_core.types.union_types.leaf_type import LeafType
+from apimatic_core.types.union_types.one_of import OneOf
+from apimatic_core.types.union_types.union_type_context import UnionTypeContext
 from dateutil.tz import tzutc
 
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -8,6 +11,7 @@ from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.utilities.api_helper import ApiHelper
 from tests.apimatic_core.base import Base
+from tests.apimatic_core.mocks.models.days import Days
 
 from tests.apimatic_core.mocks.models.grand_parent_class_model import ChildClassModel
 from tests.apimatic_core.mocks.models.person import Employee
@@ -53,7 +57,78 @@ class TestApiHelper(Base):
          '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
          '"Tuesday"], "personType": "Empl"}}]'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
                                                       Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+        ([[Base.employee_model(), Base.employee_model()], [Base.employee_model(), Base.employee_model()]],
+         '[[{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}, '
+         '{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}], [{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}, '
+         '{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}]]'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                                      Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+        ({'key0': [Base.employee_model(), Base.employee_model()],
+          'key1': [Base.employee_model(), Base.employee_model()]},
+         '{{"key0": [{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}, '
+         '{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}], "key1": [{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}, '
+         '{{"address": "street abc", "age": 27, '
+         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
+         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
+         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
+         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
+         '"Tuesday"], "personType": "Empl"}}]}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                                                      Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
         ([1, 2, 3], '[1, 2, 3]'),
+        ({'key0': 1, 'key1': 'abc'}, '{"key0": 1, "key1": "abc"}'),
+        ([[1, 2, 3], ['abc', 'def']], '[[1, 2, 3], ["abc", "def"]]'),
+        ([{'key0': [1, 2, 3]}, {'key1': ['abc', 'def']}], '[{"key0": [1, 2, 3]}, {"key1": ["abc", "def"]}]'),
+        ({'key0': [1, 2, 3], 'key1': ['abc', 'def']}, '{"key0": [1, 2, 3], "key1": ["abc", "def"]}'),
         (Base.employee_model(),
          '{{"address": "street abc", "age": 27, '
          '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
@@ -64,7 +139,8 @@ class TestApiHelper(Base):
          '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
          '"Tuesday"], "personType": "Empl"}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
                                                      Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
-        (1, '1')
+        (1, '1'),
+        ('1', '1')
     ])
     def test_json_serialize(self, input_value, expected_value):
         serialized_value = ApiHelper.json_serialize(input_value)
@@ -279,6 +355,28 @@ class TestApiHelper(Base):
          '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
          '"Tuesday"], "personType": "Empl"}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
                                                      Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+        (Base.get_complex_type(),
+         '{"innerComplexListType": [{"booleanType": true, "longType": 100003, "precisionType": 55.44, '
+         '"stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", "key1": 400}, '
+         '{"booleanType": true, "longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"],'
+         ' "stringType": "abc", "key0": "abc", "key1": 400}], "innerComplexType": {"booleanType": true, '
+         '"longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"], "stringType": "abc",'
+         ' "key0": "abc", "key1": 400}, "innerComplexListOfMapType": [{"key0": {"booleanType": true, '
+         '"longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"], '
+         '"stringType": "abc", "key0": "abc", "key1": 400}, "key1": {"booleanType": true, "longType": 100003, '
+         '"precisionType": 55.44, "stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", '
+         '"key1": 400}}], "innerComplexMapOfListType": {"key0": [{"booleanType": true, "longType": 100003, '
+         '"precisionType": 55.44, "stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", '
+         '"key1": 400}, {"booleanType": true, "longType": 100003, "precisionType": 55.44, "stringListType": '
+         '["item1", "item2"], "stringType": "abc", "key0": "abc", "key1": 400}], "key2": [{"booleanType": true, '
+         '"longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"], "stringType": "abc", '
+         '"key0": "abc", "key1": 400}, {"booleanType": true, "longType": 100003, "precisionType": 55.44, '
+         '"stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", "key1": 400}]}, '
+         '"innerComplexMapType": {"key0": {"booleanType": true, "longType": 100003, "precisionType": 55.44, '
+         '"stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", "key1": 400}, "key1": '
+         '{"booleanType": true, "longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"], '
+         '"stringType": "abc", "key0": "abc", "key1": 400}}, "prop1": [1, 2, 3], "prop2": {"key0": "abc", '
+         '"key1": "def"}}'),
         (ApiHelper.json_deserialize('{"Grand_Parent_Required_Nullable":{"key1": "value1", "key2": "value2"},'
                                     '"Grand_Parent_Required":"not nullable and required","class":23,'
                                     '"Parent_Optional_Nullable_With '
@@ -439,6 +537,105 @@ class TestApiHelper(Base):
             assert str(ApiHelper.when_defined(input_function, input_body)) == expected_value
         else:
             assert ApiHelper.when_defined(input_function, input_body) == expected_value
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        (datetime(1994, 2, 13, 5, 30, 15), ApiHelper.RFC3339DateTime,
+         ApiHelper.RFC3339DateTime),
+        (datetime(1994, 2, 13, 5, 30, 15), ApiHelper.HttpDateTime, ApiHelper.HttpDateTime),
+        (datetime(1994, 2, 13, 5, 30, 15), ApiHelper.UnixDateTime, ApiHelper.UnixDateTime),
+        (500, ApiHelper.UnixDateTime, int),
+        ('500', ApiHelper.UnixDateTime, str),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            assert isinstance(ApiHelper.apply_datetime_converter(input_value, input_converter), expected_obj)
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        ([datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.RFC3339DateTime,
+         [ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime]),
+        ([datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.HttpDateTime,
+         [ApiHelper.HttpDateTime, ApiHelper.HttpDateTime]),
+        ([datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.UnixDateTime,
+         [ApiHelper.UnixDateTime, ApiHelper.UnixDateTime]),
+        ([500, 1000], ApiHelper.UnixDateTime, [int, int]),
+        (['500', '1000'], ApiHelper.UnixDateTime, [str, str]),
+        (['500', datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.UnixDateTime, [str, ApiHelper.UnixDateTime]),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter_to_list(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            actual_converted_value = ApiHelper.apply_datetime_converter(input_value, input_converter)
+            for index, actual_value in enumerate(actual_converted_value):
+                assert isinstance(actual_value, expected_obj[index])
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        ([[datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)]], ApiHelper.RFC3339DateTime,
+         [[ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime]]),
+        ([[datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)]], ApiHelper.HttpDateTime,
+         [[ApiHelper.HttpDateTime, ApiHelper.HttpDateTime]]),
+        ([[datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)]], ApiHelper.UnixDateTime,
+         [[ApiHelper.UnixDateTime, ApiHelper.UnixDateTime]]),
+        ([[500, 1000]], ApiHelper.UnixDateTime, [[int, int]]),
+        ([['500', '1000']], ApiHelper.UnixDateTime, [[str, str]]),
+        ([['500', datetime(1994, 2, 13, 5, 30, 15)]], ApiHelper.UnixDateTime, [[str, ApiHelper.UnixDateTime]]),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter_to_list_of_list(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            actual_converted_value = ApiHelper.apply_datetime_converter(input_value, input_converter)
+            for outer_index, actual_outer_value in enumerate(actual_converted_value):
+                for index, actual_value in enumerate(actual_outer_value):
+                    assert isinstance(actual_value, expected_obj[outer_index][index])
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        ({'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}, ApiHelper.RFC3339DateTime,
+         [ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime]),
+        ({'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}, ApiHelper.HttpDateTime,
+         [ApiHelper.HttpDateTime, ApiHelper.HttpDateTime]),
+        ({'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}, ApiHelper.UnixDateTime,
+         [ApiHelper.UnixDateTime, ApiHelper.UnixDateTime]),
+        ({'key0': '5000', 'key1': datetime(1994, 2, 13, 5, 30, 15)}, ApiHelper.UnixDateTime,
+         [str, ApiHelper.UnixDateTime]),
+        ({'key0': 5000, 'key1': 10000}, ApiHelper.UnixDateTime, [int, int]),
+        ({'key0': '5000', 'key1': '10000'}, ApiHelper.UnixDateTime, [str, str]),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter_to_dict(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            actual_converted_value = ApiHelper.apply_datetime_converter(input_value, input_converter)
+            for index, actual_value in enumerate(actual_converted_value.values()):
+                assert isinstance(actual_value, expected_obj[index])
+
+    @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
+        ({'key': {'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}},
+         ApiHelper.RFC3339DateTime, {'key': [ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime]}),
+        ({'key': {'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}}, ApiHelper.HttpDateTime,
+         {'key': [ApiHelper.HttpDateTime, ApiHelper.HttpDateTime]}),
+        ({'key': {'key0': datetime(1994, 2, 13, 5, 30, 15), 'key1': datetime(1994, 2, 13, 5, 30, 15)}}, ApiHelper.UnixDateTime,
+         {'key': [ApiHelper.UnixDateTime, ApiHelper.UnixDateTime]}),
+        ({'key': {'key0': '5000', 'key1': datetime(1994, 2, 13, 5, 30, 15)}}, ApiHelper.UnixDateTime,
+         {'key': [str, ApiHelper.UnixDateTime]}),
+        ({'key': {'key0': 5000, 'key1': 10000}}, ApiHelper.UnixDateTime, {'key': [int, int]}),
+        ({'key': {'key0': '5000', 'key1': '10000'}}, ApiHelper.UnixDateTime, {'key': [str, str]}),
+        (None, ApiHelper.RFC3339DateTime, None)
+    ])
+    def test_apply_date_time_converter_to_dict_of_dict(self, input_value, input_converter, expected_obj):
+        if input_value is None:
+            assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
+        else:
+            actual_converted_value = ApiHelper.apply_datetime_converter(input_value, input_converter)
+            for outer_key, actual_outer_value in actual_converted_value.items():
+                for index, actual_value in enumerate(actual_outer_value.values()):
+                    assert isinstance(actual_value, expected_obj[outer_key][index])
 
     @pytest.mark.parametrize('input_array,formatting, is_query, expected_array', [
         ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
@@ -649,3 +846,46 @@ class TestApiHelper(Base):
         actual_message = ApiHelper.resolve_template_placeholders_using_json_pointer(input_placeholders, input_value,
                                                                                     input_template)
         assert actual_message == expected_message
+
+    @pytest.mark.parametrize('input_value, input_callable, expected_value', [
+        (100, lambda value: isinstance(value, int), True),
+        ('100', lambda value: isinstance(value, str), True),
+        ("Sunday", lambda value: Days.validate(value), True),
+        (100.5, lambda value: isinstance(value, str), False),
+        ("Invalid", lambda value: Days.validate(value), False),
+        (None, lambda value: isinstance(value, str), False),
+        (None, None, False),
+
+        ([100, 200], lambda value: isinstance(value, int), True),
+        (['100', '200'], lambda value: isinstance(value, str), True),
+        (["Sunday", "Monday"], lambda value: Days.validate(value), True),
+        ([100.5, 200], lambda value: isinstance(value, str), False),
+        (["Invalid1", "Invalid2"], lambda value: Days.validate(value), False),
+        ([None, None], lambda value: isinstance(value, str), False),
+
+        ([[100, 200], [300, 400]], lambda value: isinstance(value, int), True),
+        ([['100', '200'], ['abc', 'def']], lambda value: isinstance(value, str), True),
+        ([["Sunday", "Monday"], ["Tuesday", "Friday"]], lambda value: Days.validate(value), True),
+        ([[100.5, 200], [400, 500]], lambda value: isinstance(value, str), False),
+        ([["Invalid1", "Invalid2"], ["Sunday", "Invalid4"]], lambda value: Days.validate(value), False),
+        ([[None, None], [None, None]], lambda value: isinstance(value, str), False),
+
+        ({'key0': 100, 'key2': 200}, lambda value: isinstance(value, int), True),
+        ({'key0': 'abc', 'key2': 'def'}, lambda value: isinstance(value, str), True),
+        ({'key0': 'Sunday', 'key2': 'Tuesday'}, lambda value: Days.validate(value), True),
+        ({'key0': 100.5, 'key2': 200}, lambda value: isinstance(value, str), False),
+        ({'key0': "Invalid1", 'key2': "Invalid2"}, lambda value: Days.validate(value), False),
+        ({'key0': None, 'key2': None}, lambda value: isinstance(value, str), False),
+    ])
+    def test_is_valid_type(self, input_value, input_callable, expected_value):
+        actual_value = ApiHelper.is_valid_type(input_value, input_callable)
+        assert actual_value == expected_value
+
+    @pytest.mark.parametrize('input_value, input_union_type, input_should_deserialize, expected_value', [
+        (100, OneOf([LeafType(int), LeafType(str)]), False, 100),
+        ('[100, "200"]', OneOf([LeafType(int), LeafType(str)], UnionTypeContext.create(is_array=True)), True,
+         [100, '200']),
+    ])
+    def test_union_type_deserialize(self, input_value, input_union_type, input_should_deserialize, expected_value):
+        actual_value = ApiHelper.deserialize_union_type(input_union_type, input_value, input_should_deserialize)
+        assert actual_value == expected_value

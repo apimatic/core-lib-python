@@ -1,8 +1,5 @@
 from datetime import date, datetime
-
-import dateutil
 from apimatic_core_interfaces.types.union_type import UnionType
-
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.union_types.union_type_context import UnionTypeContext
 from apimatic_core.utilities.api_helper import ApiHelper

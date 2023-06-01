@@ -1,7 +1,8 @@
 import copy
 from apimatic_core_interfaces.types.union_type import UnionType
+from apimatic_core.exceptions.oneof_validation_exception import OneOfValidationException
+from apimatic_core.types.union_types.leaf_type import LeafType
 from apimatic_core.types.union_types.union_type_context import UnionTypeContext
-from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.union_type_helper import UnionTypeHelper
 
 
@@ -14,12 +15,16 @@ class OneOf(UnionType):
     def validate(self, value):
         context = self._union_type_context
 
+        for union_type in self._union_types:
+            union_type.get_context().is_nested = True
+
         if value is None and context.is_nullable_or_optional():
             self.is_valid = True
             return self
 
         if value is None:
             self.is_valid = False
+            self.process_errors()
             return self
 
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
@@ -43,9 +48,31 @@ class OneOf(UnionType):
             else:
                 self.is_valid = False
         else:
-            self.is_valid = ApiHelper.get_matched_count(value, self._union_types, True) == 1
+            self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, True) == 1
+
+        if not self.is_valid:
+            self.process_errors()
 
         return self
+
+    def process_errors(self):
+        self.error_messages = []
+
+        combined_types = []
+        for union_type in self._union_types:
+            if isinstance(union_type, LeafType):
+                combined_types.append(union_type.type_to_match.__name__)
+            else:
+                combined_types.append(', '.join(union_type.error_messages))
+
+        if self._union_type_context.is_nested:
+            self.error_messages.append(', '.join(combined_types))
+        else:
+            matched_count = sum(union_type.is_valid for union_type in self._union_types)
+            error_message = UnionType.MORE_THAN_1_MATCHED_ERROR_MESSAGE if matched_count > 0 \
+                else UnionType.NONE_MATCHED_ERROR_MESSAGE
+            raise OneOfValidationException('{} \nExpected Type: One Of {}'.format(
+                error_message, ', '.join(combined_types)))
 
     def deserialize(self, value):
         if value is None or not self.is_valid:
@@ -110,7 +137,7 @@ class OneOf(UnionType):
             nested_cases = []
             for union_type in self._union_types:
                 nested_cases.append(copy.deepcopy(union_type).validate(value))
-            matched_count = ApiHelper.get_matched_count(value, nested_cases, True)
+            matched_count = UnionTypeHelper.get_matched_count(value, nested_cases, True)
             if is_valid:
                 is_valid = matched_count == 1
             collection_cases[key] = nested_cases
@@ -127,7 +154,7 @@ class OneOf(UnionType):
             nested_cases = []
             for union_type in self._union_types:
                 nested_cases.append(copy.deepcopy(union_type).validate(item))
-            matched_count = ApiHelper.get_matched_count(item, nested_cases, True)
+            matched_count = UnionTypeHelper.get_matched_count(item, nested_cases, True)
             if is_valid:
                 is_valid = matched_count == 1
             collection_cases.append(nested_cases)
