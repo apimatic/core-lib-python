@@ -1,6 +1,5 @@
-from enum import Enum
 
-class Months(Enum):
+class Months(object):
 
     """Implementation of the 'Months' enum.
 
@@ -20,6 +19,7 @@ class Months(Enum):
         DECEMBER: TODO: type description here.
 
     """
+    _all_values = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
     JANUARY = 1
 
@@ -59,5 +59,4 @@ class Months(Enum):
         if value is None:
             return None
 
-        values = [member.value for member in Months]
-        return value in values
+        return value in cls._all_values

@@ -1,5 +1,4 @@
-from enum import Enum
-class Days(Enum):
+class Days(object):
 
     """Implementation of the 'Days' enum.
 
@@ -15,6 +14,8 @@ class Days(Enum):
         SATURDAY: TODO: type description here.
 
     """
+
+    _all_values = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday','Saturday']
 
     SUNDAY = 'Sunday'
 
@@ -44,5 +45,4 @@ class Days(Enum):
         if value is None:
             return None
 
-        values = [member.value for member in Days]
-        return value in values
+        return value in cls._all_values
