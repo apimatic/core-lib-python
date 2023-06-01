@@ -15,13 +15,13 @@ class LeafType(UnionType):
     def validate(self, value):
         context = self._union_type_context
 
-        if value is None and context.is_nullable_or_nullable():
+        if value is None and context.is_nullable_or_optional():
             self.is_valid = True
-            return self.is_valid
+            return self
 
         if value is None:
             self.is_valid = False
-            return self.is_valid
+            return self
 
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
             self.is_valid = self.validate_array_of_dict_case(value)

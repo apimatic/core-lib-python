@@ -6,6 +6,7 @@ from apimatic_core.types.union_types.leaf_type import LeafType
 from apimatic_core.types.union_types.any_of import AnyOf
 from apimatic_core.types.union_types.union_type_context import UnionTypeContext
 from apimatic_core.utilities.api_helper import ApiHelper
+from apimatic_core_interfaces.types.union_type import UnionType
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.mocks.models.atom import Atom
 from tests.apimatic_core.mocks.models.days import Days
@@ -19,7 +20,7 @@ from tests.apimatic_core.mocks.models.rabbit import Rabbit
 class TestAnyOf:
 
     @pytest.mark.parametrize(
-        'input_value, input_types, input_context, expected_is_valid_output, expected_deserialized_value_output', [
+        'input_value, input_types, input_context, expected_validity, expected_deserialized_value', [
             # Simple Cases
             (100, [LeafType(int), LeafType(str)], UnionTypeContext(), True, 100),
             (100, [LeafType(int), LeafType(int), LeafType(str)], UnionTypeContext(), True, 100),
@@ -238,8 +239,8 @@ class TestAnyOf:
              [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
              UnionTypeContext().dict(True).array(True), True, {'key0': [100, 200], 'key1': ['abc', 'def']}),
         ])
-    def test_any_of_primitive_type(self, input_value, input_types, input_context, expected_is_valid_output,
-                                   expected_deserialized_value_output):
+    def test_any_of_primitive_type(self, input_value, input_types, input_context, expected_validity,
+                                   expected_deserialized_value):
         try:
             union_type_result = AnyOf(input_types, input_context).validate(input_value)
             actual_is_valid = union_type_result.is_valid
@@ -248,8 +249,8 @@ class TestAnyOf:
             actual_is_valid = False
             actual_deserialized_value = None
 
-        assert actual_is_valid == expected_is_valid_output
-        assert actual_deserialized_value == expected_deserialized_value_output
+        assert actual_is_valid == expected_validity
+        assert actual_deserialized_value == expected_deserialized_value
 
     @pytest.mark.parametrize(
         'input_value, input_types, input_context, expected_validity, expected_value', [
@@ -266,6 +267,25 @@ class TestAnyOf:
              True, date(1994, 11, 6))
         ])
     def test_any_of_date_and_datetime(self, input_value, input_types, input_context, expected_validity, expected_value):
+        union_type_result = AnyOf(input_types, input_context).validate(input_value)
+        assert union_type_result.is_valid == expected_validity
+        actual_deserialized_value = union_type_result.deserialize(input_value)
+        assert actual_deserialized_value == expected_value
+
+    @pytest.mark.parametrize(
+        'input_value, input_types, input_context, expected_validity, expected_value', [
+            (None, [LeafType(int, UnionTypeContext().optional(True)), LeafType(str)], UnionTypeContext(), True, None),
+            (None, [LeafType(int, UnionTypeContext().optional(True)), LeafType(str, UnionTypeContext().optional(True))],
+             UnionTypeContext(), True, None),
+            (None, [LeafType(int), LeafType(str)], UnionTypeContext().nullable(True), True, None),
+            (None, [LeafType(int, UnionTypeContext().nullable(True)), LeafType(str)], UnionTypeContext(), True, None),
+            (None, [LeafType(int, UnionTypeContext().nullable(True)), LeafType(str, UnionTypeContext().optional(True))],
+             UnionTypeContext(), True, None),
+            (None, [LeafType(int), LeafType(str)], UnionTypeContext().nullable(True), True, None),
+            ([None, None], [LeafType(int, UnionTypeContext().nullable(True)), LeafType(str)],
+             UnionTypeContext().array(True), True, [None, None]),
+        ])
+    def test_any_of_optional_nullable(self, input_value, input_types, input_context, expected_validity, expected_value):
         union_type_result = AnyOf(input_types, input_context).validate(input_value)
         assert union_type_result.is_valid == expected_validity
         actual_deserialized_value = union_type_result.deserialize(input_value)
@@ -723,3 +743,15 @@ class TestAnyOf:
 
         assert actual_is_valid == expected_is_valid_output
         assert actual_deserialized_value == expected_deserialized_value_output
+
+    @pytest.mark.parametrize('input_value, input_types, input_context, expected_validation_message', [
+            # Simple Cases
+            (100.5, [LeafType(int), LeafType(bool), LeafType(str)], UnionTypeContext(),
+             '{} \nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+            (100.5, [LeafType(int), AnyOf([LeafType(bool), LeafType(str)])], UnionTypeContext(),
+             '{} \nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+        ])
+    def test_one_of_validation_errors(self, input_value, input_types, input_context, expected_validation_message):
+        with pytest.raises(AnyOfValidationException) as validation_error:
+            AnyOf(input_types, input_context).validate(input_value)
+        assert validation_error.value.message == expected_validation_message
