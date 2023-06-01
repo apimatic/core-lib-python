@@ -27,7 +27,7 @@ class OneOf(UnionType):
 
         if value is None:
             self.is_valid = False
-            self.process_errors()
+            self.process_errors(value)
             return self
 
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
@@ -58,11 +58,11 @@ class OneOf(UnionType):
             self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, True) == 1
 
         if not self.is_valid:
-            self.process_errors()
+            self.process_errors(value)
 
         return self
 
-    def process_errors(self):
+    def process_errors(self, value):
         self.error_messages = []
 
         combined_types = []
@@ -78,8 +78,8 @@ class OneOf(UnionType):
             matched_count = sum(union_type.is_valid for union_type in self._union_types)
             error_message = UnionType.MORE_THAN_1_MATCHED_ERROR_MESSAGE if matched_count > 0 \
                 else UnionType.NONE_MATCHED_ERROR_MESSAGE
-            raise OneOfValidationException('{} \nExpected Type: One Of {}.'.format(
-                error_message, ', '.join(combined_types)))
+            raise OneOfValidationException('{} \nActual Value: {}\nExpected Type: One Of {}.'.format(
+                error_message, value, ', '.join(combined_types)))
 
     def deserialize(self, value):
         if value is None or not self.is_valid:

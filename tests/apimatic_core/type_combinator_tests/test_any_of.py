@@ -282,8 +282,10 @@ class TestAnyOf:
             (None, [LeafType(int, UnionTypeContext().nullable(True)), LeafType(str, UnionTypeContext().optional(True))],
              UnionTypeContext(), True, None),
             (None, [LeafType(int), LeafType(str)], UnionTypeContext().nullable(True), True, None),
-            ([None, None], [LeafType(int, UnionTypeContext().nullable(True)), LeafType(str)],
-             UnionTypeContext().array(True), True, [None, None]),
+            ([1, None, 2], [LeafType(int, UnionTypeContext().nullable(True)), LeafType(str)],
+             UnionTypeContext().array(True), True, [1, None, 2]),
+            ({'key0': 1, None: None, 'key3': 2}, [LeafType(int, UnionTypeContext().nullable(True)), LeafType(str)],
+             UnionTypeContext().dict(True), True, {'key0': 1, None: None, 'key3': 2})
         ])
     def test_any_of_optional_nullable(self, input_value, input_types, input_context, expected_validity, expected_value):
         union_type_result = AnyOf(input_types, input_context).validate(input_value)
@@ -747,9 +749,9 @@ class TestAnyOf:
     @pytest.mark.parametrize('input_value, input_types, input_context, expected_validation_message', [
             # Simple Cases
             (100.5, [LeafType(int), LeafType(bool), LeafType(str)], UnionTypeContext(),
-             '{} \nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+             '{} \nActual Value: 100.5\nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
             (100.5, [LeafType(int), AnyOf([LeafType(bool), LeafType(str)])], UnionTypeContext(),
-             '{} \nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+             '{} \nActual Value: 100.5\nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
         ])
     def test_one_of_validation_errors(self, input_value, input_types, input_context, expected_validation_message):
         with pytest.raises(AnyOfValidationException) as validation_error:
