@@ -2,35 +2,36 @@ from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class Atom(object):
+
     """Implementation of the 'Atom' model.
 
     TODO: type model description here.
 
     Attributes:
-        number_of_electrons (int): TODO: type description here.
-        number_of_protons (int): TODO: type description here.
+        atom_number_of_electrons (int): TODO: type description here.
+        atom_number_of_protons (int): TODO: type description here.
 
     """
 
     # Create a mapping from Model property names to API property names
     _names = {
-        "number_of_electrons": 'AtomNumberOfElectrons', # int, bool
-        "number_of_protons": 'AtomNumberOfProtons'
+        "atom_number_of_electrons": 'AtomNumberOfElectrons',
+        "atom_number_of_protons": 'AtomNumberOfProtons'
     }
 
     _optionals = [
-        'number_of_protons',
+        'atom_number_of_protons',
     ]
 
     def __init__(self,
-                 number_of_electrons=None,
-                 number_of_protons=ApiHelper.SKIP):
+                 atom_number_of_electrons=None,
+                 atom_number_of_protons=ApiHelper.SKIP):
         """Constructor for the Atom class"""
 
         # Initialize members of the class
-        self.number_of_electrons = number_of_electrons
-        if number_of_protons is not ApiHelper.SKIP:
-            self.number_of_protons = number_of_protons
+        self.atom_number_of_electrons = atom_number_of_electrons
+        if atom_number_of_protons is not ApiHelper.SKIP:
+            self.atom_number_of_protons = atom_number_of_protons
 
     @classmethod
     def from_dictionary(cls,
@@ -50,34 +51,40 @@ class Atom(object):
             return None
 
         # Extract variables from the dictionary
-
-        number_of_electrons = dictionary.get("AtomNumberOfElectrons") if dictionary.get("AtomNumberOfElectrons") else None
-        number_of_protons = dictionary.get("AtomNumberOfProtons") if dictionary.get("AtomNumberOfProtons") else ApiHelper.SKIP
+        atom_number_of_electrons = dictionary.get("AtomNumberOfElectrons") if \
+            dictionary.get("AtomNumberOfElectrons") else None
+        atom_number_of_protons = dictionary.get("AtomNumberOfProtons") if \
+            dictionary.get("AtomNumberOfProtons") else ApiHelper.SKIP
         # Return an object of this model
-        return cls(number_of_electrons,
-                   number_of_protons)
+        return cls(atom_number_of_electrons,
+                   atom_number_of_protons)
 
     @classmethod
     def validate(cls, dictionary):
-        """Validates dictionary against class properties.
+        """Validates dictionary against class required properties
 
         Args:
-            dictionary: the dictionary to be validated against.
+            dictionary (dictionary): A dictionary representation of the object
+            as obtained from the deserialization of the server's response. The
+            keys MUST match property names in the API description.
 
         Returns:
-            boolean : if value is valid for this model.
+            boolean : if dictionary is valid contains required properties.
 
         """
+
         if isinstance(dictionary, cls):
-            return True
+            return ApiHelper.is_valid_type(value=dictionary.atom_number_of_electrons,
+                                           type_callable=lambda value: isinstance(value, int))
 
         if not isinstance(dictionary, dict):
             return False
 
-        return dictionary.get("AtomNumberOfElectrons") is not None and \
-               ApiHelper.is_valid(dictionary.get("AtomNumberOfElectrons"), lambda value: isinstance(value, int))
+        return ApiHelper.is_valid_type(value=dictionary.get('AtomNumberOfElectrons'),
+                                       type_callable=lambda value: isinstance(value, int))
 
     def __eq__(self, other):
         if isinstance(self, other.__class__):
-            return self.number_of_electrons == other.number_of_electrons and self.number_of_protons == other.number_of_protons
+            return self.atom_number_of_electrons == other.atom_number_of_electrons and \
+                   self.atom_number_of_protons == other.atom_number_of_protons
         return False

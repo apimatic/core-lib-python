@@ -1,6 +1,6 @@
 from datetime import datetime, date
 import pytest
-
+from apimatic_core.exceptions.anyof_validation_exception import AnyOfValidationException
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.union_types.leaf_type import LeafType
 from apimatic_core.types.union_types.any_of import AnyOf
@@ -238,12 +238,16 @@ class TestAnyOf:
              [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
              UnionTypeContext().dict(True).array(True), True, {'key0': [100, 200], 'key1': ['abc', 'def']}),
         ])
-    def test_one_of_primitive_type(self, input_value, input_types, input_context, expected_is_valid_output,
+    def test_any_of_primitive_type(self, input_value, input_types, input_context, expected_is_valid_output,
                                    expected_deserialized_value_output):
-        union_type = AnyOf(input_types, input_context)
-        union_type_result = union_type.validate(input_value)
-        actual_is_valid = union_type_result.is_valid
-        actual_deserialized_value = union_type_result.deserialize(input_value)
+        try:
+            union_type_result = AnyOf(input_types, input_context).validate(input_value)
+            actual_is_valid = union_type_result.is_valid
+            actual_deserialized_value = union_type_result.deserialize(input_value)
+        except AnyOfValidationException:
+            actual_is_valid = False
+            actual_deserialized_value = None
+
         assert actual_is_valid == expected_is_valid_output
         assert actual_deserialized_value == expected_deserialized_value_output
 
@@ -261,9 +265,8 @@ class TestAnyOf:
             ('1994-11-06', [LeafType(date), LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME))], UnionTypeContext(),
              True, date(1994, 11, 6))
         ])
-    def test_one_of_date_and_datetime(self, input_value, input_types, input_context, expected_validity, expected_value):
-        union_type = AnyOf(input_types, input_context)
-        union_type_result = union_type.validate(input_value)
+    def test_any_of_date_and_datetime(self, input_value, input_types, input_context, expected_validity, expected_value):
+        union_type_result = AnyOf(input_types, input_context).validate(input_value)
         assert union_type_result.is_valid == expected_validity
         actual_deserialized_value = union_type_result.deserialize(input_value)
         assert actual_deserialized_value == expected_value
@@ -567,12 +570,16 @@ class TestAnyOf:
              UnionTypeContext().dict(True).array(True), True,
              {'key0': [Orbit(10), Atom(2, 10)], 'key1': [Orbit(12), Atom(2, 12)]}),
         ])
-    def test_one_of_custom_type(self, input_value, input_types, input_context, expected_is_valid_output,
+    def test_any_of_custom_type(self, input_value, input_types, input_context, expected_is_valid_output,
                                 expected_deserialized_value_output):
-        union_type = AnyOf(input_types, input_context)
-        union_type_result = union_type.validate(input_value)
-        actual_is_valid = union_type_result.is_valid
-        actual_deserialized_value = union_type_result.deserialize(input_value)
+        try:
+            union_type_result = AnyOf(input_types, input_context).validate(input_value)
+            actual_is_valid = union_type_result.is_valid
+            actual_deserialized_value = union_type_result.deserialize(input_value)
+        except AnyOfValidationException:
+            actual_is_valid = False
+            actual_deserialized_value = None
+
         assert actual_is_valid == expected_is_valid_output
         assert actual_deserialized_value == expected_deserialized_value_output
 
@@ -630,16 +637,20 @@ class TestAnyOf:
         ('{"name": "sam", "weight": 5, "type": "deer", "kind": "hunter"}',
          [LeafType(dict), LeafType(dict)], UnionTypeContext(), True),
     ])
-    def test_one_of_with_discriminator_custom_type(self, input_value, input_types, input_context, expected_output):
-        union_type = AnyOf(input_types, input_context)
-        deserialized_dict_input = ApiHelper.json_deserialize(input_value, as_dict=True)
-        union_type_result = union_type.validate(deserialized_dict_input)
-        actual_result = union_type_result.is_valid
-        assert actual_result == expected_output
+    def test_any_of_with_discriminator_custom_type(self, input_value, input_types, input_context, expected_output):
+        try:
+            deserialized_dict_input = ApiHelper.json_deserialize(input_value, as_dict=True)
+            union_type_result = AnyOf(input_types, input_context).validate(deserialized_dict_input)
+            actual_is_valid = union_type_result.is_valid
+        except AnyOfValidationException:
+            actual_is_valid = False
 
-    @pytest.mark.parametrize('input_value, input_types, input_context,  expected_is_valid_output, expected_deserialized_value_output', [
+        assert actual_is_valid == expected_output
+
+    @pytest.mark.parametrize('input_value, input_types, input_context,  expected_is_valid_output, '
+                             'expected_deserialized_value_output', [
         # Simple Cases
-        ('Monday',[LeafType(Days, UnionTypeContext()), LeafType(Months, UnionTypeContext())],
+        ('Monday', [LeafType(Days, UnionTypeContext()), LeafType(Months, UnionTypeContext())],
          UnionTypeContext(), True, 'Monday'),
         (1, [LeafType(Days, UnionTypeContext()), LeafType(Months, UnionTypeContext())],
          UnionTypeContext(), True, 1),
@@ -701,10 +712,14 @@ class TestAnyOf:
                                         LeafType(Days, UnionTypeContext().array(True))],
          UnionTypeContext().array(True), True, [[1, 2], ['Monday', 'Tuesday']]),
     ])
-    def test_one_of_enum_type(self, input_value, input_types, input_context, expected_is_valid_output, expected_deserialized_value_output):
-        union_type = AnyOf(input_types, input_context)
-        union_type_result = union_type.validate(input_value)
-        actual_is_valid = union_type_result.is_valid
-        actual_deserialized_value = union_type_result.deserialize(input_value)
+    def test_any_of_enum_type(self, input_value, input_types, input_context, expected_is_valid_output, expected_deserialized_value_output):
+        try:
+            union_type_result = AnyOf(input_types, input_context).validate(input_value)
+            actual_is_valid = union_type_result.is_valid
+            actual_deserialized_value = union_type_result.deserialize(input_value)
+        except AnyOfValidationException:
+            actual_is_valid = False
+            actual_deserialized_value = None
+
         assert actual_is_valid == expected_is_valid_output
         assert actual_deserialized_value == expected_deserialized_value_output

@@ -2,15 +2,16 @@ from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class Lion(object):
+
     """Implementation of the 'Lion' model.
 
     TODO: type model description here.
 
     Attributes:
-        id (string): TODO: type description here.
-        weight (string): TODO: type description here.
-        mtype (string): TODO: type description here.
-        kind (string): TODO: type description here.
+        id (int): TODO: type description here.
+        weight (int): TODO: type description here.
+        mtype (str): TODO: type description here.
+        kind (str): TODO: type description here.
 
     """
 
@@ -58,7 +59,6 @@ class Lion(object):
             return None
 
         # Extract variables from the dictionary
-
         id = dictionary.get("id") if dictionary.get("id") else None
         weight = dictionary.get("weight") if dictionary.get("weight") else None
         mtype = dictionary.get("type") if dictionary.get("type") else None
@@ -71,18 +71,26 @@ class Lion(object):
 
     @classmethod
     def validate(cls, dictionary):
-        """Validates dictionary against class properties.
+        """Validates dictionary against class required properties
 
         Args:
-            dictionary: the dictionary to be validated against.
+            dictionary (dictionary): A dictionary representation of the object
+            as obtained from the deserialization of the server's response. The
+            keys MUST match property names in the API description.
 
         Returns:
-            boolean : if value is valid for this model.
+            boolean : if dictionary is valid contains required properties.
 
         """
-        if dictionary is None:
-            return None
 
-        return dictionary.get("id") is not None and \
-               dictionary.get("weight") is not None and \
-               dictionary.get("type") is not None
+        if isinstance(dictionary, cls):
+            return ApiHelper.is_valid_type(value=dictionary.id, type_callable=lambda value: isinstance(value, int)) \
+                and ApiHelper.is_valid_type(value=dictionary.weight, type_callable=lambda value: isinstance(value, int)) \
+                and ApiHelper.is_valid_type(value=dictionary.mtype, type_callable=lambda value: isinstance(value, str))
+
+        if not isinstance(dictionary, dict):
+            return False
+
+        return ApiHelper.is_valid_type(value=dictionary.get('id'), type_callable=lambda value: isinstance(value, int)) \
+            and ApiHelper.is_valid_type(value=dictionary.get('weight'), type_callable=lambda value: isinstance(value, int)) \
+            and ApiHelper.is_valid_type(value=dictionary.get('type'), type_callable=lambda value: isinstance(value, str))

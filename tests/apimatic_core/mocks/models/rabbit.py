@@ -86,9 +86,9 @@ class Rabbit(object):
         if not isinstance(dictionary, dict):
             return False
 
-        return dictionary.get("id") is not None and ApiHelper.is_valid(dictionary.get("id"),
-                                                                       lambda value: isinstance(value, str)) and \
-               dictionary.get("weight") is not None and ApiHelper.is_valid(dictionary.get("weight"),
-                                                                           lambda value: isinstance(value, str)) and \
-               dictionary.get("type") is not None and ApiHelper.is_valid(dictionary.get("type"),
-                                                                         lambda value: isinstance(value, str))
+        return dictionary.get("id") is not None and \
+               ApiHelper.is_valid_type(dictionary.get("id"), lambda value: isinstance(value, str)) and \
+               dictionary.get("weight") is not None and \
+               ApiHelper.is_valid_type(dictionary.get("weight"), lambda value: isinstance(value, str)) and \
+               dictionary.get("type") is not None and \
+               ApiHelper.is_valid_type(dictionary.get("type"), lambda value: isinstance(value, str))
