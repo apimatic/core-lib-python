@@ -111,12 +111,18 @@ class LeafType(UnionType):
         if value is None or isinstance(value, list):
             return False
 
+        return self.validate_value(value, context)
+
+    def validate_value(self, value, context):
         if self.type_to_match is datetime:
             return UnionTypeHelper.validate_date_time(value, context)
 
         if self.type_to_match is date:
             return DateTimeHelper.validate_date(value)
 
+        return self.validate_custom_type_with_discriminator(value, context)
+
+    def validate_custom_type_with_discriminator(self, value, context):
         discriminator = context.get_discriminator()
         discriminator_value = context.get_discriminator_value()
         if discriminator and discriminator_value:
