@@ -66,23 +66,28 @@ pip install apimatic-core
 | [`EndpointLogger`](apimatic_core/logger/endpoint_logger.py)      | A class to provide logging for an HTTP request      |
 
 ## Types
-| Name                                                                         | Description                                                                  |
-|------------------------------------------------------------------------------|------------------------------------------------------------------------------|
-| [`SerializationFormats`](apimatic_core/types/array_serialization_format.py)  | An Enumeration of Array serialization formats                                |
-| [`DateTimeFormat`](apimatic_core/types/datetime_format.py )                  | An Enumeration of Date Time formats                                          |
-| [`ErrorCase`](apimatic_core/types/error_case.py )                            | A class to represent Exception types                                         |
-| [`FileWrapper`](apimatic_core/types/file_wrapper.py)                         | A wrapper to allow passing in content type for file uploads                  |
-| [`Parameter`](apimatic_core/types/parameter.py )                             | A class to represent information about a Parameter passed in an endpoint     |
-| [`XmlAttributes`](apimatic_core/types/xml_attributes.py )                    | A class to represent information about a XML Parameter passed in an endpoint |
+| Name                                                                          | Description                                                                  |
+|-------------------------------------------------------------------------------|------------------------------------------------------------------------------|
+| [`SerializationFormats`](apimatic_core/types/array_serialization_format.py)   | An Enumeration of Array serialization formats                                |
+| [`DateTimeFormat`](apimatic_core/types/datetime_format.py )                   | An Enumeration of Date Time formats                                          |
+| [`ErrorCase`](apimatic_core/types/error_case.py )                             | A class to represent Exception types                                         |
+| [`FileWrapper`](apimatic_core/types/file_wrapper.py)                          | A wrapper to allow passing in content type for file uploads                  |
+| [`Parameter`](apimatic_core/types/parameter.py )                              | A class to represent information about a Parameter passed in an endpoint     |
+| [`XmlAttributes`](apimatic_core/types/xml_attributes.py )                     | A class to represent information about a XML Parameter passed in an endpoint |
+| [`OneOf`](apimatic_core/types/union_types/one_of.py )                         | A class to represent information about OneOf union types                     |
+| [`AnyOf`](apimatic_core/types/union_types/any_of.py )                         | A class to represent information about AnyOf union types                     |
+| [`LeafType`](apimatic_core/types/union_types/leaf_type.py )                   | A class to represent the case information in an OneOf or AnyOf union type    |
 
 ## Utilities
-| Name                                                               | Description                                                                          |
-|--------------------------------------------------------------------|--------------------------------------------------------------------------------------|
-| [`ApiHelper`](apimatic_core/utilities/api_helper.py)               | A Helper Class with various functions associated with making an API Call             |
-| [`AuthHelper`](apimatic_core/utilities/auth_helper.py)             | A Helper Class with various functions associated with authentication in API Calls    |
-| [`ComparisonHelper`](apimatic_core/utilities/comparison_helper.py) | A Helper Class used for the comparison of expected and actual API response           |
-| [` FileHelper`](apimatic_core/utilities/file_helper.py)            | A Helper Class for files                                                             |
-| [`XmlHelper`](apimatic_core/utilities/xml_helper.py )              | A Helper class that holds utility methods for xml serialization and deserialization. |
+| Name                                                               | Description                                                                                              |
+|--------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| [`ApiHelper`](apimatic_core/utilities/api_helper.py)               | A Helper Class with various functions associated with making an API Call                                 |
+| [`AuthHelper`](apimatic_core/utilities/auth_helper.py)             | A Helper Class with various functions associated with authentication in API Calls                        |
+| [`ComparisonHelper`](apimatic_core/utilities/comparison_helper.py) | A Helper Class used for the comparison of expected and actual API response                               |
+| [`FileHelper`](apimatic_core/utilities/file_helper.py)             | A Helper Class for files                                                                                 |
+| [`XmlHelper`](apimatic_core/utilities/xml_helper.py )              | A Helper class that holds utility methods for xml serialization and deserialization.                     |
+| [`DateTimeHelper`](apimatic_core/utilities/datetime_helper.py )    | A Helper class that holds utility methods for validation of different datetime formats.                  |
+| [`UnionTypeHelper`](apimatic_core/utilities/union_type_helper.py ) | A Helper class that holds utility methods for deserialization and validation of OneOf/AnyOf union types. |
 
 ## Links
 * [apimatic-core-interfaces](https://pypi.org/project/apimatic-core-interfaces/)
