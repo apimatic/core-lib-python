@@ -16,47 +16,45 @@ class LeafType(UnionType):
     def validate(self, value):
         context = self._union_type_context
 
-        if value is None and context.is_nullable_or_optional():
-            self.is_valid = True
-            return self
-
         if value is None:
-            self.is_valid = False
-            return self
-
-        if context.is_array() and context.is_dict() and context.is_array_of_dict():
-            self.is_valid = self.validate_array_of_dict_case(value)
-        elif context.is_array() and context.is_dict():
-            self.is_valid = self.validate_dict_of_array_case(value)
-        elif context.is_array():
-            self.is_valid = self.validate_array_case(value)
-        elif context.is_dict():
-            self.is_valid = self.validate_dict_case(value)
+            self.is_valid = context.is_nullable_or_optional()
         else:
-            self.is_valid = self.validate_item(value)
+            self.is_valid = self.validate_value_against_case(value, context)
 
         return self
 
     def deserialize(self, value):
-        if value is None or not self.is_valid:
+        if value is None:
             return None
 
         context = self._union_type_context
-        if value is None and context.is_nullable_or_optional():
-            return None
-
-        if context.is_array() and context.is_dict() and context.is_array_of_dict():
-            deserialized_value = self.deserialize_array_of_dict_case(value)
-        elif context.is_array() and context.is_dict():
-            deserialized_value = self.deserialize_dict_of_array_case(value)
-        elif context.is_array():
-            deserialized_value = self.deserialize_array_case(value)
-        elif context.is_dict():
-            deserialized_value = self.deserialize_dict_case(value)
-        else:
-            deserialized_value = self.deserialize_item(value)
+        deserialized_value = self.deserialize_value(value, context)
 
         return deserialized_value
+
+    def deserialize_value(self, value, context):
+        if context.is_array() and context.is_dict() and context.is_array_of_dict():
+            return self.deserialize_array_of_dict_case(value)
+        elif context.is_array() and context.is_dict():
+            return self.deserialize_dict_of_array_case(value)
+        elif context.is_array():
+            return self.deserialize_array_case(value)
+        elif context.is_dict():
+            return self.deserialize_dict_case(value)
+        else:
+            return self.deserialize_item(value)
+
+    def validate_value_against_case(self, value, context):
+        if context.is_array() and context.is_dict() and context.is_array_of_dict():
+            return self.validate_array_of_dict_case(value)
+        elif context.is_array() and context.is_dict():
+            return self.validate_dict_of_array_case(value)
+        elif context.is_array():
+            return self.validate_array_case(value)
+        elif context.is_dict():
+            return self.validate_dict_case(value)
+        else:
+            return self.validate_item(value)
 
     def validate_dict_case(self, dict_value):
         if not isinstance(dict_value, dict):
@@ -120,9 +118,9 @@ class LeafType(UnionType):
         if self.type_to_match is date:
             return DateTimeHelper.validate_date(value)
 
-        return self.validate_custom_type_with_discriminator(value, context)
+        return self.validate_value_with_discriminator(value, context)
 
-    def validate_custom_type_with_discriminator(self, value, context):
+    def validate_value_with_discriminator(self, value, context):
         discriminator = context.get_discriminator()
         discriminator_value = context.get_discriminator_value()
         if discriminator and discriminator_value:
