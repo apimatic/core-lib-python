@@ -110,7 +110,7 @@ class LeafType(UnionType):
         if value is None or isinstance(value, list):
             return False
 
-        if self.type_to_match in [datetime]:
+        if self.type_to_match is datetime:
             return self.validate_date_time(value, context)
 
         if self.type_to_match is date:
@@ -193,7 +193,9 @@ class LeafType(UnionType):
         return deserialized_value
 
     def deserialize_item(self, value):
-        is_native_type = self.type_to_match in UnionType.NATIVE_TYPES
+
+        if hasattr(self.type_to_match, 'from_dictionary'):
+            return self.type_to_match.from_dictionary(value)
 
         if self.type_to_match is date:
             return ApiHelper.date_deserialize(value)
@@ -202,15 +204,7 @@ class LeafType(UnionType):
             return ApiHelper.datetime_deserialize(
                 value, self._union_type_context.get_date_time_format())
 
-        if is_native_type or self.type_to_match is dict:
-            return value
-
-        if hasattr(self.type_to_match, 'from_dictionary'):
-            return self.type_to_match.from_dictionary(value)
-        else:
-            return value
-
-        return None
+        return value
 
     def __deepcopy__(self, memo={}):
         copy_object = LeafType(self.type_to_match, self._union_type_context)
