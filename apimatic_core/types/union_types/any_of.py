@@ -1,4 +1,3 @@
-import copy
 from apimatic_core_interfaces.types.union_type import UnionType
 from apimatic_core.exceptions.anyof_validation_exception import AnyOfValidationException
 from apimatic_core.types.union_types.leaf_type import LeafType
@@ -14,12 +13,10 @@ class AnyOf(UnionType):
 
     def validate(self, value):
         context = self._union_type_context
-
-        for union_type in self._union_types:
-            union_type.get_context().is_nested = True
-
-        is_optional_or_nullable = context.is_nullable_or_optional() or any(
-            union_type.get_context().is_nullable_or_optional() for union_type in self._union_types)
+        UnionTypeHelper.update_nested_flag_for_union_types(self._union_types)
+        is_optional_or_nullable = UnionTypeHelper.is_optional_or_nullable_case(self._union_type_context,
+                                                                               [nested_type.get_context()
+                                                                                for nested_type in self._union_types])
 
         if value is None and is_optional_or_nullable:
             self.is_valid = True
@@ -27,77 +24,78 @@ class AnyOf(UnionType):
 
         if value is None:
             self.is_valid = False
-            self.process_errors(value)
+            self._process_errors(value)
             return self
 
-        if context.is_array() and context.is_dict() and context.is_array_of_dict():
-            if isinstance(value, list):
-                self.is_valid, self.collection_cases = UnionTypeHelper.validate_array_of_dict_case(self._union_types,
-                                                                                                   value, False)
-            else:
-                self.is_valid = False
-        elif context.is_array() and context.is_dict():
-            if isinstance(value, dict):
-                self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_of_array_case(self._union_types,
-                                                                                                   value, False)
-            else:
-                self.is_valid = False
-        elif context.is_array():
-            if isinstance(value, list):
-                self.is_valid, self.collection_cases = UnionTypeHelper.validate_array_case(self._union_types,
-                                                                                           value, False)
-            else:
-                self.is_valid = False
-        elif context.is_dict():
-            if isinstance(value, dict):
-                self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_case(self._union_types,
-                                                                                          value, False)
-            else:
-                self.is_valid = False
-        else:
-            self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, False) > 0
+        self._validate_value_against_case(value, context)
 
         if not self.is_valid:
-            self.process_errors(value)
+            self._process_errors(value)
 
         return self
 
-    def process_errors(self, value):
+    def deserialize(self, value):
+        if value is None:
+            return None
+
+        context = self._union_type_context
+        deserialized_value = self._deserialize_value_against_case(value, context)
+        return deserialized_value
+
+    def _validate_value_against_case(self, value, context):
+        if context.is_array() and context.is_dict() and context.is_array_of_dict():
+            self.is_valid, self.collection_cases = UnionTypeHelper.validate_array_of_dict_case(self._union_types, value,
+                                                                                               False)
+        elif context.is_array() and context.is_dict():
+            self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_of_array_case(self._union_types, value,
+                                                                                               False)
+        elif context.is_array():
+            self.is_valid, self.collection_cases = UnionTypeHelper.validate_array_case(self._union_types, value, False)
+        elif context.is_dict():
+            self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_case(self._union_types, value, False)
+        else:
+            self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, False) >= 1
+
+    def _deserialize_value_against_case(self, value, context):
+        if context.is_array() and context.is_dict() and context.is_array_of_dict():
+            return UnionTypeHelper.deserialize_array_of_dict_case(value, self.collection_cases)
+
+        if context.is_array() and context.is_dict():
+            return UnionTypeHelper.deserialize_dict_of_array_case(value, self.collection_cases)
+
+        if context.is_array():
+            return UnionTypeHelper.deserialize_array_case(value, self.collection_cases)
+
+        if context.is_dict():
+            return UnionTypeHelper.deserialize_dict_case(value, self.collection_cases)
+
+        return UnionTypeHelper.get_deserialized_value(self._union_types, value)
+
+    def _process_errors(self, value):
         self.error_messages = []
 
+        combined_types = self._get_combined_types()
+
+        if self._union_type_context.is_nested:
+            self._append_nested_error_message(combined_types)
+        else:
+            self._raise_validation_exception(value, combined_types)
+
+    def _get_combined_types(self):
         combined_types = []
         for union_type in self._union_types:
             if isinstance(union_type, LeafType):
                 combined_types.append(union_type.type_to_match.__name__)
             else:
                 combined_types.append(', '.join(union_type.error_messages))
+        return combined_types
 
-        if self._union_type_context.is_nested:
-            self.error_messages.append(', '.join(combined_types))
-        else:
-            raise AnyOfValidationException('{} \nActual Value: {}\nExpected Type: Any Of {}.'.format(
-                UnionType.NONE_MATCHED_ERROR_MESSAGE, value, ', '.join(combined_types)))
+    def _append_nested_error_message(self, combined_types):
+        self.error_messages.append(', '.join(combined_types))
 
-    def deserialize(self, value):
-        if value is None or not self.is_valid:
-            return None
-
-        context = self._union_type_context
-        if value is None and context.is_nullable_or_optional():
-            return None
-
-        if context.is_array() and context.is_dict() and context.is_array_of_dict():
-            deserialized_value = UnionTypeHelper.deserialize_array_of_dict_case(value, self.collection_cases)
-        elif context.is_array() and context.is_dict():
-            deserialized_value = UnionTypeHelper.deserialize_dict_of_array_case(value, self.collection_cases)
-        elif context.is_array():
-            deserialized_value = UnionTypeHelper.deserialize_array_case(value, self.collection_cases)
-        elif context.is_dict():
-            deserialized_value = UnionTypeHelper.deserialize_dict_case(value, self.collection_cases)
-        else:
-            deserialized_value = UnionTypeHelper.get_deserialized_value(self._union_types, value)
-
-        return deserialized_value
+    def _raise_validation_exception(self, value, combined_types):
+        raise AnyOfValidationException('{} \nActual Value: {}\nExpected Type: Any Of {}.'.format(
+            UnionType.NONE_MATCHED_ERROR_MESSAGE, value, ', '.join(combined_types)))
 
     def __deepcopy__(self, memo={}):
         copy_object = AnyOf(self._union_types, self._union_type_context)

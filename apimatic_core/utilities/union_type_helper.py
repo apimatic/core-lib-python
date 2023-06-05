@@ -1,5 +1,4 @@
 import copy
-from datetime import datetime
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.datetime_helper import DateTimeHelper
@@ -13,7 +12,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_array_of_dict_case(union_types, array_value, is_for_one_of):
-        if array_value is None or not array_value:
+        if array_value is None or not isinstance(array_value, list):
             return tuple((False, []))
 
         collection_cases = []
@@ -27,7 +26,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_dict_of_array_case(union_types, dict_value, is_for_one_of):
-        if dict_value is None or not dict_value:
+        if dict_value is None or not isinstance(dict_value, dict):
             return tuple((False, []))
 
         collection_cases = {}
@@ -41,7 +40,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_dict_case(union_types, dict_value, is_for_one_of):
-        if dict_value is None or not dict_value:
+        if dict_value is None or not isinstance(dict_value, dict):
             return tuple((False, []))
 
         is_valid = True
@@ -58,7 +57,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_array_case(union_types, array_value, is_for_one_of):
-        if array_value is None or not array_value:
+        if array_value is None or not isinstance(array_value, list):
             return tuple((False, []))
 
         is_valid = True
@@ -75,8 +74,9 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_array_of_dict_case(array_value, collection_cases):
-        if array_value is None:
+        if array_value is None or not isinstance(array_value, list):
             return None
+
         deserialized_value = []
         for index, item in enumerate(array_value):
             deserialized_value.append(UnionTypeHelper.deserialize_dict_case(item, collection_cases[index]))
@@ -85,7 +85,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_dict_of_array_case(dict_value, collection_cases):
-        if dict_value is None:
+        if dict_value is None or not isinstance(dict_value, dict):
             return None
 
         deserialized_value = {}
@@ -96,7 +96,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_dict_case(dict_value, collection_cases):
-        if dict_value is None:
+        if dict_value is None or not isinstance(dict_value, dict):
             return None
 
         deserialized_value = {}
@@ -108,7 +108,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_array_case(array_value, collection_cases):
-        if array_value is None:
+        if array_value is None or not isinstance(array_value, list):
             return None
 
         deserialized_value = []
@@ -152,3 +152,13 @@ class UnionTypeHelper:
             return DateTimeHelper.validate_datetime(serialized_dt, context.get_date_time_format())
 
         return DateTimeHelper.validate_datetime(value, context.get_date_time_format())
+
+    @staticmethod
+    def is_optional_or_nullable_case(current_context, inner_contexts):
+        return current_context.is_nullable_or_optional() or \
+               any(context.is_nullable_or_optional() for context in inner_contexts)
+
+    @staticmethod
+    def update_nested_flag_for_union_types(nested_union_types):
+        for union_type in nested_union_types:
+            union_type.get_context().is_nested = True
