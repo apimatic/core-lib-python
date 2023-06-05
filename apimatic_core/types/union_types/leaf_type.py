@@ -124,7 +124,7 @@ class LeafType(UnionType):
         if hasattr(self.type_to_match, 'validate'):
             return self.type_to_match.validate(value)
 
-        return isinstance(value, self.type_to_match)
+        return type(value) is self.type_to_match
 
     def validate_with_discriminator(self, discriminator, discriminator_value, value):
         if not isinstance(value, dict) or value.get(discriminator) != discriminator_value:
@@ -133,7 +133,7 @@ class LeafType(UnionType):
         if hasattr(self.type_to_match, 'validate'):
             return self.type_to_match.validate(value)
 
-        return isinstance(value, self.type_to_match)
+        return type(value) is self.type_to_match
 
     def validate_date_time(self, value, context):
         if isinstance(value, ApiHelper.RFC3339DateTime):
