@@ -28,40 +28,31 @@ class LeafType(UnionType):
             return None
 
         context = self._union_type_context
-        deserialized_value = self.deserialize_value(value, context)
+        deserialized_value = self.deserialize_value_against_case(value, context)
 
         return deserialized_value
-
-    def deserialize_value(self, value, context):
-        if context.is_array() and context.is_dict() and context.is_array_of_dict():
-            return self.deserialize_array_of_dict_case(value)
-        elif context.is_array() and context.is_dict():
-            return self.deserialize_dict_of_array_case(value)
-        elif context.is_array():
-            return self.deserialize_array_case(value)
-        elif context.is_dict():
-            return self.deserialize_dict_case(value)
-        else:
-            return self.deserialize_item(value)
 
     def validate_value_against_case(self, value, context):
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
             return self.validate_array_of_dict_case(value)
-        elif context.is_array() and context.is_dict():
+
+        if context.is_array() and context.is_dict():
             return self.validate_dict_of_array_case(value)
-        elif context.is_array():
+
+        if context.is_array():
             return self.validate_array_case(value)
-        elif context.is_dict():
+
+        if context.is_dict():
             return self.validate_dict_case(value)
-        else:
-            return self.validate_item(value)
+
+        return self.validate_simple_case(value)
 
     def validate_dict_case(self, dict_value):
         if not isinstance(dict_value, dict):
             return False
 
         for key, value in dict_value.items():
-            is_valid = self.validate_item(value)
+            is_valid = self.validate_simple_case(value)
             if not is_valid:
                 return False
 
@@ -83,7 +74,7 @@ class LeafType(UnionType):
             return False
 
         for item in array_value:
-            is_valid = self.validate_item(item)
+            is_valid = self.validate_simple_case(item)
             if not is_valid:
                 return False
 
@@ -100,7 +91,7 @@ class LeafType(UnionType):
 
         return True
 
-    def validate_item(self, value):
+    def validate_simple_case(self, value):
         context = self._union_type_context
 
         if value is None or context.is_nullable_or_optional():
@@ -140,21 +131,30 @@ class LeafType(UnionType):
 
         return type(value) is self.type_to_match
 
-    def deserialize_dict_case(self, dict_value):
-        if not isinstance(dict_value, dict):
-            return None
+    def deserialize_value_against_case(self, value, context):
+        if context.is_array() and context.is_dict() and context.is_array_of_dict():
+            return self.deserialize_array_of_dict_case(value)
 
+        if context.is_array() and context.is_dict():
+            return self.deserialize_dict_of_array_case(value)
+
+        if context.is_array():
+            return self.deserialize_array_case(value)
+
+        if context.is_dict():
+            return self.deserialize_dict_case(value)
+
+        return self.deserialize_simple_case(value)
+
+    def deserialize_dict_case(self, dict_value):
         deserialized_value = {}
         for key, value in dict_value.items():
-            result_value = self.deserialize_item(value)
+            result_value = self.deserialize_simple_case(value)
             deserialized_value[key] = result_value
 
         return deserialized_value
 
     def deserialize_dict_of_array_case(self, dict_value):
-        if not isinstance(dict_value, dict):
-            return None
-
         deserialized_value = {}
         for key, value in dict_value.items():
             result_value = self.deserialize_array_case(value)
@@ -163,20 +163,14 @@ class LeafType(UnionType):
         return deserialized_value
 
     def deserialize_array_case(self, array_value):
-        if not isinstance(array_value, list):
-            return None
-
         deserialized_value = []
         for item in array_value:
-            result_value = self.deserialize_item(item)
+            result_value = self.deserialize_simple_case(item)
             deserialized_value.append(result_value)
 
         return deserialized_value
 
     def deserialize_array_of_dict_case(self, array_value):
-        if not isinstance(array_value, list):
-            return None
-
         deserialized_value = []
         for item in array_value:
             result_value = self.deserialize_dict_case(item)
@@ -184,7 +178,7 @@ class LeafType(UnionType):
 
         return deserialized_value
 
-    def deserialize_item(self, value):
+    def deserialize_simple_case(self, value):
         if hasattr(self.type_to_match, 'from_dictionary'):
             return self.type_to_match.from_dictionary(value)
 
