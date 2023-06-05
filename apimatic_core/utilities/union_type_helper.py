@@ -1,4 +1,8 @@
 import copy
+from datetime import datetime
+from apimatic_core.types.datetime_format import DateTimeFormat
+from apimatic_core.utilities.api_helper import ApiHelper
+from apimatic_core.utilities.datetime_helper import DateTimeHelper
 
 
 class UnionTypeHelper:
@@ -134,3 +138,17 @@ class UnionTypeHelper:
             matched_count = sum(union_type.validate(value).is_valid for union_type in union_types)
 
         return matched_count
+
+    @staticmethod
+    def validate_date_time(value, context):
+        if isinstance(value, ApiHelper.RFC3339DateTime):
+            return context.get_date_time_format() == DateTimeFormat.RFC3339_DATE_TIME
+        elif isinstance(value, ApiHelper.HttpDateTime):
+            return context.get_date_time_format() == DateTimeFormat.HTTP_DATE_TIME
+        elif isinstance(value, ApiHelper.UnixDateTime):
+            return context.get_date_time_format() == DateTimeFormat.UNIX_DATE_TIME
+        elif context.get_date_time_converter() is not None:
+            serialized_dt = ApiHelper.json_serialize(ApiHelper.when_defined(context.get_date_time_converter(), value))
+            return DateTimeHelper.validate_datetime(serialized_dt, context.get_date_time_format())
+
+        return DateTimeHelper.validate_datetime(value, context.get_date_time_format())
