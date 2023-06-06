@@ -56,12 +56,7 @@ class UnionTypeHelper:
         for key, value in dict_value.items():
             nested_cases = UnionTypeHelper.validate_item(union_types, value)
             matched_count = UnionTypeHelper.get_matched_count(value, nested_cases, is_for_one_of)
-
-            if is_valid and is_for_one_of:
-                is_valid = matched_count == 1
-            elif is_valid:
-                is_valid = matched_count >= 1
-
+            is_valid = UnionTypeHelper.check_item_validity(is_for_one_of, is_valid, matched_count)
             collection_cases[key] = nested_cases
 
         return is_valid, collection_cases
@@ -83,15 +78,18 @@ class UnionTypeHelper:
         for item in array_value:
             nested_cases = UnionTypeHelper.validate_item(union_types, item)
             matched_count = UnionTypeHelper.get_matched_count(item, nested_cases, is_for_one_of)
-
-            if is_valid and is_for_one_of:
-                is_valid = matched_count == 1
-            elif is_valid:
-                is_valid = matched_count >= 1
-
+            is_valid = UnionTypeHelper.check_item_validity(is_for_one_of, is_valid, matched_count)
             collection_cases.append(nested_cases)
 
         return is_valid, collection_cases
+
+    @staticmethod
+    def check_item_validity(is_for_one_of, is_valid, matched_count):
+        if is_valid and is_for_one_of:
+            is_valid = matched_count == 1
+        elif is_valid:
+            is_valid = matched_count >= 1
+        return is_valid
 
     @staticmethod
     def validate_item(union_types, item):
