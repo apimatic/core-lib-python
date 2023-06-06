@@ -1,4 +1,5 @@
 import copy
+from datetime import datetime
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.datetime_helper import DateTimeHelper
@@ -12,7 +13,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_array_of_dict_case(union_types, array_value, is_for_one_of):
-        if not UnionTypeHelper.is_valid_array(array_value):
+        if UnionTypeHelper.is_invalid_array_value(array_value):
             return tuple((False, []))
 
         collection_cases = []
@@ -26,7 +27,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_dict_of_array_case(union_types, dict_value, is_for_one_of):
-        if not UnionTypeHelper.is_valid_dict(dict_value):
+        if UnionTypeHelper.is_invalid_dict_value(dict_value):
             return tuple((False, []))
 
         collection_cases = {}
@@ -40,7 +41,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_dict_case(union_types, dict_value, is_for_one_of):
-        if not UnionTypeHelper.is_valid_dict(dict_value):
+        if UnionTypeHelper.is_invalid_dict_value(dict_value):
             return tuple((False, []))
 
         is_valid, collection_cases = UnionTypeHelper.process_dict_items(union_types, dict_value, is_for_one_of)
@@ -54,10 +55,12 @@ class UnionTypeHelper:
 
         for key, value in dict_value.items():
             nested_cases = UnionTypeHelper.validate_item(union_types, value)
-            matched_count = UnionTypeHelper.get_matched_count(value, nested_cases, True)
+            matched_count = UnionTypeHelper.get_matched_count(value, nested_cases, is_for_one_of)
 
-            if is_valid:
-                is_valid = matched_count == 1 if is_for_one_of else matched_count >= 1
+            if is_valid and is_for_one_of:
+                is_valid = matched_count == 1
+            elif is_valid:
+                is_valid = matched_count >= 1
 
             collection_cases[key] = nested_cases
 
@@ -65,7 +68,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_array_case(union_types, array_value, is_for_one_of):
-        if not UnionTypeHelper.is_valid_array(array_value):
+        if UnionTypeHelper.is_invalid_array_value(array_value):
             return tuple((False, []))
 
         is_valid, collection_cases = UnionTypeHelper.process_array_items(union_types, array_value, is_for_one_of)
@@ -79,10 +82,12 @@ class UnionTypeHelper:
 
         for item in array_value:
             nested_cases = UnionTypeHelper.validate_item(union_types, item)
-            matched_count = UnionTypeHelper.get_matched_count(item, nested_cases, True)
+            matched_count = UnionTypeHelper.get_matched_count(item, nested_cases, is_for_one_of)
 
-            if is_valid:
-                is_valid = matched_count == 1 if is_for_one_of else matched_count >= 1
+            if is_valid and is_for_one_of:
+                is_valid = matched_count == 1
+            elif is_valid:
+                is_valid = matched_count >= 1
 
             collection_cases.append(nested_cases)
 
@@ -114,7 +119,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_array_of_dict_case(array_value, collection_cases):
-        if not UnionTypeHelper.is_valid_array(array_value):
+        if UnionTypeHelper.is_invalid_array_value(array_value):
             return None
 
         deserialized_value = []
@@ -125,7 +130,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_dict_of_array_case(dict_value, collection_cases):
-        if not UnionTypeHelper.is_valid_dict(dict_value):
+        if UnionTypeHelper.is_invalid_dict_value(dict_value):
             return None
 
         deserialized_value = {}
@@ -136,7 +141,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_dict_case(dict_value, collection_cases):
-        if not UnionTypeHelper.is_valid_dict(dict_value):
+        if UnionTypeHelper.is_invalid_dict_value(dict_value):
             return None
 
         deserialized_value = {}
@@ -148,7 +153,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_array_case(array_value, collection_cases):
-        if not UnionTypeHelper.is_valid_array(array_value):
+        if UnionTypeHelper.is_invalid_array_value(array_value):
             return None
 
         deserialized_value = []
@@ -197,7 +202,7 @@ class UnionTypeHelper:
             return context.get_date_time_format() == DateTimeFormat.HTTP_DATE_TIME
         elif isinstance(value, ApiHelper.UnixDateTime):
             return context.get_date_time_format() == DateTimeFormat.UNIX_DATE_TIME
-        elif context.get_date_time_converter() is not None:
+        elif isinstance(value, datetime) and context.get_date_time_converter() is not None:
             serialized_dt = ApiHelper.json_serialize(ApiHelper.when_defined(context.get_date_time_converter(), value))
             return DateTimeHelper.validate_datetime(serialized_dt, context.get_date_time_format())
 
@@ -214,9 +219,9 @@ class UnionTypeHelper:
             union_type.get_context().is_nested = True
 
     @staticmethod
-    def is_valid_array(value):
-        return value is not None and isinstance(value, list)
+    def is_invalid_array_value(value):
+        return value is None or not isinstance(value, list)
 
     @staticmethod
-    def is_valid_dict(value):
-        return value is not None and isinstance(value, dict)
+    def is_invalid_dict_value(value):
+        return value is None or not isinstance(value, dict)

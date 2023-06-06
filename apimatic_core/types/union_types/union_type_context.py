@@ -62,7 +62,7 @@ class UnionTypeContext:
         return self._is_nullable
 
     def is_nullable_or_optional(self):
-        return self._is_nullable or self._is_optional
+        return self.is_nullable() or self.is_optional()
 
     def discriminator(self, discriminator):
         self._discriminator = discriminator
