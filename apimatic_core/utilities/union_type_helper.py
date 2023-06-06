@@ -43,34 +43,58 @@ class UnionTypeHelper:
         if not UnionTypeHelper.is_valid_dict(dict_value):
             return tuple((False, []))
 
+        is_valid, collection_cases = UnionTypeHelper.process_dict_items(union_types, dict_value, is_for_one_of)
+
+        return tuple((is_valid, collection_cases))
+
+    @staticmethod
+    def process_dict_items(union_types, dict_value, is_for_one_of):
         is_valid = True
         collection_cases = {}
+
         for key, value in dict_value.items():
-            nested_cases = []
-            for union_type in union_types:
-                nested_cases.append(copy.deepcopy(union_type).validate(value))
+            nested_cases = UnionTypeHelper.validate_item(union_types, value)
             matched_count = UnionTypeHelper.get_matched_count(value, nested_cases, True)
+
             if is_valid:
                 is_valid = matched_count == 1 if is_for_one_of else matched_count >= 1
+
             collection_cases[key] = nested_cases
-        return tuple((is_valid, collection_cases))
+
+        return is_valid, collection_cases
 
     @staticmethod
     def validate_array_case(union_types, array_value, is_for_one_of):
         if not UnionTypeHelper.is_valid_array(array_value):
             return tuple((False, []))
 
+        is_valid, collection_cases = UnionTypeHelper.process_array_items(union_types, array_value, is_for_one_of)
+
+        return tuple((is_valid, collection_cases))
+
+    @staticmethod
+    def process_array_items(union_types, array_value, is_for_one_of):
         is_valid = True
         collection_cases = []
+
         for item in array_value:
-            nested_cases = []
-            for union_type in union_types:
-                nested_cases.append(copy.deepcopy(union_type).validate(item))
+            nested_cases = UnionTypeHelper.validate_item(union_types, item)
             matched_count = UnionTypeHelper.get_matched_count(item, nested_cases, True)
+
             if is_valid:
                 is_valid = matched_count == 1 if is_for_one_of else matched_count >= 1
+
             collection_cases.append(nested_cases)
-        return tuple((is_valid, collection_cases))
+
+        return is_valid, collection_cases
+
+    @staticmethod
+    def validate_item(union_types, item):
+        nested_cases = []
+        for union_type in union_types:
+            nested_cases.append(copy.deepcopy(union_type).validate(item))
+
+        return nested_cases
 
     @staticmethod
     def deserialize_value(value, context, collection_cases, union_types):
@@ -136,24 +160,34 @@ class UnionTypeHelper:
 
     @staticmethod
     def get_matched_count(value, union_types, is_for_one_of):
-        matched_count = sum(union_type.validate(value).is_valid for union_type in union_types)
+        matched_count = UnionTypeHelper.get_valid_cases_count(value, union_types)
 
         if is_for_one_of and matched_count == 1:
             return matched_count
         elif not is_for_one_of and matched_count > 0:
             return matched_count
 
-        # Check through normal schema validation flow when discriminator exits but still invalid
+        matched_count = UnionTypeHelper.handle_discriminator_cases(value, union_types)
+        return matched_count
+
+    @staticmethod
+    def get_valid_cases_count(value, union_types):
+        return sum(union_type.validate(value).is_valid for union_type in union_types)
+
+    @staticmethod
+    def handle_discriminator_cases(value, union_types):
         has_discriminator_cases = all(union_type.get_context().get_discriminator() is not None and
                                       union_type.get_context().get_discriminator_value() is not None
                                       for union_type in union_types)
-        if matched_count == 0 and has_discriminator_cases:
+
+        if has_discriminator_cases:
             for union_type in union_types:
                 union_type.get_context().discriminator(None)
                 union_type.get_context().discriminator_value(None)
-            matched_count = sum(union_type.validate(value).is_valid for union_type in union_types)
 
-        return matched_count
+            return UnionTypeHelper.get_valid_cases_count(value, union_types)
+
+        return 0
 
     @staticmethod
     def validate_date_time(value, context):
