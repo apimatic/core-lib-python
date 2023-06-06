@@ -100,6 +100,72 @@ class UnionTypeHelper:
         return nested_cases
 
     @staticmethod
+    def get_matched_count(value, union_types, is_for_one_of):
+        matched_count = UnionTypeHelper.get_valid_cases_count(value, union_types)
+
+        if is_for_one_of and matched_count == 1:
+            return matched_count
+        elif not is_for_one_of and matched_count > 0:
+            return matched_count
+
+        matched_count = UnionTypeHelper.handle_discriminator_cases(value, union_types)
+        return matched_count
+
+    @staticmethod
+    def get_valid_cases_count(value, union_types):
+        return sum(union_type.validate(value).is_valid for union_type in union_types)
+
+    @staticmethod
+    def handle_discriminator_cases(value, union_types):
+        has_discriminator_cases = all(union_type.get_context().get_discriminator() is not None and
+                                      union_type.get_context().get_discriminator_value() is not None
+                                      for union_type in union_types)
+
+        if has_discriminator_cases:
+            for union_type in union_types:
+                union_type.get_context().discriminator(None)
+                union_type.get_context().discriminator_value(None)
+
+            return UnionTypeHelper.get_valid_cases_count(value, union_types)
+
+        return 0
+
+    @staticmethod
+    def validate_date_time(value, context):
+        if isinstance(value, ApiHelper.RFC3339DateTime):
+            return context.get_date_time_format() == DateTimeFormat.RFC3339_DATE_TIME
+
+        if isinstance(value, ApiHelper.HttpDateTime):
+            return context.get_date_time_format() == DateTimeFormat.HTTP_DATE_TIME
+
+        if isinstance(value, ApiHelper.UnixDateTime):
+            return context.get_date_time_format() == DateTimeFormat.UNIX_DATE_TIME
+
+        if isinstance(value, datetime) and context.get_date_time_converter() is not None:
+            serialized_dt = ApiHelper.json_serialize(ApiHelper.when_defined(context.get_date_time_converter(), value))
+            return DateTimeHelper.validate_datetime(serialized_dt, context.get_date_time_format())
+
+        return DateTimeHelper.validate_datetime(value, context.get_date_time_format())
+
+    @staticmethod
+    def is_optional_or_nullable_case(current_context, inner_contexts):
+        return current_context.is_nullable_or_optional() or \
+               any(context.is_nullable_or_optional() for context in inner_contexts)
+
+    @staticmethod
+    def update_nested_flag_for_union_types(nested_union_types):
+        for union_type in nested_union_types:
+            union_type.get_context().is_nested = True
+
+    @staticmethod
+    def is_invalid_array_value(value):
+        return value is None or not isinstance(value, list)
+
+    @staticmethod
+    def is_invalid_dict_value(value):
+        return value is None or not isinstance(value, dict)
+
+    @staticmethod
     def deserialize_value(value, context, collection_cases, union_types):
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
             return UnionTypeHelper.deserialize_array_of_dict_case(value, collection_cases)
@@ -160,66 +226,3 @@ class UnionTypeHelper:
             deserialized_value.append(valid_case.deserialize(item))
 
         return deserialized_value
-
-    @staticmethod
-    def get_matched_count(value, union_types, is_for_one_of):
-        matched_count = UnionTypeHelper.get_valid_cases_count(value, union_types)
-
-        if is_for_one_of and matched_count == 1:
-            return matched_count
-        elif not is_for_one_of and matched_count > 0:
-            return matched_count
-
-        matched_count = UnionTypeHelper.handle_discriminator_cases(value, union_types)
-        return matched_count
-
-    @staticmethod
-    def get_valid_cases_count(value, union_types):
-        return sum(union_type.validate(value).is_valid for union_type in union_types)
-
-    @staticmethod
-    def handle_discriminator_cases(value, union_types):
-        has_discriminator_cases = all(union_type.get_context().get_discriminator() is not None and
-                                      union_type.get_context().get_discriminator_value() is not None
-                                      for union_type in union_types)
-
-        if has_discriminator_cases:
-            for union_type in union_types:
-                union_type.get_context().discriminator(None)
-                union_type.get_context().discriminator_value(None)
-
-            return UnionTypeHelper.get_valid_cases_count(value, union_types)
-
-        return 0
-
-    @staticmethod
-    def validate_date_time(value, context):
-        if isinstance(value, ApiHelper.RFC3339DateTime):
-            return context.get_date_time_format() == DateTimeFormat.RFC3339_DATE_TIME
-        elif isinstance(value, ApiHelper.HttpDateTime):
-            return context.get_date_time_format() == DateTimeFormat.HTTP_DATE_TIME
-        elif isinstance(value, ApiHelper.UnixDateTime):
-            return context.get_date_time_format() == DateTimeFormat.UNIX_DATE_TIME
-        elif isinstance(value, datetime) and context.get_date_time_converter() is not None:
-            serialized_dt = ApiHelper.json_serialize(ApiHelper.when_defined(context.get_date_time_converter(), value))
-            return DateTimeHelper.validate_datetime(serialized_dt, context.get_date_time_format())
-
-        return DateTimeHelper.validate_datetime(value, context.get_date_time_format())
-
-    @staticmethod
-    def is_optional_or_nullable_case(current_context, inner_contexts):
-        return current_context.is_nullable_or_optional() or \
-               any(context.is_nullable_or_optional() for context in inner_contexts)
-
-    @staticmethod
-    def update_nested_flag_for_union_types(nested_union_types):
-        for union_type in nested_union_types:
-            union_type.get_context().is_nested = True
-
-    @staticmethod
-    def is_invalid_array_value(value):
-        return value is None or not isinstance(value, list)
-
-    @staticmethod
-    def is_invalid_dict_value(value):
-        return value is None or not isinstance(value, dict)
