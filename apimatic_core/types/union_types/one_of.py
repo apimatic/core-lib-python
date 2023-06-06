@@ -14,7 +14,7 @@ class OneOf(UnionType):
     def validate(self, value):
         context = self._union_type_context
         UnionTypeHelper.update_nested_flag_for_union_types(self._union_types)
-        is_optional_or_nullable = UnionTypeHelper.is_optional_or_nullable_case(self._union_type_context,
+        is_optional_or_nullable = UnionTypeHelper.is_optional_or_nullable_case(context,
                                                                                [nested_type.get_context()
                                                                                 for nested_type in self._union_types])
 
@@ -38,9 +38,8 @@ class OneOf(UnionType):
         if value is None:
             return None
 
-        context = self._union_type_context
-        deserialized_value = self._deserialize_value_against_case(value, context)
-        return deserialized_value
+        return UnionTypeHelper.deserialize_value(value, self._union_type_context, self.collection_cases,
+                                                 self._union_types)
 
     def _validate_value_against_case(self, value, context):
         if context.is_array() and context.is_dict() and context.is_array_of_dict():
@@ -55,21 +54,6 @@ class OneOf(UnionType):
             self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_case(self._union_types, value, True)
         else:
             self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, True) == 1
-
-    def _deserialize_value_against_case(self, value, context):
-        if context.is_array() and context.is_dict() and context.is_array_of_dict():
-            return UnionTypeHelper.deserialize_array_of_dict_case(value, self.collection_cases)
-
-        if context.is_array() and context.is_dict():
-            return UnionTypeHelper.deserialize_dict_of_array_case(value, self.collection_cases)
-
-        if context.is_array():
-            return UnionTypeHelper.deserialize_array_case(value, self.collection_cases)
-
-        if context.is_dict():
-            return UnionTypeHelper.deserialize_dict_case(value, self.collection_cases)
-
-        return UnionTypeHelper.get_deserialized_value(self._union_types, value)
 
     def _process_errors(self, value):
         self.error_messages = []

@@ -12,7 +12,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_array_of_dict_case(union_types, array_value, is_for_one_of):
-        if array_value is None or not isinstance(array_value, list):
+        if not UnionTypeHelper.is_valid_array(array_value):
             return tuple((False, []))
 
         collection_cases = []
@@ -26,7 +26,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_dict_of_array_case(union_types, dict_value, is_for_one_of):
-        if dict_value is None or not isinstance(dict_value, dict):
+        if not UnionTypeHelper.is_valid_dict(dict_value):
             return tuple((False, []))
 
         collection_cases = {}
@@ -40,7 +40,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_dict_case(union_types, dict_value, is_for_one_of):
-        if dict_value is None or not isinstance(dict_value, dict):
+        if not UnionTypeHelper.is_valid_dict(dict_value):
             return tuple((False, []))
 
         is_valid = True
@@ -57,7 +57,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def validate_array_case(union_types, array_value, is_for_one_of):
-        if array_value is None or not isinstance(array_value, list):
+        if not UnionTypeHelper.is_valid_array(array_value):
             return tuple((False, []))
 
         is_valid = True
@@ -73,8 +73,24 @@ class UnionTypeHelper:
         return tuple((is_valid, collection_cases))
 
     @staticmethod
+    def deserialize_value(value, context, collection_cases, union_types):
+        if context.is_array() and context.is_dict() and context.is_array_of_dict():
+            return UnionTypeHelper.deserialize_array_of_dict_case(value, collection_cases)
+
+        if context.is_array() and context.is_dict():
+            return UnionTypeHelper.deserialize_dict_of_array_case(value, collection_cases)
+
+        if context.is_array():
+            return UnionTypeHelper.deserialize_array_case(value, collection_cases)
+
+        if context.is_dict():
+            return UnionTypeHelper.deserialize_dict_case(value, collection_cases)
+
+        return UnionTypeHelper.get_deserialized_value(union_types, value)
+
+    @staticmethod
     def deserialize_array_of_dict_case(array_value, collection_cases):
-        if array_value is None or not isinstance(array_value, list):
+        if not UnionTypeHelper.is_valid_array(array_value):
             return None
 
         deserialized_value = []
@@ -85,7 +101,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_dict_of_array_case(dict_value, collection_cases):
-        if dict_value is None or not isinstance(dict_value, dict):
+        if not UnionTypeHelper.is_valid_dict(dict_value):
             return None
 
         deserialized_value = {}
@@ -96,7 +112,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_dict_case(dict_value, collection_cases):
-        if dict_value is None or not isinstance(dict_value, dict):
+        if not UnionTypeHelper.is_valid_dict(dict_value):
             return None
 
         deserialized_value = {}
@@ -108,7 +124,7 @@ class UnionTypeHelper:
 
     @staticmethod
     def deserialize_array_case(array_value, collection_cases):
-        if array_value is None or not isinstance(array_value, list):
+        if not UnionTypeHelper.is_valid_array(array_value):
             return None
 
         deserialized_value = []
@@ -162,3 +178,11 @@ class UnionTypeHelper:
     def update_nested_flag_for_union_types(nested_union_types):
         for union_type in nested_union_types:
             union_type.get_context().is_nested = True
+
+    @staticmethod
+    def is_valid_array(value):
+        return value is not None and isinstance(value, list)
+
+    @staticmethod
+    def is_valid_dict(value):
+        return value is not None and isinstance(value, dict)
