@@ -264,23 +264,28 @@ class TestAnyOf:
         assert actual_deserialized_value == expected_deserialized_value
 
     @pytest.mark.parametrize(
-        'input_value, input_types, input_context, expected_validity, expected_value', [
-            (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
+        'input_value, input_date, input_types, input_context, expected_validity, expected_value', [
+            (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37), False),
+             Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
              [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME)),
               LeafType(date)], UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
-            (Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37)),
+            (Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37), False),
+             Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37)),
              [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.HTTP_DATE_TIME)), LeafType(date)],
              UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
-            (1480809600,
+            (ApiHelper.UnixDateTime(datetime(1994, 11, 6, 8, 49, 37)), 1480809600,
              [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.UNIX_DATE_TIME)), LeafType(date)],
              UnionTypeContext(), True, datetime.utcfromtimestamp(1480809600)),
-            ('1994-11-06', [LeafType(date), LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME))], UnionTypeContext(),
+            ('1994-11-06', '1994-11-06',
+             [LeafType(datetime, UnionTypeContext().date_time_converter(datetime.fromisoformat).date_time_format(DateTimeFormat.RFC3339_DATE_TIME)), LeafType(date)],
+             UnionTypeContext(), True, date(1994, 11, 6)),
+            ('1994-11-06', '1994-11-06', [LeafType(date), LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME))], UnionTypeContext(),
              True, date(1994, 11, 6))
         ])
-    def test_any_of_date_and_datetime(self, input_value, input_types, input_context, expected_validity, expected_value):
+    def test_any_of_date_and_datetime(self, input_value, input_date, input_types, input_context, expected_validity, expected_value):
         union_type_result = AnyOf(input_types, input_context).validate(input_value)
         assert union_type_result.is_valid == expected_validity
-        actual_deserialized_value = union_type_result.deserialize(input_value)
+        actual_deserialized_value = union_type_result.deserialize(input_date)
         assert actual_deserialized_value == expected_value
 
     @pytest.mark.parametrize(
