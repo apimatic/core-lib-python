@@ -51,14 +51,14 @@ class UnionTypeContext:
         self._is_optional = is_optional
         return self
 
-    def is_optional(self): # pragma: no cover
+    def is_optional(self):
         return self._is_optional
 
     def nullable(self, is_nullable):
         self._is_nullable = is_nullable
         return self
 
-    def is_nullable(self): # pragma: no cover
+    def is_nullable(self):
         return self._is_nullable
 
     def is_nullable_or_optional(self):
