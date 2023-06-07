@@ -525,35 +525,25 @@ class ApiHelper(object):
     @staticmethod
     def process_nested_collection(value, should_ignore_null_values):
         if isinstance(value, list):
-            array = []
-            for item in value:
-                array.append(ApiHelper.process_nested_collection(item, should_ignore_null_values))
-            return array
-        elif isinstance(value, dict):
-            dictionary = {}
-            for k, v in value.items():
-                dictionary[k] = ApiHelper.process_nested_collection(v, should_ignore_null_values)
-            return dictionary
-        else:
-            return ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value, "_names") else value
+            return [ApiHelper.process_nested_collection(item, should_ignore_null_values) for item in value]
+
+        if isinstance(value, dict):
+            return {k: ApiHelper.process_nested_collection(v, should_ignore_null_values) for k, v in value.items()}
+
+        return ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value, "_names") else value
 
     @staticmethod
     def apply_datetime_converter(value, datetime_converter_obj):
         if isinstance(value, list):
-            converted_value = []
-            for item in value:
-                converted_value.append(ApiHelper.apply_datetime_converter(item, datetime_converter_obj))
-            return converted_value
+            return [ApiHelper.apply_datetime_converter(item, datetime_converter_obj) for item in value]
+
         if isinstance(value, dict):
-            converted_value = {}
-            for k, v in value.items():
-                converted_value[k] = ApiHelper.apply_datetime_converter(v, datetime_converter_obj)
-            return converted_value
-        elif isinstance(value, datetime.datetime):
+            return {k: ApiHelper.apply_datetime_converter(v, datetime_converter_obj) for k, v in value.items()}
+
+        if isinstance(value, datetime.datetime):
             return ApiHelper.when_defined(datetime_converter_obj, value)
 
         return value
-
 
     @staticmethod
     def when_defined(func, value):
