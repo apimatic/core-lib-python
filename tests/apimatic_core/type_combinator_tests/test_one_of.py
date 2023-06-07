@@ -279,9 +279,9 @@ class TestOneOf:
             (ApiHelper.UnixDateTime(datetime(1994, 11, 6, 8, 49, 37)), 1480809600,
              [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.UNIX_DATE_TIME)), LeafType(date)],
              UnionTypeContext(), True, datetime.utcfromtimestamp(1480809600)),
-            ('1994-11-06', '1994-11-06',
-             [LeafType(datetime, UnionTypeContext().date_time_converter(datetime.fromisoformat).date_time_format(DateTimeFormat.RFC3339_DATE_TIME)), LeafType(date)],
-             UnionTypeContext(), True, date(1994, 11, 6)),
+            (datetime(1994, 11, 6, 8, 49, 37), Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
+             [LeafType(datetime, UnionTypeContext().date_time_converter(ApiHelper.RFC3339DateTime).date_time_format(DateTimeFormat.RFC3339_DATE_TIME)), LeafType(date)],
+             UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
             ('1994-11-06', '1994-11-06', [LeafType(date), LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME))], UnionTypeContext(),
              True, date(1994, 11, 6))
         ])
@@ -307,7 +307,7 @@ class TestOneOf:
             ({'key0': 1, None: None, 'key3': 2}, [LeafType(int, UnionTypeContext().nullable(True)), LeafType(str)],
              UnionTypeContext().dict(True), True, {'key0': 1, None: None, 'key3': 2})
         ])
-    def test_any_of_optional_nullable(self, input_value, input_types, input_context, expected_validity, expected_value):
+    def test_one_of_optional_nullable(self, input_value, input_types, input_context, expected_validity, expected_value):
         union_type_result = OneOf(input_types, input_context).validate(input_value)
         assert union_type_result.is_valid == expected_validity
         actual_deserialized_value = union_type_result.deserialize(input_value)
