@@ -142,7 +142,7 @@ class UnionTypeHelper:
             return context.get_date_time_format() == DateTimeFormat.UNIX_DATE_TIME
 
         if isinstance(value, datetime) and context.get_date_time_converter() is not None:
-            serialized_dt = ApiHelper.json_serialize(ApiHelper.when_defined(context.get_date_time_converter(), value))
+            serialized_dt = str(ApiHelper.when_defined(context.get_date_time_converter(), value))
             return DateTimeHelper.validate_datetime(serialized_dt, context.get_date_time_format())
 
         return DateTimeHelper.validate_datetime(value, context.get_date_time_format())
