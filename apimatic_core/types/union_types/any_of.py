@@ -81,7 +81,7 @@ class AnyOf(UnionType):
         raise AnyOfValidationException('{} \nActual Value: {}\nExpected Type: Any Of {}.'.format(
             UnionType.NONE_MATCHED_ERROR_MESSAGE, value, ', '.join(combined_types)))
 
-    def __deepcopy__(self, memo={}):
+    def __deepcopy__(self, memo={}): # pragma: no cover
         copy_object = AnyOf(self._union_types, self._union_type_context)
         copy_object.is_valid = self.is_valid
         copy_object.collection_cases = self.collection_cases

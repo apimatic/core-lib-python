@@ -188,6 +188,10 @@ class TestAnyOf:
              [LeafType(int, UnionTypeContext().dict(True).array(True).array_of_dict(True)),
               LeafType(str, UnionTypeContext().dict(True).array(True).array_of_dict(True))],
              UnionTypeContext(), False, None),
+            ({'key0': 100, 'key1': 200},
+             [LeafType(int, UnionTypeContext().dict(True).array(True).array_of_dict(True)),
+              LeafType(str, UnionTypeContext().dict(True).array(True).array_of_dict(True))],
+             UnionTypeContext(), False, None),
 
             # Outer array of dictionary cases
             ([{'key0': 'abc', 'key1': 'def'}, {'key0': 'ghi', 'key1': 'jkl'}],
@@ -206,6 +210,10 @@ class TestAnyOf:
              [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
              UnionTypeContext().dict(True).array(True).array_of_dict(True), True,
              [{'key0': 'abc', 'key1': 'def'}, {'key0': 100, 'key1': 200}]),
+            ({'key0': 'abc', 'key1': 'def'},
+             [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
+             UnionTypeContext().dict(True).array(True).array_of_dict(True), False,
+             None),
 
             # dictionary of array cases
             ({'key0': ['abc', 'def'], 'key1': ['ghi', 'jkl']},
@@ -238,6 +246,9 @@ class TestAnyOf:
             ({'key0': [100, 200], 'key1': ['abc', 'def']},
              [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
              UnionTypeContext().dict(True).array(True), True, {'key0': [100, 200], 'key1': ['abc', 'def']}),
+            ([{'key0': [100, 200]}, {'key1': ['abc', 'def']}],
+             [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
+             UnionTypeContext().dict(True).array(True), False, None),
         ])
     def test_any_of_primitive_type(self, input_value, input_types, input_context, expected_validity,
                                    expected_deserialized_value):

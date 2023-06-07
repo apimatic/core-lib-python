@@ -187,6 +187,10 @@ class TestOneOf:
              [LeafType(int, UnionTypeContext().dict(True).array(True).array_of_dict(True)),
               LeafType(str, UnionTypeContext().dict(True).array(True).array_of_dict(True))],
              UnionTypeContext(), False, None),
+            ({'key0': 100, 'key1': 200},
+             [LeafType(int, UnionTypeContext().dict(True).array(True).array_of_dict(True)),
+              LeafType(str, UnionTypeContext().dict(True).array(True).array_of_dict(True))],
+             UnionTypeContext(), False, None),
 
             # Outer array of dictionary cases
             ([{'key0': 'abc', 'key1': 'def'}, {'key0': 'ghi', 'key1': 'jkl'}],
@@ -205,6 +209,10 @@ class TestOneOf:
              [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
              UnionTypeContext().dict(True).array(True).array_of_dict(True), True,
              [{'key0': 'abc', 'key1': 'def'}, {'key0': 100, 'key1': 200}]),
+            ({'key0': 'abc', 'key1': 'def'},
+             [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
+             UnionTypeContext().dict(True).array(True).array_of_dict(True), False,
+             None),
 
             # dictionary of array cases
             ({'key0': ['abc', 'def'], 'key1': ['ghi', 'jkl']},
@@ -223,6 +231,10 @@ class TestOneOf:
              [LeafType(int, UnionTypeContext().dict(True).array(True)),
               LeafType(str, UnionTypeContext().dict(True).array(True))],
              UnionTypeContext(), False, None),
+            ([{'key0': [100, 200]}, {'key1': ['abc', 'def']}],
+             [LeafType(int, UnionTypeContext().dict(True).array(True)),
+              LeafType(str, UnionTypeContext().dict(True).array(True))],
+             UnionTypeContext(), False, None),
 
             # Outer dictionary of array cases
             ({'key0': ['abc', 'def'], 'key1': ['ghi', 'jkl']},
@@ -237,6 +249,9 @@ class TestOneOf:
             ({'key0': [100, 200], 'key1': ['abc', 'def']},
              [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
              UnionTypeContext().dict(True).array(True), True, {'key0': [100, 200], 'key1': ['abc', 'def']}),
+            ([{'key0': [100, 200]}, {'key1': ['abc', 'def']}],
+             [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
+             UnionTypeContext().dict(True).array(True), False, None),
         ])
     def test_one_of_primitive_type(self, input_value, input_types, input_context, expected_is_valid_output,
                                    expected_deserialized_value_output):
@@ -252,24 +267,29 @@ class TestOneOf:
         assert actual_deserialized_value == expected_deserialized_value_output
 
     @pytest.mark.parametrize(
-        'input_value, input_types, input_context, expected_validity, expected_value', [
-            (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
+        'input_value, input_date, input_types, input_context, expected_validity, expected_value', [
+            (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37), False),
+             Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
              [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME)),
               LeafType(date)], UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
-            (Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37)),
+            (Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37), False),
+             Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37)),
              [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.HTTP_DATE_TIME)), LeafType(date)],
              UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
-            (1480809600,
+            (ApiHelper.UnixDateTime(datetime(1994, 11, 6, 8, 49, 37)), 1480809600,
              [LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.UNIX_DATE_TIME)), LeafType(date)],
              UnionTypeContext(), True, datetime.utcfromtimestamp(1480809600)),
-            ('1994-11-06', [LeafType(date), LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME))], UnionTypeContext(),
+            ('1994-11-06', '1994-11-06',
+             [LeafType(datetime, UnionTypeContext().date_time_converter(datetime.fromisoformat).date_time_format(DateTimeFormat.RFC3339_DATE_TIME)), LeafType(date)],
+             UnionTypeContext(), True, date(1994, 11, 6)),
+            ('1994-11-06', '1994-11-06', [LeafType(date), LeafType(datetime, UnionTypeContext().date_time_format(DateTimeFormat.RFC3339_DATE_TIME))], UnionTypeContext(),
              True, date(1994, 11, 6))
         ])
-    def test_one_of_date_and_datetime(self, input_value, input_types, input_context, expected_validity, expected_value):
+    def test_one_of_date_and_datetime(self, input_value, input_date, input_types, input_context, expected_validity, expected_value):
         union_type = OneOf(input_types, input_context)
         union_type_result = union_type.validate(input_value)
         assert union_type_result.is_valid == expected_validity
-        actual_deserialized_value = union_type_result.deserialize(input_value)
+        actual_deserialized_value = union_type_result.deserialize(input_date)
         assert actual_deserialized_value == expected_value
 
     @pytest.mark.parametrize(
