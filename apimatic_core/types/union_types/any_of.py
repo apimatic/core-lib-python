@@ -56,8 +56,6 @@ class AnyOf(UnionType):
             self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, False) >= 1
 
     def _process_errors(self, value):
-        self.error_messages = []
-
         combined_types = self._get_combined_types()
 
         if self._union_type_context.is_nested:
@@ -75,7 +73,7 @@ class AnyOf(UnionType):
         return combined_types
 
     def _append_nested_error_message(self, combined_types):
-        self.error_messages.append(', '.join(combined_types))
+        self.error_messages.add(', '.join(combined_types))
 
     def _raise_validation_exception(self, value, combined_types):
         raise AnyOfValidationException('{} \nActual Value: {}\nExpected Type: Any Of {}.'.format(

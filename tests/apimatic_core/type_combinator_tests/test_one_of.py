@@ -252,6 +252,10 @@ class TestOneOf:
             ([{'key0': [100, 200]}, {'key1': ['abc', 'def']}],
              [LeafType(int, UnionTypeContext()), LeafType(str, UnionTypeContext())],
              UnionTypeContext().dict(True).array(True), False, None),
+            ([[100, 200], None],
+             [OneOf([LeafType(str, UnionTypeContext()), LeafType(bool, UnionTypeContext())],
+                    UnionTypeContext().array(True)), LeafType(int, UnionTypeContext().array(True))],
+             UnionTypeContext().array(True), False, None),
         ])
     def test_one_of_primitive_type(self, input_value, input_types, input_context, expected_is_valid_output,
                                    expected_deserialized_value_output):
@@ -777,6 +781,10 @@ class TestOneOf:
                  UnionType.NONE_MATCHED_ERROR_MESSAGE)),
             (100.5, [LeafType(int), OneOf([LeafType(bool), LeafType(str)])], UnionTypeContext(),
              '{} \nActual Value: 100.5\nExpected Type: One Of int, bool, str.'.format(
+                 UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+            ([[100, 200], None], [OneOf([LeafType(str, UnionTypeContext()), LeafType(bool, UnionTypeContext())],
+                                        UnionTypeContext().array(True)), LeafType(int, UnionTypeContext().array(True))],
+             UnionTypeContext().array(True), '{} \nActual Value: [[100, 200], None]\nExpected Type: One Of str, bool, int.'.format(
                  UnionType.NONE_MATCHED_ERROR_MESSAGE)),
         ])
     def test_one_of_validation_errors(self, input_value, input_types, input_context, expected_validation_message):
