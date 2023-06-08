@@ -54,10 +54,10 @@ class UnionTypeHelper:
         collection_cases = {}
 
         for key, value in dict_value.items():
-            nested_cases = UnionTypeHelper.validate_item(union_types, value)
-            matched_count = UnionTypeHelper.get_matched_count(value, nested_cases, is_for_one_of)
+            union_type_cases = UnionTypeHelper.make_deep_copies(union_types)
+            matched_count = UnionTypeHelper.get_matched_count(value, union_type_cases, is_for_one_of)
             is_valid = UnionTypeHelper.check_item_validity(is_for_one_of, is_valid, matched_count)
-            collection_cases[key] = nested_cases
+            collection_cases[key] = union_type_cases
 
         return is_valid, collection_cases
 
@@ -76,10 +76,10 @@ class UnionTypeHelper:
         collection_cases = []
 
         for item in array_value:
-            nested_cases = UnionTypeHelper.validate_item(union_types, item)
-            matched_count = UnionTypeHelper.get_matched_count(item, nested_cases, is_for_one_of)
+            union_type_cases = UnionTypeHelper.make_deep_copies(union_types)
+            matched_count = UnionTypeHelper.get_matched_count(item, union_type_cases, is_for_one_of)
             is_valid = UnionTypeHelper.check_item_validity(is_for_one_of, is_valid, matched_count)
-            collection_cases.append(nested_cases)
+            collection_cases.append(union_type_cases)
 
         return is_valid, collection_cases
 
@@ -92,10 +92,10 @@ class UnionTypeHelper:
         return is_valid
 
     @staticmethod
-    def validate_item(union_types, item):
+    def make_deep_copies(union_types):
         nested_cases = []
         for union_type in union_types:
-            nested_cases.append(copy.deepcopy(union_type).validate(item))
+            nested_cases.append(copy.deepcopy(union_type))
 
         return nested_cases
 

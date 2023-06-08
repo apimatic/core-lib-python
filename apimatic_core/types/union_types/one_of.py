@@ -56,36 +56,33 @@ class OneOf(UnionType):
             self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, True) == 1
 
     def _process_errors(self, value):
-        self.error_messages = []
+        self._append_nested_error_message(self._get_combined_types())
 
-        combined_types = self._get_combined_types()
-
-        if self._union_type_context.is_nested:
-            self._append_nested_error_message(combined_types)
-        else:
-            self._raise_validation_exception(value, combined_types)
+        if not self._union_type_context.is_nested:
+            self._raise_validation_exception(value)
 
     def _get_combined_types(self):
         combined_types = []
         for union_type in self._union_types:
             if isinstance(union_type, LeafType):
                 combined_types.append(union_type.type_to_match.__name__)
-            else:
+            elif union_type.error_messages:
                 combined_types.append(', '.join(union_type.error_messages))
         return combined_types
 
     def _append_nested_error_message(self, combined_types):
-        self.error_messages.append(', '.join(combined_types))
+        self.error_messages.add(', '.join(combined_types))
 
-    def _raise_validation_exception(self, value, combined_types):
+    def _raise_validation_exception(self, value):
         matched_count = sum(union_type.is_valid for union_type in self._union_types)
         error_message = UnionType.MORE_THAN_1_MATCHED_ERROR_MESSAGE if matched_count > 0 \
             else UnionType.NONE_MATCHED_ERROR_MESSAGE
         raise OneOfValidationException('{} \nActual Value: {}\nExpected Type: One Of {}.'.format(
-            error_message, value, ', '.join(combined_types)))
+            error_message, value, ', '.join(self.error_messages)))
 
     def __deepcopy__(self, memo={}): # pragma: no cover
         copy_object = OneOf(self._union_types, self._union_type_context)
         copy_object.is_valid = self.is_valid
         copy_object.collection_cases = self.collection_cases
+        copy_object.error_messages = self.error_messages
         return copy_object
