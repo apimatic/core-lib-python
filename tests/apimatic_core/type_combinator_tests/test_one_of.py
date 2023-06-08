@@ -282,10 +282,10 @@ class TestOneOf:
                     UnionTypeContext().dict(True).nullable(True)), LeafType(int, UnionTypeContext().dict(True))],
              UnionTypeContext().array(True).array_of_dict(True), True,
              [{'key0': 100, 'key1': 200}, {'key0': 'abc', 'key1': True}, None]),
-            # ([[100, 200], None],
-            #  [OneOf([LeafType(str, UnionTypeContext()), LeafType(bool, UnionTypeContext())],
-            #         UnionTypeContext().array(True)), LeafType(int, UnionTypeContext().array(True))],
-            #  UnionTypeContext().array(True), False, None),
+            ([[100, 200], None],
+             [OneOf([LeafType(str, UnionTypeContext()), LeafType(bool, UnionTypeContext())],
+                    UnionTypeContext().array(True)), LeafType(int, UnionTypeContext().array(True))],
+             UnionTypeContext().array(True), False, None),
         ])
 
     def test_one_of_primitive_type(self, input_value, input_types, input_context, expected_is_valid_output,
