@@ -80,7 +80,7 @@ class OneOf(UnionType):
         raise OneOfValidationException('{} \nActual Value: {}\nExpected Type: One Of {}.'.format(
             error_message, value, ', '.join(self.error_messages)))
 
-    def __deepcopy__(self, memo={}): # pragma: no cover
+    def __deepcopy__(self, memo={}):
         copy_object = OneOf(self._union_types, self._union_type_context)
         copy_object.is_valid = self.is_valid
         copy_object.collection_cases = self.collection_cases
