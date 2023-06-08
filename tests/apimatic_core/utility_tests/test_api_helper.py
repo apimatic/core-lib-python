@@ -406,6 +406,8 @@ class TestApiHelper(Base):
          '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}}'.format(
              Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
              Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+        (Base.get_union_type_scalar_model(),
+         '{"anyOfRequired": 1.5, "oneOfReqNullable": "abc", "oneOfOptional": 200, "anyOfOptNullable": true}'),
 
     ])
     def test_to_dictionary(self, obj, expected_value):

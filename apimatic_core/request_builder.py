@@ -26,7 +26,6 @@ class RequestBuilder:
         self._additional_query_params = {}
         self._multipart_params = []
         self._body_param = None
-        self._should_wrap_body_param = None
         self._body_serializer = None
         self._auth = None
         self._array_serialization_format = SerializationFormats.INDEXED
@@ -88,10 +87,6 @@ class RequestBuilder:
             self._body_param[body_param.get_key()] = body_param.get_value()
         else:
             self._body_param = body_param.get_value()
-        return self
-
-    def should_wrap_body_param(self, should_wrap_body_param):
-        self._should_wrap_body_param = should_wrap_body_param
         return self
 
     def body_serializer(self, body_serializer):

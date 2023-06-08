@@ -16,5 +16,6 @@ __all__ = [
     'lion',
     'orbit',
     'rabbit',
-    'grand_parent_class_model'
+    'grand_parent_class_model',
+    'union_type_scalar_model'
 ]

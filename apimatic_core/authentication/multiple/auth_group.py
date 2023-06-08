@@ -38,7 +38,7 @@ class AuthGroup(Authentication):
 
         return self
 
-    def is_valid(self):
+    def is_valid(self):  # pragma: no cover
         ...
 
     def apply(self, http_request):

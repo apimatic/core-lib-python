@@ -639,7 +639,7 @@ class ApiHelper(object):
         def __getstate__(self):
             return self.value
 
-        def __setstate__(self, state):
+        def __setstate__(self, state):  # pragma: no cover
             pass
 
     class HttpDateTime(CustomDate):

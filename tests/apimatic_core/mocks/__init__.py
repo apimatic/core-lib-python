@@ -5,5 +5,6 @@ __all__ = [
     'authentications',
     'exceptions',
     'http',
-    'logger'
+    'logger',
+    'union_type_lookup'
 ]

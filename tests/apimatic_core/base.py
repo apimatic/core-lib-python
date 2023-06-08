@@ -28,6 +28,7 @@ from tests.apimatic_core.mocks.models.complex_type import ComplexType
 from tests.apimatic_core.mocks.models.dog_model import DogModel
 from tests.apimatic_core.mocks.models.inner_complex_type import InnerComplexType
 from tests.apimatic_core.mocks.models.one_of_xml import OneOfXML
+from tests.apimatic_core.mocks.models.union_type_scalar_model import UnionTypeScalarModel
 from tests.apimatic_core.mocks.models.wolf_model import WolfModel
 from tests.apimatic_core.mocks.models.xml_model import XMLModel
 from tests.apimatic_core.mocks.models.days import Days
@@ -270,3 +271,10 @@ class Base:
                            inner_complex_map_of_list_type={'key0': [inner_complex_type, inner_complex_type],
                                                            'key2': [inner_complex_type, inner_complex_type]},
                            additional_properties={'prop1': [1, 2, 3], 'prop2': {'key0': 'abc', 'key1': 'def'}})
+
+    @staticmethod
+    def get_union_type_scalar_model():
+        return UnionTypeScalarModel(any_of_required=1.5,
+                                    one_of_req_nullable='abc',
+                                    one_of_optional=200,
+                                    any_of_opt_nullable=True)
