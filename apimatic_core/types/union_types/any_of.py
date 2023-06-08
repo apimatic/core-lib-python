@@ -56,31 +56,29 @@ class AnyOf(UnionType):
             self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, False) >= 1
 
     def _process_errors(self, value):
-        combined_types = self._get_combined_types()
-
-        if self._union_type_context.is_nested:
-            self._append_nested_error_message(combined_types)
-        else:
-            self._raise_validation_exception(value, combined_types)
+        self._append_nested_error_message(self._get_combined_types())
+        if not self._union_type_context.is_nested:
+            self._raise_validation_exception(value)
 
     def _get_combined_types(self):
         combined_types = []
         for union_type in self._union_types:
             if isinstance(union_type, LeafType):
                 combined_types.append(union_type.type_to_match.__name__)
-            else:
+            elif union_type.error_messages:
                 combined_types.append(', '.join(union_type.error_messages))
         return combined_types
 
     def _append_nested_error_message(self, combined_types):
         self.error_messages.add(', '.join(combined_types))
 
-    def _raise_validation_exception(self, value, combined_types):
+    def _raise_validation_exception(self, value):
         raise AnyOfValidationException('{} \nActual Value: {}\nExpected Type: Any Of {}.'.format(
-            UnionType.NONE_MATCHED_ERROR_MESSAGE, value, ', '.join(combined_types)))
+            UnionType.NONE_MATCHED_ERROR_MESSAGE, value, ', '.join(self.error_messages)))
 
     def __deepcopy__(self, memo={}):
         copy_object = AnyOf(self._union_types, self._union_type_context)
         copy_object.is_valid = self.is_valid
         copy_object.collection_cases = self.collection_cases
+        copy_object.error_messages = self.error_messages
         return copy_object

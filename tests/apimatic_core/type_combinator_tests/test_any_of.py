@@ -802,6 +802,11 @@ class TestAnyOf:
              '{} \nActual Value: 100.5\nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
             (100.5, [LeafType(int), AnyOf([LeafType(bool), LeafType(str)])], UnionTypeContext(),
              '{} \nActual Value: 100.5\nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+            ([[100, 200], None], [AnyOf([LeafType(str, UnionTypeContext()), LeafType(bool, UnionTypeContext())],
+                                        UnionTypeContext().array(True)), LeafType(int, UnionTypeContext().array(True))],
+             UnionTypeContext().array(True),
+             '{} \nActual Value: [[100, 200], None]\nExpected Type: Any Of str, bool, int.'.format(
+                 UnionType.NONE_MATCHED_ERROR_MESSAGE)),
         ])
     def test_one_of_validation_errors(self, input_value, input_types, input_context, expected_validation_message):
         with pytest.raises(AnyOfValidationException) as validation_error:
