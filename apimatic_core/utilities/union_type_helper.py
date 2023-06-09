@@ -1,11 +1,16 @@
 import copy
 from datetime import datetime
+from apimatic_core.exceptions.anyof_validation_exception import AnyOfValidationException
+from apimatic_core.exceptions.oneof_validation_exception import OneOfValidationException
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.datetime_helper import DateTimeHelper
 
 
 class UnionTypeHelper:
+
+    NONE_MATCHED_ERROR_MESSAGE = 'We could not match any acceptable types against the given JSON.'
+    MORE_THAN_1_MATCHED_ERROR_MESSAGE = 'There are more than one acceptable type matched against the given JSON.'
 
     @staticmethod
     def get_deserialized_value(union_types, value):
@@ -214,3 +219,35 @@ class UnionTypeHelper:
             deserialized_value.append(valid_case.deserialize(item))
 
         return deserialized_value
+
+    @staticmethod
+    def process_errors(value, union_types, error_messages, is_nested, is_for_one_of):
+        error_messages.add(', '.join(UnionTypeHelper.get_combined_error_messages(union_types)))
+
+        if not is_nested:
+            UnionTypeHelper.raise_validation_exception(value, union_types, ', '.join(error_messages), is_for_one_of)
+
+        return error_messages
+
+    @staticmethod
+    def get_combined_error_messages(union_types):
+        combined_error_messages = []
+        from apimatic_core.types.union_types.leaf_type import LeafType
+        for union_type in union_types:
+            if isinstance(union_type, LeafType):
+                combined_error_messages.append(union_type.type_to_match.__name__)
+            elif union_type.error_messages:
+                combined_error_messages.append(', '.join(union_type.error_messages))
+        return combined_error_messages
+
+    @staticmethod
+    def raise_validation_exception(value, union_types, error_message, is_for_one_of):
+        if is_for_one_of:
+            matched_count = sum(union_type.is_valid for union_type in union_types)
+            message = UnionTypeHelper.MORE_THAN_1_MATCHED_ERROR_MESSAGE if matched_count > 0 \
+                else UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE
+            raise OneOfValidationException('{} \nActual Value: {}\nExpected Type: One Of {}.'.format(
+                message, value, error_message))
+        else:
+            raise AnyOfValidationException('{} \nActual Value: {}\nExpected Type: Any Of {}.'.format(
+                UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE, value, error_message))

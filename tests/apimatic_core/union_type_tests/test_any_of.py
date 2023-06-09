@@ -6,7 +6,7 @@ from apimatic_core.types.union_types.leaf_type import LeafType
 from apimatic_core.types.union_types.any_of import AnyOf
 from apimatic_core.types.union_types.union_type_context import UnionTypeContext
 from apimatic_core.utilities.api_helper import ApiHelper
-from apimatic_core_interfaces.types.union_type import UnionType
+from apimatic_core.utilities.union_type_helper import UnionTypeHelper
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.mocks.models.atom import Atom
 from tests.apimatic_core.mocks.models.days import Days
@@ -515,8 +515,8 @@ class TestAnyOf:
 
             # Dictionary of Dictionary Cases
             ({'key0': {'key0': {"AtomNumberOfElectrons": 2, "AtomNumberOfProtons": 5},
-                       'key1': {"AtomNumberOfElectrons": 2, "AtomNumberOfProtons": 10}}, \
-              'key1': {'key0': {"AtomNumberOfElectrons": 2, "AtomNumberOfProtons": 5}, \
+                       'key1': {"AtomNumberOfElectrons": 2, "AtomNumberOfProtons": 10}},
+              'key1': {'key0': {"AtomNumberOfElectrons": 2, "AtomNumberOfProtons": 5},
                        'key1': {"AtomNumberOfElectrons": 2, "AtomNumberOfProtons": 10}}},
              [LeafType(Atom, UnionTypeContext().dict(True)), LeafType(Orbit, UnionTypeContext().dict(True))],
              UnionTypeContext().dict(True), True,
@@ -799,14 +799,16 @@ class TestAnyOf:
     @pytest.mark.parametrize('input_value, input_types, input_context, expected_validation_message', [
             # Simple Cases
             (100.5, [LeafType(int), LeafType(bool), LeafType(str)], UnionTypeContext(),
-             '{} \nActual Value: 100.5\nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+             '{} \nActual Value: 100.5\nExpected Type: Any Of int, bool, str.'.format(
+                 UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE)),
             (100.5, [LeafType(int), AnyOf([LeafType(bool), LeafType(str)])], UnionTypeContext(),
-             '{} \nActual Value: 100.5\nExpected Type: Any Of int, bool, str.'.format(UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+             '{} \nActual Value: 100.5\nExpected Type: Any Of int, bool, str.'.format(
+                 UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE)),
             ([[100, 200], None], [AnyOf([LeafType(str, UnionTypeContext()), LeafType(bool, UnionTypeContext())],
                                         UnionTypeContext().array(True)), LeafType(int, UnionTypeContext().array(True))],
              UnionTypeContext().array(True),
              '{} \nActual Value: [[100, 200], None]\nExpected Type: Any Of str, bool, int.'.format(
-                 UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+                 UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE)),
         ])
     def test_one_of_validation_errors(self, input_value, input_types, input_context, expected_validation_message):
         with pytest.raises(AnyOfValidationException) as validation_error:

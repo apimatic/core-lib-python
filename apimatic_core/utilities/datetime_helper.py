@@ -1,7 +1,4 @@
 from datetime import datetime, date
-
-import dateutil
-
 from apimatic_core.types.datetime_format import DateTimeFormat
 
 

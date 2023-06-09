@@ -6,7 +6,7 @@ from apimatic_core.types.union_types.leaf_type import LeafType
 from apimatic_core.types.union_types.one_of import OneOf
 from apimatic_core.types.union_types.union_type_context import UnionTypeContext
 from apimatic_core.utilities.api_helper import ApiHelper
-from apimatic_core_interfaces.types.union_type import UnionType
+from apimatic_core.utilities.union_type_helper import UnionTypeHelper
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.mocks.models.atom import Atom
 from tests.apimatic_core.mocks.models.days import Days
@@ -806,17 +806,17 @@ class TestOneOf:
             # Simple Cases
             (100, [LeafType(int), LeafType(int), LeafType(str)], UnionTypeContext(),
              '{} \nActual Value: 100\nExpected Type: One Of int, int, str.'.format(
-                 UnionType.MORE_THAN_1_MATCHED_ERROR_MESSAGE)),
+                 UnionTypeHelper.MORE_THAN_1_MATCHED_ERROR_MESSAGE)),
             (100.5, [LeafType(int), LeafType(bool), LeafType(str)], UnionTypeContext(),
              '{} \nActual Value: 100.5\nExpected Type: One Of int, bool, str.'.format(
-                 UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+                 UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE)),
             (100.5, [LeafType(int), OneOf([LeafType(bool), LeafType(str)])], UnionTypeContext(),
              '{} \nActual Value: 100.5\nExpected Type: One Of int, bool, str.'.format(
-                 UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+                 UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE)),
             ([[100, 200], None], [OneOf([LeafType(str, UnionTypeContext()), LeafType(bool, UnionTypeContext())],
                                         UnionTypeContext().array(True)), LeafType(int, UnionTypeContext().array(True))],
              UnionTypeContext().array(True), '{} \nActual Value: [[100, 200], None]\nExpected Type: One Of str, bool, int.'.format(
-                 UnionType.NONE_MATCHED_ERROR_MESSAGE)),
+                 UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE)),
         ])
     def test_one_of_validation_errors(self, input_value, input_types, input_context, expected_validation_message):
         with pytest.raises(OneOfValidationException) as validation_error:
