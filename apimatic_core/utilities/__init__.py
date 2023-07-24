@@ -3,5 +3,7 @@ __all__ = [
     'auth_helper',
     'xml_helper',
     'comparison_helper',
-    'file_helper'
+    'file_helper',
+    'datetime_helper',
+    'union_type_helper'
 ]

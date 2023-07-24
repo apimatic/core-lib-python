@@ -1,4 +1,3 @@
-
 class Days(object):
 
     """Implementation of the 'Days' enum.
@@ -16,6 +15,8 @@ class Days(object):
 
     """
 
+    _all_values = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday','Saturday']
+
     SUNDAY = 'Sunday'
 
     MONDAY = 'Monday'
@@ -29,3 +30,19 @@ class Days(object):
     FRI_DAY = 'Friday'
 
     SATURDAY = 'Saturday'
+
+    @classmethod
+    def validate(cls, value):
+        """Validates value against enum.
+
+        Args:
+            value: the value to be validated against.
+
+        Returns:
+            boolean : if value is valid for this model.
+
+        """
+        if value is None:
+            return None
+
+        return value in cls._all_values

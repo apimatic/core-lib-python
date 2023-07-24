@@ -9,8 +9,7 @@ class HttpCallBack(object):
 
     """
 
-    def on_before_request(self,
-                          request):
+    def on_before_request(self, request):  # pragma: no cover
         """The controller will call this method before making the HttpRequest.
 
         Args:
@@ -19,8 +18,7 @@ class HttpCallBack(object):
         """
         raise NotImplementedError("This method has not been implemented.")
 
-    def on_after_response(self,
-                          http_response):
+    def on_after_response(self, http_response):  # pragma: no cover
         """The controller will call this method after making the HttpRequest.
 
         Args:

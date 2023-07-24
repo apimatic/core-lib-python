@@ -15,6 +15,7 @@ from apimatic_core.utilities.xml_helper import XmlHelper
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.mocks.callables.base_uri_callable import Server
 from requests.utils import quote
+from tests.apimatic_core.mocks.union_type_lookup import UnionTypeLookUp
 
 
 class TestRequestBuilder(Base):
@@ -417,27 +418,18 @@ class TestRequestBuilder(Base):
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 
-    @pytest.mark.parametrize('input_body_param_value, input_should_wrap_body_param,'
-                             'input_body_key, expected_body_param_value', [
-                                 (100, False, None, '100'),
-                                 (100, True, 'body', '{"body": 100}'),
-                                 ([1, 2, 3, 4], False, None, '[1, 2, 3, 4]'),
-                                 ([1, 2, 3, 4], True, 'body', '{"body": [1, 2, 3, 4]}'),
-                                 ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, False, None,
-                                  '{"key1": "value1", "key2": [1, 2, 3, 4]}'),
-                                 ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, True, 'body',
-                                  '{"body": {"key1": "value1", "key2": [1, 2, 3, 4]}}')
-                             ])
-    def test_type_combinator_body_param_with_serializer(self, input_body_param_value, input_should_wrap_body_param,
-                                                        input_body_key, expected_body_param_value):
+    @pytest.mark.parametrize('input_value, expected_value', [
+        (100, '100'),
+        (True, 'true')
+    ])
+    def test_type_combinator_validation_in_request(self, input_value, expected_value):
         http_request = self.new_request_builder \
             .body_param(Parameter()
-                        .key(input_body_key)
-                        .value(input_body_param_value)) \
-            .body_serializer(ApiHelper.get_request_parameter) \
-            .should_wrap_body_param(input_should_wrap_body_param) \
+                        .validator(lambda value: UnionTypeLookUp.get('ScalarTypes'))
+                        .value(input_value)) \
+            .body_serializer(ApiHelper.json_serialize) \
             .build(self.global_configuration)
-        assert http_request.parameters == expected_body_param_value
+        assert http_request.parameters == expected_value
 
     @pytest.mark.parametrize('input_body_param_value, expected_body_param_value', [
         (Base.xml_model(), '<AttributesAndElements string="String" number="10000" boolean="false">'

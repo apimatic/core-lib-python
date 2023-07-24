@@ -5,11 +5,9 @@ import datetime
 import calendar
 import email.utils as eut
 from time import mktime
-
 import jsonpickle
 import dateutil.parser
 from jsonpointer import JsonPointerException, resolve_pointer
-
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -27,26 +25,6 @@ class ApiHelper(object):
     """
 
     SKIP = '#$%^S0K1I2P3))*'
-
-    @staticmethod
-    def get_request_parameter(value, is_wrapped=False):
-        """get the correct serialization method for a oneof/anyof parameter type.
-
-        Args:
-            value: the value of the request parameter
-            is_wrapped: whether parameter are wrapped in object or not
-
-        Returns:
-             A correct serialized value which can be used
-             when sending a request.
-
-        """
-
-        if type(value) is str:
-            return value
-        if is_wrapped:
-            return ApiHelper.json_serialize_wrapped_params(value)
-        return ApiHelper.json_serialize(value)
 
     @staticmethod
     def json_serialize_wrapped_params(obj):
@@ -79,17 +57,33 @@ class ApiHelper(object):
             str: The JSON serialized string of the object.
 
         """
+
         if obj is None:
             return None
+
+        if isinstance(obj, str):
+            return obj
 
         # Resolve any Names if it's one of our objects that needs to have this called on
         if isinstance(obj, list):
             value = list()
             for item in obj:
-                if hasattr(item, "_names"):
+                if isinstance(item, dict) or isinstance(item, list):
+                    value.append(ApiHelper.json_serialize(item, False))
+                elif hasattr(item, "_names"):
                     value.append(ApiHelper.to_dictionary(item))
                 else:
                     value.append(item)
+            obj = value
+        elif isinstance(obj, dict):
+            value = dict()
+            for key, item in obj.items():
+                if isinstance(item, list) or isinstance(item, dict):
+                    value[key] = ApiHelper.json_serialize(item, False)
+                elif hasattr(item, "_names"):
+                    value[key] = ApiHelper.to_dictionary(item)
+                else:
+                    value[key] = item
             obj = value
         else:
             if hasattr(obj, "_names"):
@@ -104,6 +98,8 @@ class ApiHelper(object):
 
         Args:
             json (str): The JSON serialized string to deserialize.
+            unboxing_function (callable): The deserialization funtion to be used.
+            as_dict (bool): The flag to determine to deserialize json as dictionary type
 
         Returns:
             dict: A dictionary representing the data contained in the
@@ -175,6 +171,9 @@ class ApiHelper(object):
                 JSON serialized string.
 
         """
+        if response is None:
+            return None
+
         if isinstance(response, str):
             deserialized_response = ApiHelper.json_deserialize(response)
         else:
@@ -198,6 +197,15 @@ class ApiHelper(object):
                         ApiHelper.json_deserialize(response, ApiHelper.RFC3339DateTime.from_value)]
             else:
                 return ApiHelper.RFC3339DateTime.from_value(response).datetime
+
+    @staticmethod
+    def deserialize_union_type(union_type, response, should_deserialize=True):
+        if should_deserialize:
+            response = ApiHelper.json_deserialize(response, as_dict=True)
+
+        union_type_result = union_type.validate(response)
+
+        return union_type_result.deserialize(response)
 
     @staticmethod
     def get_content_type(value):
@@ -314,9 +322,7 @@ class ApiHelper(object):
         return url
 
     @staticmethod
-    def append_url_with_query_parameters(url,
-                                         parameters,
-                                         array_serialization="indexed"):
+    def append_url_with_query_parameters(url, parameters, array_serialization="indexed"):
         """Adds query parameters to a URL.
 
         Args:
@@ -377,8 +383,7 @@ class ApiHelper(object):
         return protocol + query_url + parameters
 
     @staticmethod
-    def form_encode_parameters(form_parameters,
-                               array_serialization="indexed"):
+    def form_encode_parameters(form_parameters, array_serialization="indexed"):
         """Form encodes a dictionary of form parameters
 
         Args:
@@ -453,6 +458,9 @@ class ApiHelper(object):
         optional_fields = obj._optionals if hasattr(obj, "_optionals") else []
         nullable_fields = obj._nullables if hasattr(obj, "_nullables") else []
 
+        if hasattr(obj, 'validate'):
+            obj.validate(obj)
+
         # Loop through all properties in this model
         names = {k: v for k, v in obj.__dict__.items() if v is not None} if should_ignore_null_values else obj._names
         for name in names:
@@ -470,19 +478,25 @@ class ApiHelper(object):
                 # Loop through each item
                 dictionary[obj._names[name]] = list()
                 for item in value:
-                    dictionary[obj._names[name]].append(
-                        ApiHelper.to_dictionary(item, should_ignore_null_values) if hasattr(item, "_names") else item)
+                    if isinstance(item, list) or isinstance(item, dict):
+                        dictionary[obj._names[name]].append(ApiHelper.process_nested_collection(
+                            item, should_ignore_null_values))
+                    else:
+                        dictionary[obj._names[name]].append(ApiHelper.to_dictionary(item, should_ignore_null_values)
+                                                            if hasattr(item, "_names") else item)
             elif isinstance(value, dict):
                 # Loop through each item
                 dictionary[obj._names[name]] = dict()
-                for key in value:
-                    dictionary[obj._names[name]][key] = ApiHelper.to_dictionary(value[key],
-                                                                                should_ignore_null_values) if hasattr(
-                        value[key],
-                        "_names") else \
-                        value[key]
+                for k, v in value.items():
+                    if isinstance(v, list) or isinstance(v, dict):
+                        dictionary[obj._names[name]][k] = ApiHelper.process_nested_collection(
+                            v, should_ignore_null_values)
+                    else:
+                        dictionary[obj._names[name]][k] = ApiHelper.to_dictionary(value[k], should_ignore_null_values) \
+                            if hasattr(value[k], "_names") else value[k]
             else:
-                dictionary[obj._names[name]] = ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value, "_names") else value
+                dictionary[obj._names[name]] = ApiHelper.to_dictionary(value, should_ignore_null_values) if \
+                    hasattr(value, "_names") else value
 
         # Loop through all additional properties in this model
         if hasattr(obj, "additional_properties"):
@@ -509,12 +523,44 @@ class ApiHelper(object):
         return dictionary
 
     @staticmethod
+    def process_nested_collection(value, should_ignore_null_values):
+        if isinstance(value, list):
+            return [ApiHelper.process_nested_collection(item, should_ignore_null_values) for item in value]
+
+        if isinstance(value, dict):
+            return {k: ApiHelper.process_nested_collection(v, should_ignore_null_values) for k, v in value.items()}
+
+        return ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value, "_names") else value
+
+    @staticmethod
+    def apply_datetime_converter(value, datetime_converter_obj):
+        if isinstance(value, list):
+            return [ApiHelper.apply_datetime_converter(item, datetime_converter_obj) for item in value]
+
+        if isinstance(value, dict):
+            return {k: ApiHelper.apply_datetime_converter(v, datetime_converter_obj) for k, v in value.items()}
+
+        if isinstance(value, datetime.datetime):
+            return ApiHelper.when_defined(datetime_converter_obj, value)
+
+        return value
+
+    @staticmethod
     def when_defined(func, value):
         return func(value) if value else None
 
     @staticmethod
     def is_file_wrapper_instance(param):
         return isinstance(param, FileWrapper)
+
+    @staticmethod
+    def is_valid_type(value, type_callable):
+        if isinstance(value, list):
+            return all(ApiHelper.is_valid_type(item, type_callable) for item in value)
+        elif isinstance(value, dict):
+            return all(ApiHelper.is_valid_type(item, type_callable) for item in value.values())
+
+        return value is not None and type_callable(value)
 
     @staticmethod
     def resolve_template_placeholders_using_json_pointer(placeholders, value, template):
@@ -593,7 +639,7 @@ class ApiHelper(object):
         def __getstate__(self):
             return self.value
 
-        def __setstate__(self, state):
+        def __setstate__(self, state):  # pragma: no cover
             pass
 
     class HttpDateTime(CustomDate):
@@ -602,8 +648,7 @@ class ApiHelper(object):
 
         @classmethod
         def from_datetime(cls, date_time):
-            return eut.formatdate(timeval=mktime(date_time.timetuple()),
-                                  localtime=False, usegmt=True)
+            return eut.formatdate(timeval=mktime(date_time.timetuple()), localtime=False, usegmt=True)
 
         @classmethod
         def from_value(cls, value):

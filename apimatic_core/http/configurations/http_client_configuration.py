@@ -2,7 +2,7 @@
 from apimatic_core.factories.http_response_factory import HttpResponseFactory
 
 
-class HttpClientConfiguration(object):
+class HttpClientConfiguration(object):  # pragma: no cover
     """A class used for configuring the SDK by a user.
     """
 

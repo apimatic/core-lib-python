@@ -5,5 +5,6 @@ __all__ = [
     'utility_tests',
     'mocks',
     'api_call_tests',
-    'api_logger_tests'
+    'api_logger_tests',
+    'union_type_tests'
 ]

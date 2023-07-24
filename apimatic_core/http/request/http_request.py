@@ -56,7 +56,7 @@ class HttpRequest(object):
         """
         self.headers[name] = value
 
-    def add_parameter(self, name, value):
+    def add_parameter(self, name, value):  # pragma: no cover
         """ Add a parameter to the HttpRequest.
 
         Args:

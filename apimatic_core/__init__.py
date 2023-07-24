@@ -9,5 +9,6 @@ __all__ = [
     'utilities',
     'factories',
     'types',
-    'logger'
+    'logger',
+    'exceptions'
 ]
