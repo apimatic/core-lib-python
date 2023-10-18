@@ -318,7 +318,7 @@ class TestApiHelper(Base):
         ({'query_param': "string",
           'query_param2': True,
           'query_param3': [1, 2, 3]
-          }, 'query_param=string&query_param2=True&query_param3[0]=1&query_param3[1]=2&query_param3[2]=3',
+          }, 'query_param=string&query_param2=true&query_param3[0]=1&query_param3[1]=2&query_param3[2]=3',
          SerializationFormats.INDEXED)
     ])
     def test_process_complex_query_parameters(self, input_query_params, expected_query_param_value,
@@ -521,7 +521,7 @@ class TestApiHelper(Base):
           'form_param3': {'key': 'string_val'},
           }, [('form_param1', 'string'),
               ('form_param2[0]', 'string'),
-              ('form_param2[1]', True),
+              ('form_param2[1]', 'true'),
               ('form_param3[key]', 'string_val')], SerializationFormats.INDEXED)
     ])
     def test_form_encode_parameters(self, input_form_param_value, expected_form_param_value,

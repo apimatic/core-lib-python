@@ -434,6 +434,8 @@ class ApiHelper(object):
                 retval += ApiHelper.form_encode(obj[item], instance_name + "[" + item + "]", array_serialization,
                                                 is_query)
         else:
+            if isinstance(obj, bool):
+                obj = str(obj).lower()
             retval.append((instance_name, obj))
 
         return retval
