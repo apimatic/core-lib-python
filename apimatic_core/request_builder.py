@@ -1,3 +1,4 @@
+from apimatic_core.exceptions.auth_validation_exception import AuthValidationException
 from apimatic_core.http.request.http_request import HttpRequest
 from apimatic_core.types.array_serialization_format import SerializationFormats
 from apimatic_core.utilities.api_helper import ApiHelper
@@ -229,4 +230,4 @@ class RequestBuilder:
             if self._auth.with_auth_managers(auth_managers).is_valid():
                 self._auth.apply(http_request)
             else:
-                raise PermissionError(self._auth.error_message)
+                raise AuthValidationException(self._auth.error_message)

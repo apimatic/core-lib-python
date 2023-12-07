@@ -16,10 +16,12 @@ class Or(AuthGroup):
             return False
 
         for participant in self.mapped_group:
-            if participant.is_valid():
-                self._is_valid_group = True
-            else:
-                self.error_messages.append(participant.error_message)
+            self._is_valid_group = participant.is_valid()
+            # returning as we encounter the first participant as valid
+            if self._is_valid_group:
+                return self._is_valid_group
 
-        return self.is_valid_group
+            self.error_messages.append(participant.error_message)
+
+        return self._is_valid_group
 
