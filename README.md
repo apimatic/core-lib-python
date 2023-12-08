@@ -46,6 +46,13 @@ pip install apimatic-core
 |--------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | [`LazyProperty`](apimatic_core/decorators/lazy_property.py)  | A decorator class for lazy instantiation                                             |
 
+## Exceptions
+| Name                                                                                 | Description                                                              |
+|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [`OneOfValidationException`](apimatic_core/exceptions/oneof_validation_exception.py) | An exception class for the failed validation of oneOf (union-type) cases |
+| [`AnyOfValidationException`](apimatic_core/exceptions/anyof_validation_exception.py) | An exception class for the failed validation of anyOf (union-type) cases |
+| [`AuthValidationException`](apimatic_core/exceptions/auth_validation_exception.py)   | An exception class for the failed validation of authentication schemes   |
+
 ## Factories
 | Name                                                                      | Description                                                                 |
 |---------------------------------------------------------------------------|-----------------------------------------------------------------------------|

@@ -1,6 +1,8 @@
 from datetime import datetime, date
 import pytest
 import sys
+
+from apimatic_core.exceptions.auth_validation_exception import AuthValidationException
 from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
 from apimatic_core.authentication.multiple.and_auth_group import And
 from apimatic_core.authentication.multiple.or_auth_group import Or
@@ -589,9 +591,9 @@ class TestRequestBuilder(Base):
             expected_multipart_param_value1.close()
 
     @pytest.mark.parametrize('input_auth_scheme, expected_auth_header_key, expected_auth_header_value', [
-        (Single('basic_auth'), 'Authorization', 'Basic {}'.format(
+        (Single('basic_auth'), 'Basic-Authorization', 'Basic {}'.format(
             AuthHelper.get_base64_encoded_value('test_username', 'test_password'))),
-        (Single('bearer_auth'), 'Authorization', 'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42'),
+        (Single('bearer_auth'), 'Bearer-Authorization', 'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42'),
         (Single('custom_header_auth'), 'token', 'Qaws2W233WedeRe4T56G6Vref2')
     ])
     def test_header_authentication(self, input_auth_scheme, expected_auth_header_key, expected_auth_header_value):
@@ -620,44 +622,59 @@ class TestRequestBuilder(Base):
                 .build(self.global_configuration_with_auth)
         assert validation_error.value.args[0] == 'Auth key is invalid.'
 
-    @pytest.mark.parametrize('input_auth_scheme, expected_auth_header_key_1,'
-                             'expected_auth_header_value_1, expected_auth_header_key_2,'
-                             'expected_auth_header_value_2', [
-                                 (Or('basic_auth', 'bearer_auth', 'custom_header_auth'), 'Authorization',
-                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
-                                  'Qaws2W233WedeRe4T56G6Vref2'),
-                                 (And('basic_auth', 'bearer_auth', 'custom_header_auth'), 'Authorization',
-                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
-                                  'Qaws2W233WedeRe4T56G6Vref2'),
-                                 (Or('basic_auth', And('bearer_auth', 'custom_header_auth')), 'Authorization',
-                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
-                                  'Qaws2W233WedeRe4T56G6Vref2'),
-                                 (And('basic_auth', Or('bearer_auth', 'custom_header_auth')), 'Authorization',
-                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
-                                  'Qaws2W233WedeRe4T56G6Vref2'),
-                                 (And('basic_auth', And('bearer_auth', 'custom_header_auth')), 'Authorization',
-                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
-                                  'Qaws2W233WedeRe4T56G6Vref2'),
-                                 (Or('basic_auth', Or('bearer_auth', 'custom_header_auth')), 'Authorization',
-                                  'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42', 'token',
-                                  'Qaws2W233WedeRe4T56G6Vref2'),
-                                 (Or('basic_auth', Or(None, 'custom_header_auth')), 'Authorization',
-                                  'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk', 'token',
-                                  'Qaws2W233WedeRe4T56G6Vref2'),
-                                 (Or('basic_auth', And(None, 'custom_header_auth')), 'Authorization',
-                                  'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk', 'token',
-                                  'Qaws2W233WedeRe4T56G6Vref2'),
+    @pytest.mark.parametrize('input_auth_scheme, expected_request_headers', [
+                                 (Or('basic_auth', 'custom_header_auth'),
+                                  {
+                                      'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
+                                      'token': None
+                                  }),
+                                 (And('basic_auth', 'bearer_auth', 'custom_header_auth'),
+                                  {
+                                      'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
+                                      'Bearer-Authorization': 'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42',
+                                      'token': 'Qaws2W233WedeRe4T56G6Vref2'
+                                  }),
+                                 (Or('basic_auth', And('bearer_auth', 'custom_header_auth')),
+                                  {
+                                      'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
+                                      'Bearer-Authorization': None,
+                                      'token': None
+                                  }),
+                                 (And('basic_auth', Or('bearer_auth', 'custom_header_auth')),
+                                  {
+                                      'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
+                                      'Bearer-Authorization': 'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42',
+                                      'token': None
+                                  }),
+                                 (And('basic_auth', And('bearer_auth', 'custom_header_auth')),
+                                  {
+                                      'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
+                                      'Bearer-Authorization': 'Bearer 0b79bab50daca910b000d4f1a2b675d604257e42',
+                                      'token': 'Qaws2W233WedeRe4T56G6Vref2'
+                                  }),
+                                 (Or('basic_auth', Or('bearer_auth', 'custom_header_auth')),
+                                  {
+                                      'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
+                                      'Bearer-Authorization': None,
+                                      'token': None
+                                  }),
+                                 (Or('basic_auth', Or(None, 'custom_header_auth')),
+                                  {
+                                      'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
+                                      'token': None
+                                  }),
+                                 (Or('basic_auth', And(None, 'custom_header_auth')),
+                                  {
+                                      'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
+                                      'token': None
+                                  }),
                              ])
-    def test_success_case_of_multiple_authentications(self, input_auth_scheme, expected_auth_header_key_1,
-                                                      expected_auth_header_value_1,
-                                                      expected_auth_header_key_2,
-                                                      expected_auth_header_value_2):
+    def test_success_case_of_multiple_authentications(self, input_auth_scheme, expected_request_headers):
         http_request = self.new_request_builder \
             .auth(input_auth_scheme) \
             .build(self.global_configuration_with_auth)
-
-        assert http_request.headers[expected_auth_header_key_1] == expected_auth_header_value_1 \
-               and http_request.headers[expected_auth_header_key_2] == expected_auth_header_value_2
+        for key in expected_request_headers.keys():
+            assert http_request.headers.get(key) == expected_request_headers.get(key)
 
     @pytest.mark.parametrize('input_auth_scheme, expected_error_message', [
         (Or('basic_auth', 'bearer_auth', 'custom_header_auth'), '[BasicAuth: _basic_auth_user_name or '
@@ -693,7 +710,7 @@ class TestRequestBuilder(Base):
         (And(None, 'basic_auth'), '[BasicAuth: _basic_auth_user_name or _basic_auth_password is undefined.]')
     ])
     def test_failed_case_of_multiple_authentications(self, input_auth_scheme, expected_error_message):
-        with pytest.raises(PermissionError) as errors:
+        with pytest.raises(AuthValidationException) as errors:
             self.new_request_builder \
                 .auth(input_auth_scheme) \
                 .build(self.global_configuration_with_uninitialized_auth_params)

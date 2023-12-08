@@ -12,7 +12,7 @@ class Single(Authentication):
         self._auth_participant = auth_participant
         self._mapped_auth = None
         self._error_message = None
-        self._is_valid = True
+        self._is_valid = False
 
     def with_auth_managers(self, auth_managers):
         if not auth_managers.get(self._auth_participant):
@@ -23,9 +23,9 @@ class Single(Authentication):
         return self
 
     def is_valid(self):
-        if not self._mapped_auth.is_valid():
+        self._is_valid = self._mapped_auth.is_valid()
+        if not self._is_valid:
             self._error_message = self._mapped_auth.error_message
-            self._is_valid = False
 
         return self._is_valid
 

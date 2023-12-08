@@ -30,15 +30,15 @@ class TestApiLogger(Base):
                              'Calling the on_before_request method of http_call_back for end-to-end-test.',
                              'Raw request for end-to-end-test is: {\'http_method\': \'POST\', \'query_url\': '
                              '\'http://localhost:3000/body/model\', \'headers\': {\'Content-Type\': '
-                             '\'application/json\', \'accept\': \'application/json\', \'Authorization\': '
+                             '\'application/json\', \'accept\': \'application/json\', \'Basic-Authorization\': '
                              '\'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk\'}, \'query_parameters\': None, '
                              '\'parameters\': \'{"Key": "Value"}\', \'files\': {}}',
                              'Raw response for end-to-end-test is: {\'status_code\': 200, \'reason_phrase\': None, '
                              '\'headers\': {\'Content-Type\': \'application/json\', \'accept\': \'application/json\', '
-                             '\'Authorization\': \'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk\'}, \'text\': '
+                             '\'Basic-Authorization\': \'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk\'}, \'text\': '
                              '\'{"Key": "Value"}\', \'request\': {\'http_method\': \'POST\', \'query_url\': '
                              '\'http://localhost:3000/body/model\', \'headers\': {\'Content-Type\': '
-                             '\'application/json\', \'accept\': \'application/json\', \'Authorization\': '
+                             '\'application/json\', \'accept\': \'application/json\', \'Basic-Authorization\': '
                              '\'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk\'}, \'query_parameters\': None, '
                              '\'parameters\': \'{"Key": "Value"}\', \'files\': {}}}',
                              'Calling on_after_response method of http_call_back for end-to-end-test.',
