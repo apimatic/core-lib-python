@@ -28,7 +28,7 @@ setup(
         'python-dateutil~=2.8.1',
         'requests~=2.31',
         'enum34~=1.1, >=1.1.10',
-        'setuptools==66.0.0',
+        'setuptools>=68.0.0',
         'jsonpointer~=2.3'
     ],
     tests_require=[
