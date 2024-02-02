@@ -556,7 +556,10 @@ class ApiHelper(object):
         return isinstance(param, FileWrapper)
 
     @staticmethod
-    def is_valid_type(value, type_callable):
+    def is_valid_type(value, type_callable, is_value_nullable=False):
+        if value is None and is_value_nullable:
+            return True
+
         if isinstance(value, list):
             return all(ApiHelper.is_valid_type(item, type_callable) for item in value)
         elif isinstance(value, dict):
