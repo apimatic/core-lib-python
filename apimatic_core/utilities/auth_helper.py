@@ -7,7 +7,7 @@ class AuthHelper:
 
     @staticmethod
     def get_base64_encoded_value(*props, delimiter=':'):
-        if props:
+        if props.__len__() > 0 and not any(prop is None for prop in props):
             joined = delimiter.join(props)
             encoded = base64.b64encode(str.encode(joined)).decode('iso-8859-1')
             return encoded

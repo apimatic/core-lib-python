@@ -8,6 +8,15 @@ class TestAuthHelper:
         expected_base64_encoded_value = None
         assert actual_base64_encoded_value == expected_base64_encoded_value
 
+    def test_base64_encoded_provided_none_values(self):
+        actual_base64_encoded_value = AuthHelper.get_base64_encoded_value(None, None)
+        expected_base64_encoded_value = None
+        assert actual_base64_encoded_value == expected_base64_encoded_value
+
+        actual_base64_encoded_value = AuthHelper.get_base64_encoded_value('test_username', None)
+        expected_base64_encoded_value = None
+        assert actual_base64_encoded_value == expected_base64_encoded_value
+
     def test_base64_encoded_value(self):
         actual_base64_encoded_value = AuthHelper.get_base64_encoded_value('test_username', 'test_password')
         expected_base64_encoded_value = 'dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk'
