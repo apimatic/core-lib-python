@@ -2,7 +2,7 @@ from apimatic_core.constants.logger_constants import LoggerConstants
 
 
 class LogHelper:
-    NON_SENSITIVE_HEADERS = [
+    NON_SENSITIVE_HEADERS = list(map(lambda x: x.lower(), [
         "Accept", "Accept-Charset", "Accept-Encoding", "Accept-Language",
         "Access-Control-Allow-Origin", "Cache-Control", "Connection",
         "Content-Encoding", "Content-Language", "Content-Length", "Content-Location",
@@ -12,7 +12,7 @@ class LogHelper:
         "Max-Forwards", "Pragma", "Range", "Referer", "Retry-After", "Server",
         "Trailer", "Transfer-Encoding", "Upgrade", "User-Agent", "Vary", "Via",
         "Warning", "X-Forwarded-For", "X-Requested-With", "X-Powered-By"
-    ]
+    ]))
     """List of sensitive headers that need to be filtered."""
 
     @staticmethod

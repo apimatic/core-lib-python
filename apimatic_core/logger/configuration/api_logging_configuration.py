@@ -76,9 +76,12 @@ class BaseLoggingConfiguration:
 
         self._log_body = log_body
         self._log_headers = log_headers
-        self._headers_to_include = headers_to_include
-        self._headers_to_exclude = headers_to_exclude
-        self._headers_to_unmask = headers_to_unmask
+        self._headers_to_include = [] if headers_to_include is None \
+            else list(map(lambda x: x.lower(), headers_to_include))
+        self._headers_to_exclude = [] if headers_to_exclude is None \
+            else list(map(lambda x: x.lower(), headers_to_exclude))
+        self._headers_to_unmask = [] if headers_to_unmask is None \
+            else list(map(lambda x: x.lower(), headers_to_unmask))
 
 
 class RequestLoggingConfiguration(BaseLoggingConfiguration):
