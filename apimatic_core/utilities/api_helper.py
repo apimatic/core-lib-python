@@ -5,6 +5,8 @@ import datetime
 import calendar
 import email.utils as eut
 from time import mktime
+from urllib.parse import urlsplit
+
 import jsonpickle
 import dateutil.parser
 from jsonpointer import JsonPointerException, resolve_pointer
@@ -348,6 +350,28 @@ class ApiHelper(object):
                 url += "{0}{1}={2}".format(seperator, key, quote(str(val), safe=''))
 
         return url
+
+    @staticmethod
+    def get_url_without_query(url):
+        """
+        Extracts the protocol, domain, and path from a URL excluding the query parameters.
+
+        Args:
+            url: The URL string.
+
+        Returns:
+            A string containing the protocol, domain, and path of the URL without the query string.
+
+        Raises:
+            ValueError: If the URL is invalid.
+        """
+        try:
+            parsed_url = urlsplit(url)
+            if not parsed_url.netloc:  # Check if URL has scheme and netloc (valid URL)
+                raise ValueError("Invalid URL format")
+            return f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+        except ValueError as e:
+            raise ValueError(f"Error parsing URL: {e}") from e
 
     @staticmethod
     def process_complex_types_parameters(query_parameters, array_serialization):

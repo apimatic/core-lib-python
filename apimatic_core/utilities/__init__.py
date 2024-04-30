@@ -5,5 +5,6 @@ __all__ = [
     'comparison_helper',
     'file_helper',
     'datetime_helper',
-    'union_type_helper'
+    'union_type_helper',
+    'log_helper'
 ]

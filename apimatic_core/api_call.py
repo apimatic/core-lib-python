@@ -1,6 +1,7 @@
 from apimatic_core.configurations.endpoint_configuration import EndpointConfiguration
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
 from apimatic_core.logger.endpoint_logger import EndpointLogger
+from apimatic_core.logger.sdk_logger import LoggerFactory
 from apimatic_core.response_handler import ResponseHandler
 
 
@@ -21,6 +22,8 @@ class ApiCall:
         self._endpoint_configuration = EndpointConfiguration()
         self._endpoint_logger = EndpointLogger(logger)
         self._endpoint_name_for_logging = None
+        self._sdk_configuration = self._global_configuration.get_http_client_configuration()
+        self._api_logger = LoggerFactory.get_api_logger(self._sdk_configuration.logging_configuration)
 
     def request(self, request_builder):
         self._request_builder = request_builder
@@ -50,21 +53,24 @@ class ApiCall:
                 .endpoint_name_for_logging(self._endpoint_name_for_logging) \
                 .build(self._global_configuration)
 
+            # Logging the request
+            self._api_logger.log_request(_http_request)
+
             _http_callback = _http_client_configuration.http_callback
 
+            # Applying the on before sending HTTP request callback
             self.update_http_callback(_http_callback,
                                       _http_callback.on_before_request if _http_callback is not None else None,
                                       _http_request, "Calling the on_before_request method of http_call_back for {}.")
 
-            self._endpoint_logger.debug("Raw request for {} is: {}".format(
-                self._endpoint_name_for_logging, vars(_http_request)))
-
+            # Executing the HTTP call
             _http_response = _http_client_configuration.http_client.execute(
                 _http_request, self._endpoint_configuration)
 
-            self._endpoint_logger.debug("Raw response for {} is: {}".format(
-                self._endpoint_name_for_logging, vars(_http_response)))
+            # Logging the response
+            self._api_logger.log_response(_http_response)
 
+            # Applying the after receiving HTTP response callback
             self.update_http_callback(_http_callback,
                                       _http_callback.on_after_response if _http_callback is not None else None,
                                       _http_response, "Calling on_after_response method of http_call_back for {}.")
@@ -73,7 +79,6 @@ class ApiCall:
                 .endpoint_name_for_logging(self._endpoint_name_for_logging) \
                 .handle(_http_response, self._global_configuration.get_global_errors())
         except Exception as e:
-            self._endpoint_logger.error(e)
             raise
 
     def update_http_callback(self, http_callback, func, argument, log_message):

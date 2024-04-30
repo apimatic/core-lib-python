@@ -5,3 +5,4 @@ apimatic-core-interfaces~=0.1.0
 requests~=2.31
 setuptools>=68.0.0
 jsonpointer~=2.3
+python-json-logger~=2.0.0
