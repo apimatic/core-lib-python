@@ -1,3 +1,5 @@
+from apimatic_core_interfaces.logger.logger import Logger
+
 
 class ApiLoggingConfiguration:
 
@@ -21,7 +23,7 @@ class ApiLoggingConfiguration:
     def response_logging_config(self):
         return self._response_logging_config
 
-    def __init__(self, logger, log_level, mask_sensitive_headers,
+    def __init__(self, logger: Logger, log_level, mask_sensitive_headers,
                  request_logging_config, response_logging_config):
         """Default constructor.
 
