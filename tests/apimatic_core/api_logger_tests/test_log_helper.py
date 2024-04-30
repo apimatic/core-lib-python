@@ -1,5 +1,5 @@
 import pytest
-from apimatic_core.logger.configuration.api_logging_configuration import RequestLoggingConfiguration
+from apimatic_core.logger.configuration.api_logging_configuration import ApiRequestLoggingConfiguration
 from apimatic_core.utilities.log_helper import LogHelper
 
 
@@ -18,10 +18,10 @@ class TestLogHelper:
     def create_sample_request_logging_configuration(headers_to_include=None, headers_to_exclude=None,
                                                     headers_to_unmask=None):
         # Create a sample request logging configuration object for testing
-        return RequestLoggingConfiguration(log_body=False, log_headers=False, include_query_in_path=False,
-                                           headers_to_include=headers_to_include or [],
-                                           headers_to_exclude=headers_to_exclude or [],
-                                           headers_to_unmask=headers_to_unmask or [])
+        return ApiRequestLoggingConfiguration(log_body=False, log_headers=False, include_query_in_path=False,
+                                              headers_to_include=headers_to_include or [],
+                                              headers_to_exclude=headers_to_exclude or [],
+                                              headers_to_unmask=headers_to_unmask or [])
 
     def test_get_headers_to_log_include(self):
         # Test get_headers_to_log with inclusion criteria

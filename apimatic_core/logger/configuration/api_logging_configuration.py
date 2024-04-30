@@ -31,8 +31,8 @@ class ApiLoggingConfiguration:
             logger (Logger): The logger implementation to log with.
             log_level (LogLevel): The log level to apply to the log message.
             mask_sensitive_headers (bool): Flag to control masking of sensitive headers.
-            request_logging_config (RequestLoggingConfiguration): The API request logging configuration.
-            response_logging_config (ResponseLoggingConfiguration): The API response logging configuration.
+            request_logging_config (ApiRequestLoggingConfiguration): The API request logging configuration.
+            response_logging_config (ApiResponseLoggingConfiguration): The API response logging configuration.
         """
 
         self._logger = logger
@@ -86,7 +86,7 @@ class BaseLoggingConfiguration:
             else list(map(lambda x: x.lower(), headers_to_unmask))
 
 
-class RequestLoggingConfiguration(BaseLoggingConfiguration):
+class ApiRequestLoggingConfiguration(BaseLoggingConfiguration):
 
     @property
     def include_query_in_path(self):
@@ -105,12 +105,12 @@ class RequestLoggingConfiguration(BaseLoggingConfiguration):
             headers_to_unmask (List[str]): Logs specified headers without masking, revealing their actual values.
             include_query_in_path (bool): Determines whether to include query parameters in the logged request path.
         """
-        super(RequestLoggingConfiguration, self).__init__(log_body, log_headers, headers_to_include,
-                                                          headers_to_exclude, headers_to_unmask)
+        super(ApiRequestLoggingConfiguration, self).__init__(log_body, log_headers, headers_to_include,
+                                                             headers_to_exclude, headers_to_unmask)
         self._include_query_in_path = include_query_in_path
 
 
-class ResponseLoggingConfiguration(BaseLoggingConfiguration):
+class ApiResponseLoggingConfiguration(BaseLoggingConfiguration):
 
     def __init__(self, log_body, log_headers, headers_to_include,
                  headers_to_exclude, headers_to_unmask):
@@ -124,5 +124,5 @@ class ResponseLoggingConfiguration(BaseLoggingConfiguration):
             headers_to_unmask (List[str]): Logs specified headers without masking, revealing their actual values.
         """
 
-        super(ResponseLoggingConfiguration, self).__init__(log_body, log_headers, headers_to_include,
-                                                           headers_to_exclude, headers_to_unmask)
+        super(ApiResponseLoggingConfiguration, self).__init__(log_body, log_headers, headers_to_include,
+                                                              headers_to_exclude, headers_to_unmask)
