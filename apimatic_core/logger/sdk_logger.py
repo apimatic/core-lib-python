@@ -1,9 +1,7 @@
 import logging
 
 from apimatic_core_interfaces.logger.api_logger import ApiLogger
-
 from apimatic_core.constants.logger_constants import LoggerConstants
-from apimatic_core.logger.configuration.api_logging_configuration import ApiLoggingConfiguration
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.log_helper import LogHelper
 
@@ -31,7 +29,7 @@ class SdkLogger(ApiLogger):
         _content_type = http_request.headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
         _url = self.get_request_url(http_request)
         params = {
-            LoggerConstants.METHOD: http_request.method,
+            LoggerConstants.METHOD: http_request.http_method,
             LoggerConstants.URL: _url,
             LoggerConstants.CONTENT_TYPE: _content_type,
         }
