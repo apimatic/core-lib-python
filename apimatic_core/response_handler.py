@@ -16,7 +16,6 @@ class ResponseHandler:
         self._is_xml_response = False
         self._xml_item_name = None
         self._endpoint_name_for_logging = None
-        self._endpoint_logger = None
 
     def deserializer(self, deserializer):
         self._deserializer = deserializer
@@ -66,17 +65,10 @@ class ResponseHandler:
         self._endpoint_name_for_logging = endpoint_name_for_logging
         return self
 
-    def endpoint_logger(self, endpoint_logger):
-        self._endpoint_logger = endpoint_logger
-        return self
-
     def handle(self, response, global_errors):
-        self._endpoint_logger.info('Validating response for {}.'.format(self._endpoint_name_for_logging))
 
         # checking Nullify 404
         if response.status_code == 404 and self._is_nullify404:
-            self._endpoint_logger.info('Status code 404 received for {}. Returning None.'.format(
-                self._endpoint_name_for_logging))
             return None
 
         # validating response if configured

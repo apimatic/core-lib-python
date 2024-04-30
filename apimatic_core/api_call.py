@@ -9,18 +9,16 @@ class ApiCall:
 
     @property
     def new_builder(self):
-        return ApiCall(self._global_configuration, logger=self._endpoint_logger.logger)
+        return ApiCall(self._global_configuration)
 
     def __init__(
             self,
-            global_configuration=GlobalConfiguration(),
-            logger=None
+            global_configuration=GlobalConfiguration()
     ):
         self._global_configuration = global_configuration
         self._request_builder = None
         self._response_handler = ResponseHandler()
         self._endpoint_configuration = EndpointConfiguration()
-        self._endpoint_logger = EndpointLogger(logger)
         self._endpoint_name_for_logging = None
         self._sdk_configuration = self._global_configuration.get_http_client_configuration()
         self._api_logger = LoggerFactory.get_api_logger(self._sdk_configuration.logging_configuration)
@@ -42,49 +40,31 @@ class ApiCall:
         return self
 
     def execute(self):
-        try:
-            _http_client_configuration = self._global_configuration.get_http_client_configuration()
+        _http_client_configuration = self._global_configuration.get_http_client_configuration()
 
-            if _http_client_configuration.http_client is None:
-                raise ValueError("An HTTP client instance is required to execute an Api call.")
+        if _http_client_configuration.http_client is None:
+            raise ValueError("An HTTP client instance is required to execute an Api call.")
 
-            _http_request = self._request_builder \
-                .endpoint_logger(self._endpoint_logger) \
-                .endpoint_name_for_logging(self._endpoint_name_for_logging) \
-                .build(self._global_configuration)
+        _http_request = self._request_builder.build(self._global_configuration)
 
-            # Logging the request
-            self._api_logger.log_request(_http_request)
+        # Logging the request
+        self._api_logger.log_request(_http_request)
 
-            _http_callback = _http_client_configuration.http_callback
+        _http_callback = _http_client_configuration.http_callback
 
-            # Applying the on before sending HTTP request callback
-            self.update_http_callback(_http_callback,
-                                      _http_callback.on_before_request if _http_callback is not None else None,
-                                      _http_request, "Calling the on_before_request method of http_call_back for {}.")
+        # Applying the on before sending HTTP request callback
+        if _http_callback is not None:
+            _http_callback.on_before_request(_http_request)
 
-            # Executing the HTTP call
-            _http_response = _http_client_configuration.http_client.execute(
-                _http_request, self._endpoint_configuration)
+        # Executing the HTTP call
+        _http_response = _http_client_configuration.http_client.execute(
+            _http_request, self._endpoint_configuration)
 
-            # Logging the response
-            self._api_logger.log_response(_http_response)
+        # Logging the response
+        self._api_logger.log_response(_http_response)
 
-            # Applying the after receiving HTTP response callback
-            self.update_http_callback(_http_callback,
-                                      _http_callback.on_after_response if _http_callback is not None else None,
-                                      _http_response, "Calling on_after_response method of http_call_back for {}.")
+        # Applying the after receiving HTTP response callback
+        if _http_callback is not None:
+            _http_callback.on_after_response(_http_request)
 
-            return self._response_handler.endpoint_logger(self._endpoint_logger) \
-                .endpoint_name_for_logging(self._endpoint_name_for_logging) \
-                .handle(_http_response, self._global_configuration.get_global_errors())
-        except Exception as e:
-            raise
-
-    def update_http_callback(self, http_callback, func, argument, log_message):
-        if http_callback is None:
-            return
-
-        self._endpoint_logger.info(log_message.format(
-            self._endpoint_name_for_logging))
-        func(argument)
+        return self._response_handler.handle(_http_response, self._global_configuration.get_global_errors())
