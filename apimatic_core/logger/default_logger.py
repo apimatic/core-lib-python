@@ -12,7 +12,8 @@ class ConsoleLogger(Logger):
         stdout = logging.StreamHandler(stream=sys.stdout)
         fmt = jsonlogger.JsonFormatter(
             "%(asctime)s %(levelname)s %(message)s",
-            datefmt="%Y-%m-%dT%H:%M:%SZ"
+            datefmt="%Y-%m-%dT%H:%M:%SZ",
+            rename_fields={"levelname": "level", "asctime": "timestamp"}
         )
         stdout.setFormatter(fmt)
         self._logger.addHandler(stdout)
