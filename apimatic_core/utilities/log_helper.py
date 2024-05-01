@@ -36,9 +36,9 @@ class LogHelper:
                                                              logging_configuration.headers_to_include,
                                                              logging_configuration.headers_to_exclude)
 
-        return LogHelper.filter_sensitive_headers(extracted_headers,
-                                                  logging_configuration.headers_to_unmask,
-                                                  mask_sensitive_headers)
+        return LogHelper.mask_sensitive_headers(extracted_headers,
+                                                logging_configuration.headers_to_unmask,
+                                                mask_sensitive_headers)
 
     @staticmethod
     def extract_headers_to_log(headers, headers_to_include, headers_to_exclude):
@@ -54,16 +54,16 @@ class LogHelper:
             Dict[str, str]: The extracted headers to log.
         """
         if headers_to_include:
-            return LogHelper.extract_included_headers(headers, headers_to_include)
-        elif headers_to_exclude:
-            return LogHelper.extract_excluded_headers(headers, headers_to_exclude)
+            return LogHelper.filter_included_headers(headers, headers_to_include)
+        if headers_to_exclude:
+            return LogHelper.filter_excluded_headers(headers, headers_to_exclude)
 
         return headers
 
     @staticmethod
-    def filter_sensitive_headers(headers, headers_to_unmask, mask_sensitive_headers):
+    def mask_sensitive_headers(headers, headers_to_unmask, mask_sensitive_headers):
         """
-        Filter sensitive headers from the given list of request headers.
+        Masks sensitive headers from the given list of request headers.
 
         Args:
             headers (Dict[str, str]): The list of headers to filter.
@@ -85,9 +85,9 @@ class LogHelper:
         return filtered_headers
 
     @staticmethod
-    def extract_included_headers(headers, headers_to_include):
+    def filter_included_headers(headers, headers_to_include):
         """
-        Extracts headers to log based on inclusion criteria.
+        Filters headers to log based on inclusion criteria.
 
         Args:
             headers (Dict[str, str]): The map of headers.
@@ -103,9 +103,9 @@ class LogHelper:
         return extracted_headers
 
     @staticmethod
-    def extract_excluded_headers(headers, headers_to_exclude):
+    def filter_excluded_headers(headers, headers_to_exclude):
         """
-        Extracts headers to log based on exclusion criteria.
+        Filters headers to log based on exclusion criteria.
 
         Args:
             headers (Dict[str, str]): The map of headers.
