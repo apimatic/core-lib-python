@@ -2,6 +2,7 @@ import logging
 
 from apimatic_core_interfaces.logger.api_logger import ApiLogger
 from apimatic_core.constants.logger_constants import LoggerConstants
+from apimatic_core.logger.default_logger import ConsoleLogger
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.log_helper import LogHelper
 
@@ -15,7 +16,7 @@ class SdkLogger(ApiLogger):
             api_logging_configuration (ApiLoggingConfiguration): The Api logging configuration.
         """
         self._api_logging_config = api_logging_configuration
-        self._logger = self._api_logging_config.logger
+        self._logger = ConsoleLogger() if self._api_logging_config.logger is None else self._api_logging_config.logger
         self._request_logging_config = self._api_logging_config.request_logging_config
         self._response_logging_config = self._api_logging_config.response_logging_config
 
