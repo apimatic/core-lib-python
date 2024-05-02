@@ -2,18 +2,6 @@ from apimatic_core.constants.logger_constants import LoggerConstants
 
 
 class LogHelper:
-    NON_SENSITIVE_HEADERS = list(map(lambda x: x.lower(), [
-        "Accept", "Accept-Charset", "Accept-Encoding", "Accept-Language",
-        "Access-Control-Allow-Origin", "Cache-Control", "Connection",
-        "Content-Encoding", "Content-Language", "Content-Length", "Content-Location",
-        "Content-MD5", "Content-Range", "Content-Type", "Date", "ETag", "Expect",
-        "Expires", "From", "Host", "If-Match", "If-Modified-Since", "If-None-Match",
-        "If-Range", "If-Unmodified-Since", "Keep-Alive", "Last-Modified", "Location",
-        "Max-Forwards", "Pragma", "Range", "Referer", "Retry-After", "Server",
-        "Trailer", "Transfer-Encoding", "Upgrade", "User-Agent", "Vary", "Via",
-        "Warning", "X-Forwarded-For", "X-Requested-With", "X-Powered-By"
-    ]))
-    """List of sensitive headers that need to be filtered."""
 
     @staticmethod
     def get_headers_to_log(logging_configuration, headers, mask_sensitive_headers):
@@ -79,7 +67,7 @@ class LogHelper:
         filtered_headers = {}
         for key, value in headers.items():
             header_key = key.lower()
-            is_non_sensitive = header_key in LogHelper.NON_SENSITIVE_HEADERS or header_key in headers_to_unmask
+            is_non_sensitive = header_key in LoggerConstants.NON_SENSITIVE_HEADERS or header_key in headers_to_unmask
             filtered_headers[key] = value if is_non_sensitive else "**Redacted**"
 
         return filtered_headers

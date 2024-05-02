@@ -29,3 +29,16 @@ class LoggerConstants:
 
     CONTENT_TYPE_HEADER = "content-type"
     """Key representing the content type header."""
+
+    NON_SENSITIVE_HEADERS = tuple(map(lambda x: x.lower(), [
+        "Accept", "Accept-Charset", "Accept-Encoding", "Accept-Language",
+        "Access-Control-Allow-Origin", "Cache-Control", "Connection",
+        "Content-Encoding", "Content-Language", "Content-Length", "Content-Location",
+        "Content-MD5", "Content-Range", "Content-Type", "Date", "ETag", "Expect",
+        "Expires", "From", "Host", "If-Match", "If-Modified-Since", "If-None-Match",
+        "If-Range", "If-Unmodified-Since", "Keep-Alive", "Last-Modified", "Location",
+        "Max-Forwards", "Pragma", "Range", "Referer", "Retry-After", "Server",
+        "Trailer", "Transfer-Encoding", "Upgrade", "User-Agent", "Vary", "Via",
+        "Warning", "X-Forwarded-For", "X-Requested-With", "X-Powered-By"
+    ]))
+    """List of sensitive headers that need to be filtered."""
