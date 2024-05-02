@@ -27,7 +27,8 @@ class SdkLogger(ApiLogger):
             http_request (HttpRequest): The HTTP request to log.
         """
         _level = logging.INFO if self._api_logging_config.log_level is None else self._api_logging_config.log_level
-        _content_type = http_request.headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
+        lowered_case_headers = {key.lower(): value for key, value in http_request.headers.items()}
+        _content_type = lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
         _url = self.get_request_url(http_request)
         params = {
             LoggerConstants.METHOD: http_request.http_method,
@@ -59,8 +60,9 @@ class SdkLogger(ApiLogger):
             http_response (HttpRequest): The HTTP request to log.
         """
         _level = logging.INFO if self._api_logging_config.log_level is None else self._api_logging_config.log_level
-        _content_type = http_response.headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
-        _content_length = http_response.headers.get(LoggerConstants.CONTENT_LENGTH_HEADER)
+        lowered_case_headers = {key.lower(): value for key, value in http_response.headers.items()}
+        _content_type = lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
+        _content_length = lowered_case_headers.get(LoggerConstants.CONTENT_LENGTH_HEADER)
         params = {
             LoggerConstants.STATUS_CODE: http_response.status_code,
             LoggerConstants.CONTENT_TYPE: _content_type,
