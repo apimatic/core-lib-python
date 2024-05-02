@@ -34,8 +34,7 @@ class SdkLogger(ApiLogger):
             LoggerConstants.CONTENT_TYPE: _content_type,
         }
 
-        self._logger.log(_level, f"Request {{{LoggerConstants.METHOD}}} {{{LoggerConstants.URL}}}"
-                                 f" {{{LoggerConstants.CONTENT_TYPE}}}", params)
+        self._logger.log(_level, "Request %s %s %s", params)
 
         if self._request_logging_config.log_headers:
             params = {
@@ -43,14 +42,14 @@ class SdkLogger(ApiLogger):
                                                                       http_request.headers,
                                                                       self._api_logging_config.mask_sensitive_headers)
             }
-            self._logger.log(_level, f"Request Headers {{{LoggerConstants.HEADERS}}}", params)
+            self._logger.log(_level, f"Request Headers %s", params)
 
         if self._request_logging_config.log_body:
             body = http_request.parameters if http_request.parameters is not None else http_request.files
             params = {
                 LoggerConstants.BODY: body
             }
-            self._logger.log(_level, f"Request Body {{{LoggerConstants.BODY}}}", params)
+            self._logger.log(_level, f"Request Body %s", params)
 
     def log_response(self, http_response):
         """Logs the given HTTP response.
@@ -66,8 +65,7 @@ class SdkLogger(ApiLogger):
             LoggerConstants.CONTENT_TYPE: _content_type,
             LoggerConstants.CONTENT_LENGTH: _content_length,
         }
-        self._logger.log(_level, f"Response {{{LoggerConstants.STATUS_CODE}}} {{{LoggerConstants.CONTENT_TYPE}}}"
-                                 f" {{{LoggerConstants.CONTENT_LENGTH}}}", params)
+        self._logger.log(_level, f"Response %s %s %s", params)
 
         if self._response_logging_config.log_headers:
             params = {
@@ -75,13 +73,13 @@ class SdkLogger(ApiLogger):
                                                                       http_response.headers,
                                                                       self._api_logging_config.mask_sensitive_headers)
             }
-            self._logger.log(_level, f"Response Headers {{{LoggerConstants.HEADERS}}}", params)
+            self._logger.log(_level, f"Response Headers %s", params)
 
         if self._response_logging_config.log_body:
             params = {
                 LoggerConstants.BODY: http_response.text
             }
-            self._logger.log(_level, f"Response Body {{{LoggerConstants.BODY}}}", params)
+            self._logger.log(_level, f"Response Body %s", params)
 
     def get_request_url(self, http_request):
         if self._request_logging_config.include_query_in_path:
