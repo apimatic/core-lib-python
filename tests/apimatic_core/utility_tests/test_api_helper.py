@@ -1,4 +1,5 @@
 from datetime import datetime, date
+
 import jsonpickle
 import pytest
 from apimatic_core.types.union_types.leaf_type import LeafType
@@ -893,3 +894,19 @@ class TestApiHelper(Base):
     def test_union_type_deserialize(self, input_value, input_union_type, input_should_deserialize, expected_value):
         actual_value = ApiHelper.deserialize_union_type(input_union_type, input_value, input_should_deserialize)
         assert actual_value == expected_value
+
+    @pytest.mark.parametrize('input_url, expected_url', [
+        ("https://www.example.com/path/to/resource?param1=value1&param2=value2", "https://www.example.com/path/to/resource"),
+        ("https://www.example.com/path/to/resource", "https://www.example.com/path/to/resource")
+    ])
+    def test_get_url_without_query(self, input_url, expected_url):
+        assert ApiHelper.get_url_without_query(input_url) == expected_url
+
+    @pytest.mark.parametrize('input_url, expected_error_message', [
+        ("", "Error parsing URL: Invalid URL format"),
+        ("invalid_url", "Error parsing URL: Invalid URL format")
+    ])
+    def test_get_url_without_query_with_invalid_url(self, input_url, expected_error_message):
+        with pytest.raises(ValueError) as excinfo:
+            ApiHelper.get_url_without_query(input_url)
+        assert str(excinfo.value) == expected_error_message

@@ -68,9 +68,9 @@ pip install apimatic-core
 | [`HttpResponse`](apimatic_core/http/response/http_response.py)                              | A class which contains information about the HTTP Response  |
 
 ## Logger
-| Name                                                             | Description                                         |
-|------------------------------------------------------------------|-----------------------------------------------------|
-| [`EndpointLogger`](apimatic_core/logger/endpoint_logger.py)      | A class to provide logging for an HTTP request      |
+| Name                                                                                         | Description                                                         |
+|----------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| [`ApiLoggingConfiguration`](apimatic_core/logger/configuration/api_logging_configuration.py) | Holds logging configuration for request and response of an API call |
 
 ## Types
 | Name                                                                          | Description                                                                  |

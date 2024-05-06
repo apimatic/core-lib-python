@@ -15,7 +15,6 @@ class ResponseHandler:
         self._datetime_format = None
         self._is_xml_response = False
         self._xml_item_name = None
-        self._endpoint_name_for_logging = None
 
     def deserializer(self, deserializer):
         self._deserializer = deserializer
@@ -59,10 +58,6 @@ class ResponseHandler:
 
     def xml_item_name(self, xml_item_name):
         self._xml_item_name = xml_item_name
-        return self
-
-    def endpoint_name_for_logging(self, endpoint_name_for_logging):
-        self._endpoint_name_for_logging = endpoint_name_for_logging
         return self
 
     def handle(self, response, global_errors):

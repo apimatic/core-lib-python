@@ -6,12 +6,13 @@ from datetime import datetime, date
 from apimatic_core.api_call import ApiCall
 from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
 from apimatic_core.http.http_callback import HttpCallBack
+from apimatic_core.logger.configuration.api_logging_configuration import ApiLoggingConfiguration, \
+    ApiRequestLoggingConfiguration, ApiResponseLoggingConfiguration
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
 from apimatic_core.http.request.http_request import HttpRequest
 from apimatic_core.http.response.http_response import HttpResponse
-from apimatic_core.logger.endpoint_logger import EndpointLogger
 from apimatic_core.request_builder import RequestBuilder
 from apimatic_core.response_handler import ResponseHandler
 from apimatic_core.types.error_case import ErrorCase
@@ -147,8 +148,18 @@ class Base:
         }
 
     @staticmethod
-    def request():
-        return HttpRequest(http_method=HttpMethodEnum.GET, query_url='http://localhost:3000/test')
+    def request(http_method=HttpMethodEnum.GET,
+                query_url='http://localhost:3000/test',
+                headers=None,
+                query_parameters=None,
+                parameters=None,
+                files=None):
+        return HttpRequest(http_method=http_method,
+                           query_url=query_url,
+                           headers=headers,
+                           query_parameters=query_parameters,
+                           parameters=parameters,
+                           files=files)
 
     @staticmethod
     def response(status_code=200, reason_phrase=None, headers=None, text=None):
@@ -168,8 +179,8 @@ class Base:
         return ApiHelper.RFC3339DateTime(datetime_value)
 
     @staticmethod
-    def new_api_call_builder(global_configuration, logger=None):
-        return ApiCall(global_configuration, logger)
+    def new_api_call_builder(global_configuration):
+        return ApiCall(global_configuration)
 
     @staticmethod
     def user_agent():
@@ -195,23 +206,20 @@ class Base:
         return MockHttpClient()
 
     @staticmethod
-    def http_client_configuration(http_callback=HttpResponseCatcher()):
-        http_client_configurations = HttpClientConfiguration(http_call_back=http_callback)
+    def http_client_configuration(http_callback=HttpResponseCatcher(), logging_configuration=None):
+        http_client_configurations = HttpClientConfiguration(http_call_back=http_callback,
+                                                             logging_configuration=logging_configuration)
         http_client_configurations.set_http_client(Base.mocked_http_client())
         return http_client_configurations
 
     @property
     def new_request_builder(self):
         return RequestBuilder().path('/test') \
-            .endpoint_name_for_logging('Dummy Endpoint') \
-            .endpoint_logger(EndpointLogger(None)) \
             .server(Server.DEFAULT)
 
     @property
     def new_response_handler(self):
-        return ResponseHandler() \
-            .endpoint_name_for_logging('Dummy Endpoint') \
-            .endpoint_logger(EndpointLogger(None))
+        return ResponseHandler()
 
     @property
     def global_configuration(self):
@@ -221,7 +229,7 @@ class Base:
 
     @property
     def global_configuration_without_http_callback(self):
-        return GlobalConfiguration(self.http_client_configuration(None))\
+        return GlobalConfiguration(self.http_client_configuration(None)) \
             .base_uri_executor(BaseUriCallable().get_base_uri)
 
     @property
@@ -243,6 +251,44 @@ class Base:
         return self.global_configuration.auth_managers(
             {'basic_auth': self.basic_auth(), 'bearer_auth': self.bearer_auth(),
              'custom_header_auth': self.custom_header_auth(), 'custom_query_auth': self.custom_query_auth()})
+
+    @staticmethod
+    def api_request_logging_configuration(log_body=False, log_headers=False, headers_to_include=None,
+                                          headers_to_exclude=None, headers_to_unmask=None,
+                                          include_query_in_path=False):
+        return ApiRequestLoggingConfiguration(log_body=log_body, log_headers=log_headers,
+                                              headers_to_include=headers_to_include,
+                                              headers_to_exclude=headers_to_exclude,
+                                              headers_to_unmask=headers_to_unmask,
+                                              include_query_in_path=include_query_in_path)
+
+    @staticmethod
+    def api_response_logging_configuration(log_body=False, log_headers=False, headers_to_include=None,
+                                           headers_to_exclude=None, headers_to_unmask=None):
+        return ApiResponseLoggingConfiguration(log_body=log_body, log_headers=log_headers,
+                                               headers_to_include=headers_to_include,
+                                               headers_to_exclude=headers_to_exclude,
+                                               headers_to_unmask=headers_to_unmask)
+
+    @staticmethod
+    def api_logging_configuration(logger, log_level=logging.INFO, mask_sensitive_headers=True,
+                                  request_logging_configuration=None,
+                                  response_logging_configuration=None):
+        if request_logging_configuration is None:
+            request_logging_configuration = Base.api_request_logging_configuration()
+
+        if response_logging_configuration is None:
+            response_logging_configuration = Base.api_response_logging_configuration()
+
+        return ApiLoggingConfiguration(logger, log_level, mask_sensitive_headers,
+                                       request_logging_configuration,
+                                       response_logging_configuration)
+
+    @staticmethod
+    def global_configuration_with_logging(logger):
+        return GlobalConfiguration(Base.http_client_configuration(
+            logging_configuration=Base.api_logging_configuration(logger))) \
+            .base_uri_executor(BaseUriCallable().get_base_uri)
 
     @property
     def global_configuration_with_uninitialized_auth_params(self):

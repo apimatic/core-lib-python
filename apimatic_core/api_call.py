@@ -1,6 +1,5 @@
 from apimatic_core.configurations.endpoint_configuration import EndpointConfiguration
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
-from apimatic_core.logger.endpoint_logger import EndpointLogger
 from apimatic_core.logger.sdk_logger import LoggerFactory
 from apimatic_core.response_handler import ResponseHandler
 
@@ -19,7 +18,6 @@ class ApiCall:
         self._request_builder = None
         self._response_handler = ResponseHandler()
         self._endpoint_configuration = EndpointConfiguration()
-        self._endpoint_name_for_logging = None
         self._sdk_configuration = self._global_configuration.get_http_client_configuration()
         self._api_logger = LoggerFactory.get_api_logger(self._sdk_configuration.logging_configuration)
 
@@ -33,10 +31,6 @@ class ApiCall:
 
     def endpoint_configuration(self, endpoint_configuration):
         self._endpoint_configuration = endpoint_configuration
-        return self
-
-    def endpoint_name_for_logging(self, endpoint_name_for_logging):
-        self._endpoint_name_for_logging = endpoint_name_for_logging
         return self
 
     def execute(self):
@@ -65,6 +59,6 @@ class ApiCall:
 
         # Applying the after receiving HTTP response callback
         if _http_callback is not None:
-            _http_callback.on_after_response(_http_request)
+            _http_callback.on_after_response(_http_response)
 
         return self._response_handler.handle(_http_response, self._global_configuration.get_global_errors())
