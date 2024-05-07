@@ -39,11 +39,7 @@ class SdkLogger(ApiLogger):
         self._logger.log(_level, "Request %s %s %s", params)
 
         if self._request_logging_config.log_headers:
-            params = {
-                LoggerConstants.HEADERS: LogHelper.get_headers_to_log(self._request_logging_config,
-                                                                      http_request.headers,
-                                                                      self._api_logging_config.mask_sensitive_headers)
-            }
+            params = self.get_headers(self._request_logging_config, http_request.headers)
             self._logger.log(_level, "Request Headers %s", params)
 
         if self._request_logging_config.log_body:
@@ -71,11 +67,7 @@ class SdkLogger(ApiLogger):
         self._logger.log(_level, "Response %s %s %s", params)
 
         if self._response_logging_config.log_headers:
-            params = {
-                LoggerConstants.HEADERS: LogHelper.get_headers_to_log(self._response_logging_config,
-                                                                      http_response.headers,
-                                                                      self._api_logging_config.mask_sensitive_headers)
-            }
+            params = self.get_headers(self._response_logging_config, http_response.headers)
             self._logger.log(_level, "Response Headers %s", params)
 
         if self._response_logging_config.log_body:
@@ -89,6 +81,12 @@ class SdkLogger(ApiLogger):
             return http_request.query_url
 
         return ApiHelper.get_url_without_query(http_request.query_url)
+
+    def get_headers(self, logging_config, headers):
+        return {
+            LoggerConstants.HEADERS: LogHelper.get_headers_to_log(logging_config, headers,
+                                                                  self._api_logging_config.mask_sensitive_headers)
+        }
 
 
 class NoneSdkLogger(ApiLogger):
