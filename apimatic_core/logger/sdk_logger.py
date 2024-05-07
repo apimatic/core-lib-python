@@ -44,14 +44,14 @@ class SdkLogger(ApiLogger):
                                                                       http_request.headers,
                                                                       self._api_logging_config.mask_sensitive_headers)
             }
-            self._logger.log(_level, f"Request Headers %s", params)
+            self._logger.log(_level, "Request Headers %s", params)
 
         if self._request_logging_config.log_body:
             body = http_request.parameters if http_request.parameters is not None else http_request.files
             params = {
                 LoggerConstants.BODY: body
             }
-            self._logger.log(_level, f"Request Body %s", params)
+            self._logger.log(_level, "Request Body %s", params)
 
     def log_response(self, http_response):
         """Logs the given HTTP response.
@@ -68,7 +68,7 @@ class SdkLogger(ApiLogger):
             LoggerConstants.CONTENT_TYPE: _content_type,
             LoggerConstants.CONTENT_LENGTH: _content_length,
         }
-        self._logger.log(_level, f"Response %s %s %s", params)
+        self._logger.log(_level, "Response %s %s %s", params)
 
         if self._response_logging_config.log_headers:
             params = {
@@ -76,13 +76,13 @@ class SdkLogger(ApiLogger):
                                                                       http_response.headers,
                                                                       self._api_logging_config.mask_sensitive_headers)
             }
-            self._logger.log(_level, f"Response Headers %s", params)
+            self._logger.log(_level, "Response Headers %s", params)
 
         if self._response_logging_config.log_body:
             params = {
                 LoggerConstants.BODY: http_response.text
             }
-            self._logger.log(_level, f"Response Body %s", params)
+            self._logger.log(_level, "Response Body %s", params)
 
     def get_request_url(self, http_request):
         if self._request_logging_config.include_query_in_path:
