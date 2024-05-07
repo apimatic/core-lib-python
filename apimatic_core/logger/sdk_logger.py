@@ -39,8 +39,8 @@ class SdkLogger(ApiLogger):
         self._logger.log(_level, "Request %s %s %s", params)
 
         if self._request_logging_config.log_headers:
-            params = self.get_headers(self._request_logging_config, http_request.headers)
-            self._logger.log(_level, "Request Headers %s", params)
+            self._logger.log(_level, "Request Headers %s",
+                             self.get_headers(self._request_logging_config, http_request.headers))
 
         if self._request_logging_config.log_body:
             body = http_request.parameters if http_request.parameters is not None else http_request.files
@@ -67,8 +67,8 @@ class SdkLogger(ApiLogger):
         self._logger.log(_level, "Response %s %s %s", params)
 
         if self._response_logging_config.log_headers:
-            params = self.get_headers(self._response_logging_config, http_response.headers)
-            self._logger.log(_level, "Response Headers %s", params)
+            self._logger.log(_level, "Response Headers %s",
+                             self.get_headers(self._response_logging_config, http_response.headers))
 
         if self._response_logging_config.log_body:
             params = {
