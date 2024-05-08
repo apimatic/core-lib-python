@@ -2,7 +2,6 @@ import logging
 
 from apimatic_core_interfaces.logger.api_logger import ApiLogger
 from apimatic_core.constants.logger_constants import LoggerConstants
-from apimatic_core.logger.default_logger import ConsoleLogger
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.log_helper import LogHelper
 
