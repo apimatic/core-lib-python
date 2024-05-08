@@ -16,7 +16,7 @@ class SdkLogger(ApiLogger):
             api_logging_configuration (ApiLoggingConfiguration): The Api logging configuration.
         """
         self._api_logging_config = api_logging_configuration
-        self._logger = ConsoleLogger() if self._api_logging_config.logger is None else self._api_logging_config.logger
+        self._logger = self._api_logging_config.logger
         self._request_logging_config = self._api_logging_config.request_logging_config
         self._response_logging_config = self._api_logging_config.response_logging_config
 
@@ -26,7 +26,7 @@ class SdkLogger(ApiLogger):
         Args:
             http_request (HttpRequest): The HTTP request to log.
         """
-        _level = logging.INFO if self._api_logging_config.log_level is None else self._api_logging_config.log_level
+        _level = self.get_logging_level()
         lowered_case_headers = {key.lower(): value for key, value in http_request.headers.items()}
         _content_type = lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
         _url = self.get_request_url(http_request)
@@ -55,7 +55,7 @@ class SdkLogger(ApiLogger):
         Args:
             http_response (HttpRequest): The HTTP request to log.
         """
-        _level = logging.INFO if self._api_logging_config.log_level is None else self._api_logging_config.log_level
+        _level = self.get_logging_level()
         lowered_case_headers = {key.lower(): value for key, value in http_response.headers.items()}
         _content_type = lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
         _content_length = lowered_case_headers.get(LoggerConstants.CONTENT_LENGTH_HEADER)
@@ -87,6 +87,12 @@ class SdkLogger(ApiLogger):
             LoggerConstants.HEADERS: LogHelper.get_headers_to_log(logging_config, headers,
                                                                   self._api_logging_config.mask_sensitive_headers)
         }
+
+    def get_logging_level(self):
+        if self._api_logging_config.log_level is None:
+            return logging.INFO
+
+        return self._api_logging_config.log_level
 
 
 class NoneSdkLogger(ApiLogger):
