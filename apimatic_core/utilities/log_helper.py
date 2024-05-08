@@ -10,8 +10,7 @@ class LogHelper:
         headers, and sensitivity masking configuration.
 
         Args:
-            logging_configuration (BaseLoggingConfiguration): The logging configuration containing configurations for
-                                                              header logging for request or response.
+            logging_configuration (BaseHttpLoggingConfiguration): The http request & response logging configuration.
             headers (Dict[str, str]): The headers to be evaluated for logging.
             mask_sensitive_headers (bool): Determines whether sensitive headers should be
                                             masked in the log.

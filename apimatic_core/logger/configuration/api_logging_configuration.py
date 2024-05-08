@@ -42,7 +42,7 @@ class ApiLoggingConfiguration:
         self._response_logging_config = response_logging_config
 
 
-class BaseLoggingConfiguration:
+class BaseHttpLoggingConfiguration:
 
     @property
     def log_body(self):
@@ -86,7 +86,7 @@ class BaseLoggingConfiguration:
             else list(map(lambda x: x.lower(), headers_to_unmask))
 
 
-class ApiRequestLoggingConfiguration(BaseLoggingConfiguration):
+class ApiRequestLoggingConfiguration(BaseHttpLoggingConfiguration):
 
     @property
     def include_query_in_path(self):
@@ -110,7 +110,7 @@ class ApiRequestLoggingConfiguration(BaseLoggingConfiguration):
         self._include_query_in_path = include_query_in_path
 
 
-class ApiResponseLoggingConfiguration(BaseLoggingConfiguration):
+class ApiResponseLoggingConfiguration(BaseHttpLoggingConfiguration):
 
     def __init__(self, log_body, log_headers, headers_to_include,
                  headers_to_exclude, headers_to_unmask):
