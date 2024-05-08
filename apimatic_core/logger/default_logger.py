@@ -9,7 +9,7 @@ class ConsoleLogger(Logger):
     def __init__(self):
         self._logger = logging.Logger(name='')
         stdout = logging.StreamHandler(stream=sys.stdout)
-        fmt = logging.Formatter("%(asctime)s %(levelname)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%SZ")
+        fmt = logging.Formatter("%(levelname)s %(message)s")
         stdout.setFormatter(fmt)
         self._logger.addHandler(stdout)
 
