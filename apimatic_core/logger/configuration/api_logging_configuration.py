@@ -1,5 +1,6 @@
-from apimatic_core_interfaces.logger.logger import Logger
+import logging
 
+from apimatic_core_interfaces.logger.logger import Logger
 from apimatic_core.logger.default_logger import ConsoleLogger
 
 
@@ -38,7 +39,7 @@ class ApiLoggingConfiguration:
         """
 
         self._logger = ConsoleLogger() if logger is None else logger
-        self._log_level = log_level
+        self._log_level = logging.INFO if log_level is None else log_level
         self._mask_sensitive_headers = mask_sensitive_headers
         self._request_logging_config = request_logging_config
         self._response_logging_config = response_logging_config

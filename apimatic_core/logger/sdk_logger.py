@@ -16,6 +16,7 @@ class SdkLogger(ApiLogger):
         """
         self._api_logging_config = api_logging_configuration
         self._logger = self._api_logging_config.logger
+        self._level = self._api_logging_config.log_level
         self._request_logging_config = self._api_logging_config.request_logging_config
         self._response_logging_config = self._api_logging_config.response_logging_config
 
@@ -25,7 +26,6 @@ class SdkLogger(ApiLogger):
         Args:
             http_request (HttpRequest): The HTTP request to log.
         """
-        _level = self.get_logging_level()
         lowered_case_headers = {key.lower(): value for key, value in http_request.headers.items()}
         _content_type = lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
         _url = self.get_request_url(http_request)
@@ -35,10 +35,10 @@ class SdkLogger(ApiLogger):
             LoggerConstants.CONTENT_TYPE: _content_type,
         }
 
-        self._logger.log(_level, "Request %s %s %s", params)
+        self._logger.log(self._level, "Request %s %s %s", params)
 
         if self._request_logging_config.log_headers:
-            self._logger.log(_level, "Request Headers %s",
+            self._logger.log(self._level, "Request Headers %s",
                              self.get_headers(self._request_logging_config, http_request.headers))
 
         if self._request_logging_config.log_body:
@@ -46,7 +46,7 @@ class SdkLogger(ApiLogger):
             params = {
                 LoggerConstants.BODY: body
             }
-            self._logger.log(_level, "Request Body %s", params)
+            self._logger.log(self._level, "Request Body %s", params)
 
     def log_response(self, http_response):
         """Logs the given HTTP response.
@@ -54,7 +54,6 @@ class SdkLogger(ApiLogger):
         Args:
             http_response (HttpRequest): The HTTP request to log.
         """
-        _level = self.get_logging_level()
         lowered_case_headers = {key.lower(): value for key, value in http_response.headers.items()}
         _content_type = lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
         _content_length = lowered_case_headers.get(LoggerConstants.CONTENT_LENGTH_HEADER)
@@ -63,17 +62,17 @@ class SdkLogger(ApiLogger):
             LoggerConstants.CONTENT_TYPE: _content_type,
             LoggerConstants.CONTENT_LENGTH: _content_length,
         }
-        self._logger.log(_level, "Response %s %s %s", params)
+        self._logger.log(self._level, "Response %s %s %s", params)
 
         if self._response_logging_config.log_headers:
-            self._logger.log(_level, "Response Headers %s",
+            self._logger.log(self._level, "Response Headers %s",
                              self.get_headers(self._response_logging_config, http_response.headers))
 
         if self._response_logging_config.log_body:
             params = {
                 LoggerConstants.BODY: http_response.text
             }
-            self._logger.log(_level, "Response Body %s", params)
+            self._logger.log(self._level, "Response Body %s", params)
 
     def get_request_url(self, http_request):
         if self._request_logging_config.include_query_in_path:
@@ -86,12 +85,6 @@ class SdkLogger(ApiLogger):
             LoggerConstants.HEADERS: LogHelper.get_headers_to_log(logging_config, headers,
                                                                   self._api_logging_config.mask_sensitive_headers)
         }
-
-    def get_logging_level(self):
-        if self._api_logging_config.log_level is None:
-            return logging.INFO
-
-        return self._api_logging_config.log_level
 
 
 class NoneSdkLogger(ApiLogger):
