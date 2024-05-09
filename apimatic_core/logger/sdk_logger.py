@@ -1,10 +1,5 @@
-import logging
-
 from apimatic_core_interfaces.logger.api_logger import ApiLogger
 from apimatic_core.constants.logger_constants import LoggerConstants
-from apimatic_core.utilities.api_helper import ApiHelper
-from apimatic_core.utilities.log_helper import LogHelper
-
 
 class SdkLogger(ApiLogger):
 
@@ -17,6 +12,7 @@ class SdkLogger(ApiLogger):
         self._api_logging_config = api_logging_configuration
         self._logger = self._api_logging_config.logger
         self._level = self._api_logging_config.log_level
+        self._mask_sensitive_headers = self._api_logging_config.mask_sensitive_headers
         self._request_logging_config = self._api_logging_config.request_logging_config
         self._response_logging_config = self._api_logging_config.response_logging_config
 
@@ -26,9 +22,9 @@ class SdkLogger(ApiLogger):
         Args:
             http_request (HttpRequest): The HTTP request to log.
         """
-        lowered_case_headers = {key.lower(): value for key, value in http_request.headers.items()}
-        _content_type = lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
-        _url = self.get_request_url(http_request)
+        _lowered_case_headers = {key.lower(): value for key, value in http_request.headers.items()}
+        _content_type = _lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
+        _url = self._request_logging_config.get_loggable_url(http_request.query_url)
         params = {
             LoggerConstants.METHOD: http_request.http_method,
             LoggerConstants.URL: _url,
@@ -39,7 +35,7 @@ class SdkLogger(ApiLogger):
 
         if self._request_logging_config.log_headers:
             self._logger.log(self._level, "Request Headers %s",
-                             self.get_headers(self._request_logging_config, http_request.headers))
+                             self._get_loggable_headers(self._request_logging_config, http_request.headers))
 
         if self._request_logging_config.log_body:
             body = http_request.parameters if http_request.parameters is not None else http_request.files
@@ -54,9 +50,9 @@ class SdkLogger(ApiLogger):
         Args:
             http_response (HttpRequest): The HTTP request to log.
         """
-        lowered_case_headers = {key.lower(): value for key, value in http_response.headers.items()}
-        _content_type = lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
-        _content_length = lowered_case_headers.get(LoggerConstants.CONTENT_LENGTH_HEADER)
+        _lowered_case_headers = {key.lower(): value for key, value in http_response.headers.items()}
+        _content_type = _lowered_case_headers.get(LoggerConstants.CONTENT_TYPE_HEADER)
+        _content_length = _lowered_case_headers.get(LoggerConstants.CONTENT_LENGTH_HEADER)
         params = {
             LoggerConstants.STATUS_CODE: http_response.status_code,
             LoggerConstants.CONTENT_TYPE: _content_type,
@@ -66,7 +62,7 @@ class SdkLogger(ApiLogger):
 
         if self._response_logging_config.log_headers:
             self._logger.log(self._level, "Response Headers %s",
-                             self.get_headers(self._response_logging_config, http_response.headers))
+                             self._get_loggable_headers(self._response_logging_config, http_response.headers))
 
         if self._response_logging_config.log_body:
             params = {
@@ -74,16 +70,9 @@ class SdkLogger(ApiLogger):
             }
             self._logger.log(self._level, "Response Body %s", params)
 
-    def get_request_url(self, http_request):
-        if self._request_logging_config.include_query_in_path:
-            return http_request.query_url
-
-        return ApiHelper.get_url_without_query(http_request.query_url)
-
-    def get_headers(self, logging_config, headers):
+    def _get_loggable_headers(self, logging_config, headers):
         return {
-            LoggerConstants.HEADERS: LogHelper.get_headers_to_log(logging_config, headers,
-                                                                  self._api_logging_config.mask_sensitive_headers)
+            LoggerConstants.HEADERS: logging_config.get_loggable_headers(headers, self._mask_sensitive_headers)
         }
 
 

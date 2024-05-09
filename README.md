@@ -106,7 +106,6 @@ pip install apimatic-core
 | [`XmlHelper`](apimatic_core/utilities/xml_helper.py )              | A Helper class that holds utility methods for xml serialization and deserialization.                     |
 | [`DateTimeHelper`](apimatic_core/utilities/datetime_helper.py )    | A Helper class that holds utility methods for validation of different datetime formats.                  |
 | [`UnionTypeHelper`](apimatic_core/utilities/union_type_helper.py ) | A Helper class that holds utility methods for deserialization and validation of OneOf/AnyOf union types. |
-| [`LogHelper`](apimatic_core/utilities/log_helper.py )              | A Helper class that holds utility methods for logging.                                                   |
 
 ## Links
 * [apimatic-core-interfaces](https://pypi.org/project/apimatic-core-interfaces/)
