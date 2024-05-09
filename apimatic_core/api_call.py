@@ -18,8 +18,8 @@ class ApiCall:
         self._request_builder = None
         self._response_handler = ResponseHandler()
         self._endpoint_configuration = EndpointConfiguration()
-        self._sdk_configuration = self._global_configuration.get_http_client_configuration()
-        self._api_logger = LoggerFactory.get_api_logger(self._sdk_configuration.logging_configuration)
+        self._api_logger = LoggerFactory.get_api_logger(self._global_configuration.get_http_client_configuration()
+                                                        .logging_configuration)
 
     def request(self, request_builder):
         self._request_builder = request_builder

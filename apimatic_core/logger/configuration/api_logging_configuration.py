@@ -2,6 +2,7 @@ import logging
 
 from apimatic_core_interfaces.logger.logger import Logger
 from apimatic_core.logger.default_logger import ConsoleLogger
+from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class ApiLoggingConfiguration:
@@ -81,12 +82,9 @@ class BaseHttpLoggingConfiguration:
 
         self._log_body = log_body
         self._log_headers = log_headers
-        self._headers_to_include = [] if headers_to_include is None \
-            else list(map(lambda x: x.lower(), headers_to_include))
-        self._headers_to_exclude = [] if headers_to_exclude is None \
-            else list(map(lambda x: x.lower(), headers_to_exclude))
-        self._headers_to_unmask = [] if headers_to_unmask is None \
-            else list(map(lambda x: x.lower(), headers_to_unmask))
+        self._headers_to_include = [] if headers_to_include is None else ApiHelper.to_lower_case(headers_to_include)
+        self._headers_to_exclude = [] if headers_to_exclude is None else ApiHelper.to_lower_case(headers_to_exclude)
+        self._headers_to_unmask = [] if headers_to_unmask is None else ApiHelper.to_lower_case(headers_to_unmask)
 
 
 class ApiRequestLoggingConfiguration(BaseHttpLoggingConfiguration):

@@ -910,3 +910,14 @@ class TestApiHelper(Base):
         with pytest.raises(ValueError) as excinfo:
             ApiHelper.get_url_without_query(input_url)
         assert str(excinfo.value) == expected_error_message
+
+    @pytest.mark.parametrize('input_list, expected_output', [
+        (None, None),
+        ([], []),
+        (["HELLO"], ["hello"]),
+        (["hElLo", "worLd"], ["hello", "world"])
+    ])
+    def test_to_lower_case(self, input_list, expected_output):
+        """Tests if an empty list returns an empty list."""
+        actual_output = ApiHelper.to_lower_case(input_list)
+        assert actual_output == expected_output

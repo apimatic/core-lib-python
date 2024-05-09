@@ -646,6 +646,25 @@ class ApiHelper(object):
 
         return template
 
+    @staticmethod
+    def to_lower_case(list_of_string):
+        """Converts all strings in a list to lowercase.
+
+        Args:
+            list_of_string (list): A list of strings to convert to lowercase.
+
+        Returns:
+            list: A new list containing the lowercase versions of the input strings.
+                Returns None if the input list is None.
+
+        Raises:
+            TypeError: If the input is not a list.
+        """
+        if list_of_string is None:
+            return None
+
+        return list(map(lambda x: x.lower(), list_of_string))
+
     class CustomDate(object):
 
         """ A base class for wrapper classes of datetime.
