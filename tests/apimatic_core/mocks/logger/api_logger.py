@@ -1,18 +1,14 @@
+import logging
 
-class ApiLogger():
+from apimatic_core_interfaces.logger.logger import Logger
 
-    @property
-    def logged_messages(self):
-        return self._logged_messages
+
+class ApiLogger(Logger):
 
     def __init__(self):
-        self._logged_messages = []
+        self._logger = logging.getLogger('mocked_logger')
 
-    def info(self, info_message):
-        self._logged_messages.append(info_message)
+    def log(self, level, message, params):
+        self._logger.log(level, message, *params.values())
 
-    def debug(self, debug_message):
-        self._logged_messages.append(debug_message)
 
-    def error(self, error_message, exc_info):
-        self._logged_messages.append('{}-{}'.format(error_message, exc_info))

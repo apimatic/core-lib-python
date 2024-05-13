@@ -67,10 +67,21 @@ pip install apimatic-core
 | [`ApiResponse`](apimatic_core/http/response/api_response.py)                                | A wrapper class for Api Response                            |
 | [`HttpResponse`](apimatic_core/http/response/http_response.py)                              | A class which contains information about the HTTP Response  |
 
+## Logging Configuration
+| Name                                                                                                 | Description                                                 |
+|------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| [`ApiLoggingConfiguration`](apimatic_core/logger/configuration/api_logging_configuration.py)         | Holds overall logging configuration for logging an API call |
+| [`ApiRequestLoggingConfiguration`](apimatic_core/logger/configuration/api_logging_configuration.py)  | Holds logging configuration for API request                 |
+| [`ApiResponseLoggingConfiguration`](apimatic_core/logger/configuration/api_logging_configuration.py) | Holds logging configuration for API response                |
+
+
 ## Logger
-| Name                                                             | Description                                         |
-|------------------------------------------------------------------|-----------------------------------------------------|
-| [`EndpointLogger`](apimatic_core/logger/endpoint_logger.py)      | A class to provide logging for an HTTP request      |
+| Name                                                      | Description                                                                                                                                                       |
+|-----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`SdkLogger`](apimatic_core/logger/sdk_logger.py)         | Responsible for logging the request and response of an API call, it represents the default implementation of ApiLogger when there exist any logging configuration |
+| [`NoneSdkLogger`](apimatic_core/logger/sdk_logger.py)     | Represents the default implementation for ApiLogger when no logging configuration is provided                                                                     |
+| [`ConsoleLogger`](apimatic_core/logger/default_logger.py) | Represents the default implementation for Logger when no custom implementation is provided                                                                        |
+| [`LoggerFactory`](apimatic_core/logger/sdk_logger.py)     | Responsible for providing the ApiLogger implementation (`SdkLogger` \| `NoneSdkLogger`) based on the logging configuration                                        |
 
 ## Types
 | Name                                                                          | Description                                                                  |

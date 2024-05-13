@@ -5,6 +5,8 @@ import datetime
 import calendar
 import email.utils as eut
 from time import mktime
+from urllib.parse import urlsplit
+
 import jsonpickle
 import dateutil.parser
 from jsonpointer import JsonPointerException, resolve_pointer
@@ -350,6 +352,28 @@ class ApiHelper(object):
         return url
 
     @staticmethod
+    def get_url_without_query(url):
+        """
+        Extracts the protocol, domain, and path from a URL excluding the query parameters.
+
+        Args:
+            url: The URL string.
+
+        Returns:
+            A string containing the protocol, domain, and path of the URL without the query string.
+
+        Raises:
+            ValueError: If the URL is invalid.
+        """
+        try:
+            parsed_url = urlsplit(url)
+            if not parsed_url.netloc:  # Check if URL has scheme and netloc (valid URL)
+                raise ValueError("Invalid URL format")
+            return f"{parsed_url.scheme}://{parsed_url.netloc}{parsed_url.path}"
+        except ValueError as e:
+            raise ValueError(f"Error parsing URL: {e}") from e
+
+    @staticmethod
     def process_complex_types_parameters(query_parameters, array_serialization):
         processed_params = []
         for key, value in query_parameters.items():
@@ -621,6 +645,25 @@ class ApiHelper(object):
                 template = template.replace(placeholder, values)
 
         return template
+
+    @staticmethod
+    def to_lower_case(list_of_string):
+        """Converts all strings in a list to lowercase.
+
+        Args:
+            list_of_string (list): A list of strings to convert to lowercase.
+
+        Returns:
+            list: A new list containing the lowercase versions of the input strings.
+                Returns None if the input list is None.
+
+        Raises:
+            TypeError: If the input is not a list.
+        """
+        if list_of_string is None:
+            return None
+
+        return list(map(lambda x: x.lower(), list_of_string))
 
     class CustomDate(object):
 

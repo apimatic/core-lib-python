@@ -46,13 +46,20 @@ class HttpClientConfiguration(object):  # pragma: no cover
     def retry_methods(self):
         return self._retry_methods
 
-    def __init__(
-            self, http_client_instance=None,
-            override_http_client_configuration=False, http_call_back=None,
-            timeout=60, max_retries=0, backoff_factor=2,
-            retry_statuses=[408, 413, 429, 500, 502, 503, 504, 521, 522, 524],
-            retry_methods=['GET', 'PUT']
-    ):
+    @property
+    def logging_configuration(self):
+        return self._logging_configuration
+
+    def __init__(self, http_client_instance=None,
+                 override_http_client_configuration=False, http_call_back=None,
+                 timeout=60, max_retries=0, backoff_factor=2,
+                 retry_statuses=None, retry_methods=None, logging_configuration=None):
+        if retry_statuses is None:
+            retry_statuses = [408, 413, 429, 500, 502, 503, 504, 521, 522, 524]
+
+        if retry_methods is None:
+            retry_methods = ['GET', 'PUT']
+
         self._http_response_factory = HttpResponseFactory()
 
         # The Http Client passed from the sdk user for making requests
@@ -83,6 +90,8 @@ class HttpClientConfiguration(object):  # pragma: no cover
 
         # The Http Client to use for making requests.
         self._http_client = None
+
+        self._logging_configuration = logging_configuration
 
     def set_http_client(self, http_client):
         self._http_client = http_client

@@ -10,5 +10,6 @@ __all__ = [
     'factories',
     'types',
     'logger',
-    'exceptions'
+    'exceptions',
+    'constants'
 ]
