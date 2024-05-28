@@ -13,7 +13,9 @@ class AuthHelper:
             return encoded
 
     @staticmethod
-    def get_token_expiry(current_timestamp, expires_in):
+    def get_token_expiry(current_timestamp, expires_in, skew_time=None):
+        if skew_time:
+            return current_timestamp + int(expires_in) - int(skew_time)
         return current_timestamp + int(expires_in)
 
     @staticmethod
