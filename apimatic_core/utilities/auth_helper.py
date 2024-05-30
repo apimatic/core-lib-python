@@ -21,13 +21,15 @@ class AuthHelper:
         return calendar.timegm(datetime.now().utctimetuple())
 
     @staticmethod
-    def is_token_expired(token_expiry):
+    def is_token_expired(token_expiry, clock_skew_time=None):
         """ Checks if OAuth token has expired.
 
         Returns:
             bool: True if token has expired, False otherwise.
 
         """
+        if clock_skew_time is not None and token_expiry is not None:
+            token_expiry -= clock_skew_time
         utc_now = AuthHelper.get_current_utc_timestamp()
         return token_expiry is not None and token_expiry < utc_now
 
