@@ -580,14 +580,17 @@ class ApiHelper(object):
         return isinstance(param, FileWrapper)
 
     @staticmethod
-    def is_valid_type(value, type_callable, is_value_nullable=False):
+    def is_valid_type(value, type_callable, is_value_nullable=False, is_model_dict=False,
+                      is_inner_model_dict=False):
         if value is None and is_value_nullable:
             return True
 
         if isinstance(value, list):
-            return all(ApiHelper.is_valid_type(item, type_callable) for item in value)
-        elif isinstance(value, dict):
-            return all(ApiHelper.is_valid_type(item, type_callable) for item in value.values())
+            return all(ApiHelper.is_valid_type(item, type_callable, is_value_nullable, is_model_dict,
+                                               is_inner_model_dict) for item in value)
+        elif isinstance(value, dict) and (not is_model_dict or is_inner_model_dict):
+            return all(ApiHelper.is_valid_type(item, type_callable, is_value_nullable, is_model_dict)
+                       for item in value.values())
 
         return value is not None and type_callable(value)
 
