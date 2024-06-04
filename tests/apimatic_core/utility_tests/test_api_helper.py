@@ -2,6 +2,8 @@ from datetime import datetime, date
 
 import jsonpickle
 import pytest
+from tests.apimatic_core.mocks.models.atom import Atom
+
 from apimatic_core.types.union_types.leaf_type import LeafType
 from apimatic_core.types.union_types.one_of import OneOf
 from apimatic_core.types.union_types.union_type_context import UnionTypeContext
@@ -850,40 +852,65 @@ class TestApiHelper(Base):
                                                                                     input_template)
         assert actual_message == expected_message
 
-    @pytest.mark.parametrize('input_value, input_callable, is_value_nullable, expected_value', [
-        (100, lambda value: isinstance(value, int), False, True),
-        ('100', lambda value: isinstance(value, str), False, True),
-        ("Sunday", lambda value: Days.validate(value), False, True),
-        (100.5, lambda value: isinstance(value, str), False, False),
-        ("Invalid", lambda value: Days.validate(value), False, False),
-        (None, lambda value: isinstance(value, str), False, False),
-        (None, lambda value: isinstance(value, str), True, True),
-        (None, None, False, False),
-        (None, None, True, True),
+    @pytest.mark.parametrize(
+        'input_value, input_callable, is_value_nullable, is_model_dict, is_inner_model_dict, expected_value', [
+            (100, lambda value: isinstance(value, int), False, False, False, True),
+            ('100', lambda value: isinstance(value, str), False, False, False, True),
+            ("Sunday", lambda value: Days.validate(value), False, False, False, True),
+            (100.5, lambda value: isinstance(value, str), False, False, False, False),
+            ("Invalid", lambda value: Days.validate(value), False, False, False, False),
+            (None, lambda value: isinstance(value, str), False, False, False, False),
+            (None, lambda value: isinstance(value, str), True, False, False, True),
+            (None, None, False, False, False, False),
+            (None, None, True, False, False, True),
 
-        ([100, 200], lambda value: isinstance(value, int), False, True),
-        (['100', '200'], lambda value: isinstance(value, str), False, True),
-        (["Sunday", "Monday"], lambda value: Days.validate(value), False, True),
-        ([100.5, 200], lambda value: isinstance(value, str), False, False),
-        (["Invalid1", "Invalid2"], lambda value: Days.validate(value), False, False),
-        ([None, None], lambda value: isinstance(value, str), False, False),
+            ([100, 200], lambda value: isinstance(value, int), False, False, False, True),
+            (['100', '200'], lambda value: isinstance(value, str), False, False, False, True),
+            (["Sunday", "Monday"], lambda value: Days.validate(value), False, False, False, True),
+            ([100.5, 200], lambda value: isinstance(value, str), False, False, False, False),
+            (["Invalid1", "Invalid2"], lambda value: Days.validate(value), False, False, False, False),
+            ([None, None], lambda value: isinstance(value, str), False, False, False, False),
 
-        ([[100, 200], [300, 400]], lambda value: isinstance(value, int), False, True),
-        ([['100', '200'], ['abc', 'def']], lambda value: isinstance(value, str), False, True),
-        ([["Sunday", "Monday"], ["Tuesday", "Friday"]], lambda value: Days.validate(value), False, True),
-        ([[100.5, 200], [400, 500]], lambda value: isinstance(value, str), False, False),
-        ([["Invalid1", "Invalid2"], ["Sunday", "Invalid4"]], lambda value: Days.validate(value), False, False),
-        ([[None, None], [None, None]], lambda value: isinstance(value, str), False, False),
+            ([[100, 200], [300, 400]], lambda value: isinstance(value, int), False, False, False, True),
+            ([['100', '200'], ['abc', 'def']], lambda value: isinstance(value, str), False, False, False, True),
+            ([["Sunday", "Monday"], ["Tuesday", "Friday"]], lambda value: Days.validate(value), False, False, False,
+             True),
+            ([[100.5, 200], [400, 500]], lambda value: isinstance(value, str), False, False, False, False),
+            (
+            [["Invalid1", "Invalid2"], ["Sunday", "Invalid4"]], lambda value: Days.validate(value), False, False, False,
+            False),
+            ([[None, None], [None, None]], lambda value: isinstance(value, str), False, False, False, False),
 
-        ({'key0': 100, 'key2': 200}, lambda value: isinstance(value, int), False, True),
-        ({'key0': 'abc', 'key2': 'def'}, lambda value: isinstance(value, str), False, True),
-        ({'key0': 'Sunday', 'key2': 'Tuesday'}, lambda value: Days.validate(value), False, True),
-        ({'key0': 100.5, 'key2': 200}, lambda value: isinstance(value, str), False, False),
-        ({'key0': "Invalid1", 'key2': "Invalid2"}, lambda value: Days.validate(value), False, False),
-        ({'key0': None, 'key2': None}, lambda value: isinstance(value, str), False, False),
-    ])
-    def test_is_valid_type(self, input_value, input_callable, is_value_nullable, expected_value):
-        actual_value = ApiHelper.is_valid_type(input_value, input_callable, is_value_nullable)
+            ({'key0': 100, 'key2': 200}, lambda value: isinstance(value, int), False, False, False, True),
+            ({'key0': 'abc', 'key2': 'def'}, lambda value: isinstance(value, str), False, False, False, True),
+            ({'key0': 'Sunday', 'key2': 'Tuesday'}, lambda value: Days.validate(value), False, False, False, True),
+            ({'key0': 100.5, 'key2': 200}, lambda value: isinstance(value, str), False, False, False, False),
+            ({'key0': "Invalid1", 'key2': "Invalid2"}, lambda value: Days.validate(value), False, False, False, False),
+            ({'key0': None, 'key2': None}, lambda value: isinstance(value, str), False, False, False, False),
+
+            ({"AtomNumberOfElectrons": 3}, lambda value: Atom.validate(value), False, True, False, True),
+            ([{"AtomNumberOfElectrons": 3}, {"AtomNumberOfElectrons": 3}],
+             lambda value: Atom.validate(value), False, True, False, True),
+            ({"item": {"AtomNumberOfElectrons": 3}}, lambda value: Atom.validate(value), False, True, True, True),
+            ([{"item": {"AtomNumberOfElectrons": 3}}, {"item": {"AtomNumberOfElectrons": 3}}],
+             lambda value: Atom.validate(value), False, True, True, True),
+            ({"item": [{"AtomNumberOfElectrons": 3}, {"AtomNumberOfElectrons": 3}]},
+             lambda value: Atom.validate(value), False, True, True, True),
+
+            ({"InvalidAtomNumberOfElectrons": 3}, lambda value: Atom.validate(value), False, True, False, False),
+            ([{"InvalidAtomNumberOfElectrons": 3}, {"InvalidAtomNumberOfElectrons": 3}],
+             lambda value: Atom.validate(value), False, True, False, False),
+            ({"item": {"InvalidAtomNumberOfElectrons": 3}},
+             lambda value: Atom.validate(value), False, True, True, False),
+            ([{"item": {"InvalidAtomNumberOfElectrons": 3}}, {"item": {"InvalidAtomNumberOfElectrons": 3}}],
+             lambda value: Atom.validate(value), False, True, True, False),
+            ({"item": [{"InvalidAtomNumberOfElectrons": 3}, {"AtomNumberOfElectrons": 3}]},
+             lambda value: Atom.validate(value), False, True, True, False),
+        ])
+    def test_is_valid_type(self, input_value, input_callable, is_value_nullable, is_model_dict,
+                           is_inner_model_dict, expected_value):
+        actual_value = ApiHelper.is_valid_type(input_value, input_callable, is_value_nullable, is_model_dict,
+                                               is_inner_model_dict)
         assert actual_value == expected_value
 
     @pytest.mark.parametrize('input_value, input_union_type, input_should_deserialize, expected_value', [
