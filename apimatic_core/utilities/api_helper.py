@@ -108,7 +108,7 @@ class ApiHelper(object):
                 JSON serialized string.
 
         """
-        if json is None:
+        if json is None or json.strip() == '':
             return None
 
         try:
