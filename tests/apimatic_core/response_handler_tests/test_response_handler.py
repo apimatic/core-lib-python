@@ -273,7 +273,9 @@ class TestResponseHandler(Base):
 
     @pytest.mark.parametrize('input_http_response, expected_response_body, expected_error_list', [
         (Base.response(text='{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"]}'),
-         '{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"]}', ['e1', 'e2'])
+         '{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"]}', ['e1', 'e2']),
+        (Base.response(text=''), None, None),
+        (Base.response(text='    '), None, None)
     ])
     def test_api_response_with_errors(self, input_http_response, expected_response_body, expected_error_list):
         api_response = self.new_response_handler \
