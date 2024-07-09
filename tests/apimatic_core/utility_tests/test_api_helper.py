@@ -152,6 +152,8 @@ class TestApiHelper(Base):
     @pytest.mark.parametrize('input_json_value, unboxing_function, as_dict, expected_value', [
         (None, None, False, None),
         ('true', None, False, 'true'),
+        ('', None, False, None),
+        ('    ', None, False, None),
         (ApiHelper.json_serialize(Base.employee_model()), Employee.from_dictionary, False,
          ApiHelper.json_serialize(Base.employee_model())),
         (ApiHelper.json_serialize([Base.employee_model(), Base.employee_model()]),
@@ -175,14 +177,6 @@ class TestApiHelper(Base):
     def test_json_deserialize(self, input_json_value, unboxing_function, as_dict, expected_value):
         deserialized_value = ApiHelper.json_deserialize(input_json_value, unboxing_function, as_dict)
         assert ApiHelper.json_serialize(deserialized_value) == expected_value
-
-    @pytest.mark.parametrize('input_json', [
-        True
-    ])
-    def test_json_deserialize_value_error(self, input_json):
-        with pytest.raises(ValueError):
-            raise ValueError(input_json)
-            ApiHelper.json_deserialize(input_json)
 
     @pytest.mark.parametrize('input_url, input_file_value, expected_value', [
         ('C:\\PYTHON_GENERIC_LIB\\Tester\\models\\test_file.py', "test_file",
@@ -789,7 +783,9 @@ class TestApiHelper(Base):
     @pytest.mark.parametrize('input_value, output_value', [
         ('{"method": "GET", "body": {}, "uploadCount": 0}', {'body': {}, 'method': 'GET', 'uploadCount': 0}),
         ('I am a string', 'I am a string'),
-        (None, None)
+        (None, None),
+        ('', None),
+        ('    ', None)
     ])
     def test_dynamic_deserialize(self, input_value, output_value):
         assert ApiHelper.dynamic_deserialize(input_value) == output_value

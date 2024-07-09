@@ -151,7 +151,10 @@ class TestResponseHandler(Base):
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
         (Base.response(text=ApiHelper.json_serialize(Base.employee_model())),
-         ApiHelper.json_serialize(Base.employee_model()))
+         ApiHelper.json_serialize(Base.employee_model())),
+        (Base.response(), None),
+        (Base.response(text=''), None),
+        (Base.response(text='    '), None)
     ])
     def test_custom_type_response_body(self, input_http_response, expected_response_body):
         http_response = self.new_response_handler \
@@ -164,7 +167,10 @@ class TestResponseHandler(Base):
         (Base.response(text='[1, 2, 3, 4]'), '[1, 2, 3, 4]'),
         (Base.response(text='{"key1": "value1", "key2": "value2"}'), '{"key1": "value1", "key2": "value2"}'),
         (Base.response(text='{"key1": "value1", "key2": [1, 2, 3, {"key1": "value1", "key2": "value2"}]}'),
-         '{"key1": "value1", "key2": [1, 2, 3, {"key1": "value1", "key2": "value2"}]}')
+         '{"key1": "value1", "key2": [1, 2, 3, {"key1": "value1", "key2": "value2"}]}'),
+        (Base.response(), None),
+        (Base.response(text=''), None),
+        (Base.response(text='    '), None)
     ])
     def test_json_response_body(self, input_http_response, expected_response_body):
         http_response = self.new_response_handler \
@@ -267,7 +273,9 @@ class TestResponseHandler(Base):
 
     @pytest.mark.parametrize('input_http_response, expected_response_body, expected_error_list', [
         (Base.response(text='{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"]}'),
-         '{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"]}', ['e1', 'e2'])
+         '{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"]}', ['e1', 'e2']),
+        (Base.response(text=''), None, None),
+        (Base.response(text='    '), None, None)
     ])
     def test_api_response_with_errors(self, input_http_response, expected_response_body, expected_error_list):
         api_response = self.new_response_handler \
