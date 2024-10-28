@@ -527,6 +527,10 @@ class ApiHelper(object):
         # Loop through all additional properties in this model
         if hasattr(obj, "additional_properties"):
             for name in obj.additional_properties:
+
+                if name in dictionary.keys():
+                    raise ValueError(f'An additional property key, \'{name}\' conflicts with one of the model\'s properties')
+
                 value = obj.additional_properties.get(name)
                 if isinstance(value, list):
                     # Loop through each item
