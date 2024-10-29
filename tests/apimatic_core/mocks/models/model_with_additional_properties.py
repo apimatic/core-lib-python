@@ -22,8 +22,12 @@ class ModelWithAdditionalPropertiesOfPrimitiveType(object):
 
     def __init__(self,
                  email=None,
-                 additional_properties:dict[str, int]=None):
-        """Constructor for the NonInheritEnabledNumber class"""
+                 additional_properties=None):
+        """Constructor for the NonInheritEnabledNumber class
+        Args:
+            email (str): TODO: type description here.
+            additional_properties (dict[str, int]): TODO: type description here.
+        """
 
         # Initialize members of the class
         if additional_properties is None:
@@ -78,8 +82,14 @@ class ModelWithAdditionalPropertiesOfPrimitiveArrayType(object):
 
     def __init__(self,
                  email=None,
-                 additional_properties:dict[str, list[int]]=None):
-        """Constructor for the NonInheritEnabledNumber class"""
+                 additional_properties=None):
+        """Constructor for the NonInheritEnabledNumber class
+
+        Args:
+            email (str): TODO: type description here.
+            additional_properties (dict[str, list[int]]): TODO: type description here.
+
+        """
 
         # Initialize members of the class
         if additional_properties is None:
@@ -133,8 +143,14 @@ class ModelWithAdditionalPropertiesOfPrimitiveDictType(object):
 
     def __init__(self,
                  email=None,
-                 additional_properties:dict[str, dict[str, int]]=None):
-        """Constructor for the NonInheritEnabledNumber class"""
+                 additional_properties=None):
+        """Constructor for the NonInheritEnabledNumber class
+
+        Args:
+            email (str): TODO: type description here.
+            additional_properties (dict[str, dict[str, int]]): TODO: type description here.
+
+        """
 
         # Initialize members of the class
         if additional_properties is None:
@@ -188,8 +204,14 @@ class ModelWithAdditionalPropertiesOfModelType(object):
 
     def __init__(self,
                  email=None,
-                 additional_properties:dict[str, Lion]=None):
-        """Constructor for the NonInheritEnabledNumber class"""
+                 additional_properties=None):
+        """Constructor for the NonInheritEnabledNumber class
+
+        Args:
+            email (str): TODO: type description here.
+            additional_properties (dict[str, Lion]): TODO: type description here.
+
+        """
 
         # Initialize members of the class
         if additional_properties is None:
@@ -243,8 +265,14 @@ class ModelWithAdditionalPropertiesOfModelArrayType(object):
 
     def __init__(self,
                  email=None,
-                 additional_properties:dict[str, list[Lion]]=None):
-        """Constructor for the NonInheritEnabledNumber class"""
+                 additional_properties=None):
+        """Constructor for the NonInheritEnabledNumber class
+
+        Args:
+            email (str): TODO: type description here.
+            additional_properties (dict[str, list[Lion]]): TODO: type description here.
+
+        """
 
         # Initialize members of the class
         if additional_properties is None:
@@ -298,8 +326,14 @@ class ModelWithAdditionalPropertiesOfModelDictType(object):
 
     def __init__(self,
                  email=None,
-                 additional_properties:dict[str, dict[str, Lion]]=None):
-        """Constructor for the NonInheritEnabledNumber class"""
+                 additional_properties=None):
+        """Constructor for the NonInheritEnabledNumber class
+
+        Args:
+            email (str): TODO: type description here.
+            additional_properties (dict[str, dict[str, Lion]]): TODO: type description here.
+
+        """
 
         # Initialize members of the class
         if additional_properties is None:
@@ -355,8 +389,14 @@ class ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(object):
 
     def __init__(self,
                  email=None,
-                 additional_properties:dict[str, float|bool]=None):
-        """Constructor for the NonInheritEnabledNumber class"""
+                 additional_properties=None):
+        """Constructor for the NonInheritEnabledNumber class
+
+        Args:
+            email (str): TODO: type description here.
+            additional_properties (dict[str, float|bool]): TODO: type description here.
+
+        """
 
         # Initialize members of the class
         if additional_properties is None:
