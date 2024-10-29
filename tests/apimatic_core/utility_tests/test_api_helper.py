@@ -156,6 +156,17 @@ class TestApiHelper(Base):
         serialized_value = ApiHelper.json_serialize(input_value)
         assert serialized_value == expected_value
 
+    @pytest.mark.parametrize('input_value, expected_validation_message', [
+        (ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
+            'test@gmail.com', {'email': 10.55}),
+         "An additional property key, 'email' conflicts with one of the model's properties")
+    ])
+    def test_json_serialize_with_exception(self, input_value, expected_validation_message):
+        with pytest.raises(ValueError) as conflictingPropertyError:
+            ApiHelper.json_serialize(input_value)
+
+        assert conflictingPropertyError.value.args[0] == expected_validation_message
+
     @pytest.mark.parametrize('input_json_value, unboxing_function, as_dict, expected_value', [
         (None, None, False, None),
         ('true', None, False, 'true'),
@@ -582,6 +593,18 @@ class TestApiHelper(Base):
                        and item[1].value == expected_form_param_value[index][1].value
             else:
                 assert item == expected_form_param_value[index]
+
+    @pytest.mark.parametrize('input_form_param_value, expected_validation_message', [
+        (ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
+            'test@gmail.com', {'email': 10.55}),
+         "An additional property key, 'email' conflicts with one of the model's properties")
+    ])
+    def test_form_params_with_exception(self, input_form_param_value, expected_validation_message):
+        with pytest.raises(ValueError) as conflictingPropertyError:
+            ApiHelper.form_encode(input_form_param_value, 'form_param')
+
+        assert conflictingPropertyError.value.args[0] == expected_validation_message
+
 
     @pytest.mark.parametrize('input_form_param_value, expected_form_param_value, array_serialization_format', [
         ({'form_param1': 'string',
