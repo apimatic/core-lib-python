@@ -54,10 +54,10 @@ class ModelWithAdditionalPropertiesOfPrimitiveType(object):
             return None
 
         # Extract variables from the dictionary
-        email = dictionary.pop("email", None)
+        email = dictionary.get("email") if dictionary.get("email") else None
 
         additional_properties = ApiHelper.get_additional_properties(
-            dictionary=dictionary,
+            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
             unboxing_function=lambda x: int(x))
 
         # Return an object of this model
@@ -116,10 +116,10 @@ class ModelWithAdditionalPropertiesOfPrimitiveArrayType(object):
             return None
 
         # Extract variables from the dictionary
-        email = dictionary.pop("email", None)
+        email = dictionary.get("email") if dictionary.get("email") else None
 
         additional_properties = ApiHelper.get_additional_properties(
-            dictionary=dictionary,
+            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
             unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: int(item)))
 
         # Return an object of this model
@@ -177,10 +177,10 @@ class ModelWithAdditionalPropertiesOfPrimitiveDictType(object):
             return None
 
         # Extract variables from the dictionary
-        email = dictionary.pop("email", None)
+        email = dictionary.get("email") if dictionary.get("email") else None
 
         additional_properties = ApiHelper.get_additional_properties(
-            dictionary=dictionary,
+            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
             unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: int(item), as_dict=True))
 
         # Return an object of this model
@@ -238,10 +238,10 @@ class ModelWithAdditionalPropertiesOfModelType(object):
             return None
 
         # Extract variables from the dictionary
-        email = dictionary.pop("email", None)
+        email = dictionary.get("email") if dictionary.get("email") else None
 
         additional_properties = ApiHelper.get_additional_properties(
-            dictionary=dictionary,
+            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
             unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: Lion.from_dictionary(item)))
 
         # Return an object of this model
@@ -299,10 +299,10 @@ class ModelWithAdditionalPropertiesOfModelArrayType(object):
             return None
 
         # Extract variables from the dictionary
-        email = dictionary.pop("email", None)
+        email = dictionary.get("email") if dictionary.get("email") else None
 
         additional_properties = ApiHelper.get_additional_properties(
-            dictionary=dictionary,
+            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
             unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: Lion.from_dictionary(item)))
 
         # Return an object of this model
@@ -360,10 +360,10 @@ class ModelWithAdditionalPropertiesOfModelDictType(object):
             return None
 
         # Extract variables from the dictionary
-        email = dictionary.pop("email", None)
+        email = dictionary.get("email") if dictionary.get("email") else None
 
         additional_properties = ApiHelper.get_additional_properties(
-            dictionary=dictionary,
+            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
             unboxing_function=lambda x: ApiHelper.apply_unboxing_function(
                 x, lambda item: Lion.from_dictionary(item),
                 as_dict=True))
@@ -423,10 +423,10 @@ class ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(object):
             return None
 
         # Extract variables from the dictionary
-        email = dictionary.pop("email", None)
+        email = dictionary.get("email") if dictionary.get("email") else None
 
         additional_properties = ApiHelper.get_additional_properties(
-            dictionary=dictionary,
+            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
             unboxing_function=lambda x: ApiHelper.deserialize_union_type(UnionTypeLookUp.get('ScalarModelAnyOfRequired'),
                                                                          x, False))
 
