@@ -1068,27 +1068,35 @@ class TestApiHelper(Base):
         assert result == {}  # expected result when exception occurs
 
     @pytest.mark.parametrize(
-        "value, unboxing_function, is_array, is_dict, is_array_of_map, is_map_of_array, expected",
+        "value, unboxing_function, is_array, is_dict, is_array_of_map, is_map_of_array, dimension_count, expected",
         [
             # Test case 1: Simple object
-            (5, lambda x: x * 2, False, False, False, False, 10),
+            (5, lambda x: x * 2, False, False, False, False, 0, 10),
             # Test case 2: Array
-            ([1, 2, 3], lambda x: x * 2, True, False, False, False, [2, 4, 6]),
+            ([1, 2, 3], lambda x: x * 2, True, False, False, False, 0, [2, 4, 6]),
             # Test case 3: Dictionary
-            ({"a": 1, "b": 2}, lambda x: x * 2, False, True, False, False, {"a": 2, "b": 4}),
+            ({"a": 1, "b": 2}, lambda x: x * 2, False, True, False, False, 0, {"a": 2, "b": 4}),
             # Test case 4: Array of maps
-            ([{"a": 1}, {"b": 2}], lambda x: x * 2, True, False, True, False, [{"a": 2}, {"b": 4}]),
+            ([{"a": 1}, {"b": 2}], lambda x: x * 2, True, False, True, False, 0, [{"a": 2}, {"b": 4}]),
             # Test case 5: Map of arrays
-            ({"a": [1, 2], "b": [3, 4]}, lambda x: x * 2, False, True, False, True, {"a": [2, 4], "b": [6, 8]}),
+            ({"a": [1, 2], "b": [3, 4]}, lambda x: x * 2, False, True, False, True, 0, {"a": [2, 4], "b": [6, 8]}),
+            # Test case 6: Multi-dimensional array
+            ([[1], [2, 3], [4]], lambda x: x * 2, True, False, False, False, 2, [[2], [4, 6], [8]]),
+            # Test case 7: Array of arrays
+            ([[1, 2], [3, 4]], lambda x: x * 2, True, False, False, False, 2, [[2, 4], [6, 8]]),
+            # Test case 8: Array of arrays of arrays
+            ([[[1, 2], [3, 4]], [[5, 6], [7, 8]]], lambda x: x * 2, True, False, False, False, 3,
+             [[[2, 4], [6, 8]], [[10, 12], [14, 16]]]),
         ],
     )
     def test_apply_unboxing_function(self, value, unboxing_function, is_array, is_dict,
-                                     is_array_of_map, is_map_of_array, expected):
+                                     is_array_of_map, is_map_of_array, dimension_count, expected):
         result = ApiHelper.apply_unboxing_function(
             value,
             unboxing_function,
             is_array,
             is_dict,
             is_array_of_map,
-            is_map_of_array)
+            is_map_of_array,
+            dimension_count)
         assert result == expected

@@ -128,17 +128,31 @@ class ApiHelper(object):
 
     @staticmethod
     def apply_unboxing_function(value, unboxing_function, is_array=False, is_dict=False, is_array_of_map=False,
-                                is_map_of_array=False):
+                                is_map_of_array=False, dimension_count=1):
         if is_dict:
             if is_map_of_array:
-                return {k: list(map(unboxing_function, v)) for k, v in value.items()}
+                return {k: ApiHelper.apply_unboxing_function(v,
+                                                             unboxing_function,
+                                                             is_array=True,
+                                                             dimension_count=dimension_count)
+                        for k, v in value.items()}
             else:
                 return {k: unboxing_function(v) for k, v in value.items()}
         elif is_array:
             if is_array_of_map:
-                return list(map(lambda x: {k: unboxing_function(v) for k, v in x.items()}, value))
+                return [
+                    ApiHelper.apply_unboxing_function(element,
+                                                      unboxing_function,
+                                                      is_dict=True,
+                                                      dimension_count=dimension_count)
+                    for element in value]
+            elif dimension_count > 1:
+                return [ApiHelper.apply_unboxing_function(element, unboxing_function,
+                                                          is_array=True,
+                                                          dimension_count=dimension_count - 1)
+                        for element in value]
             else:
-                return list(map(unboxing_function, value))
+                return [unboxing_function(element) for element in value]
 
         return unboxing_function(value)
 
