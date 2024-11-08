@@ -120,7 +120,7 @@ class ModelWithAdditionalPropertiesOfPrimitiveArrayType(object):
 
         additional_properties = ApiHelper.get_additional_properties(
             dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: int(item)))
+            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: int(item), is_array=True))
 
         # Return an object of this model
         return cls(email, additional_properties)
@@ -181,7 +181,7 @@ class ModelWithAdditionalPropertiesOfPrimitiveDictType(object):
 
         additional_properties = ApiHelper.get_additional_properties(
             dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: int(item), as_dict=True))
+            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: int(item), is_dict=True))
 
         # Return an object of this model
         return cls(email, additional_properties)
@@ -303,7 +303,7 @@ class ModelWithAdditionalPropertiesOfModelArrayType(object):
 
         additional_properties = ApiHelper.get_additional_properties(
             dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: Lion.from_dictionary(item)))
+            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: Lion.from_dictionary(item), is_array=True))
 
         # Return an object of this model
         return cls(email, additional_properties)
@@ -366,7 +366,7 @@ class ModelWithAdditionalPropertiesOfModelDictType(object):
             dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
             unboxing_function=lambda x: ApiHelper.apply_unboxing_function(
                 x, lambda item: Lion.from_dictionary(item),
-                as_dict=True))
+                is_dict=True))
 
         # Return an object of this model
         return cls(email, additional_properties)

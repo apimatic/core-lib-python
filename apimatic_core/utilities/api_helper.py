@@ -119,16 +119,28 @@ class ApiHelper(object):
         if unboxing_function is None:
             return decoded
 
-        return ApiHelper.apply_unboxing_function(decoded, unboxing_function, as_dict)
+        if as_dict:
+            return {k: unboxing_function(v) for k, v in decoded.items()}
+        elif isinstance(decoded, list):
+            return [unboxing_function(element) for element in decoded]
+
+        return unboxing_function(decoded)
 
     @staticmethod
-    def apply_unboxing_function(obj, unboxing_function, as_dict=False):
-        if as_dict:
-            return {k: unboxing_function(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [unboxing_function(element) for element in obj]
+    def apply_unboxing_function(value, unboxing_function, is_array=False, is_dict=False, is_array_of_map=False,
+                                is_map_of_array=False):
+        if is_dict:
+            if is_map_of_array:
+                return {k: list(map(unboxing_function, v)) for k, v in value.items()}
+            else:
+                return {k: unboxing_function(v) for k, v in value.items()}
+        elif is_array:
+            if is_array_of_map:
+                return list(map(lambda x: {k: unboxing_function(v) for k, v in x.items()}, value))
+            else:
+                return list(map(unboxing_function, value))
 
-        return unboxing_function(obj)
+        return unboxing_function(value)
 
     @staticmethod
     def dynamic_deserialize(dynamic_response):

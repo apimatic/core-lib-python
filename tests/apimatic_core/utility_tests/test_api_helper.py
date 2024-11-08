@@ -1040,18 +1040,20 @@ class TestApiHelper(Base):
         assert actual_output == expected_output
 
     @pytest.mark.parametrize(
-        "dictionary, expected_result, unboxing_func, is_dict",
+        "dictionary, expected_result, unboxing_func, is_array, is_dict",
         [
-            ({}, {}, lambda x: int(x), False),
-            ({"a": 1, "b": 2}, {"a": 1, "b": 2}, lambda x: int(x), False),
-            ({"a": "1", "b": "2"}, {"a": "1", "b": "2"}, lambda x: str(x), False),
-            ({"a": "Test 1", "b": "Test 2"}, {}, lambda x: int(x), False),
-            ({"a": [1, 2], "b": [3, 4]}, {"a": [1, 2], "b": [3, 4]}, lambda x: int(x), False),
-            ({"a": {"x": 1, "y": 2}, "b": {"x": 3, "y": 4}}, {"a": {"x": 1, "y": 2}, "b": {"x": 3, "y": 4}}, lambda x: int(x), True),
+            ({}, {}, lambda x: int(x), False, False),
+            ({"a": 1, "b": 2}, {"a": 1, "b": 2}, lambda x: int(x), False, False),
+            ({"a": "1", "b": "2"}, {"a": "1", "b": "2"}, lambda x: str(x), False, False),
+            ({"a": "Test 1", "b": "Test 2"}, {}, lambda x: int(x), False, False),
+            ({"a": [1, 2], "b": [3, 4]}, {"a": [1, 2], "b": [3, 4]}, lambda x: int(x), True, False),
+            ({"a": {"x": 1, "y": 2}, "b": {"x": 3, "y": 4}}, {"a": {"x": 1, "y": 2}, "b": {"x": 3, "y": 4}}, lambda x: int(x), False, True),
         ],
     )
-    def test_get_additional_properties_success(self, dictionary, expected_result, unboxing_func, is_dict):
-        result = ApiHelper.get_additional_properties(dictionary, lambda x: ApiHelper.apply_unboxing_function(x, unboxing_func, is_dict))
+    def test_get_additional_properties_success(self, dictionary, expected_result, unboxing_func, is_array, is_dict):
+        result = ApiHelper.get_additional_properties(
+            dictionary, lambda x: ApiHelper.apply_unboxing_function(
+                x, unboxing_func, is_array, is_dict))
         assert result == expected_result
 
     @pytest.mark.parametrize(
@@ -1064,3 +1066,29 @@ class TestApiHelper(Base):
     def test_get_additional_properties_exception(self, dictionary):
         result = ApiHelper.get_additional_properties(dictionary, ApiHelper.apply_unboxing_function)
         assert result == {}  # expected result when exception occurs
+
+    @pytest.mark.parametrize(
+        "value, unboxing_function, is_array, is_dict, is_array_of_map, is_map_of_array, expected",
+        [
+            # Test case 1: Simple object
+            (5, lambda x: x * 2, False, False, False, False, 10),
+            # Test case 2: Array
+            ([1, 2, 3], lambda x: x * 2, True, False, False, False, [2, 4, 6]),
+            # Test case 3: Dictionary
+            ({"a": 1, "b": 2}, lambda x: x * 2, False, True, False, False, {"a": 2, "b": 4}),
+            # Test case 4: Array of maps
+            ([{"a": 1}, {"b": 2}], lambda x: x * 2, True, False, True, False, [{"a": 2}, {"b": 4}]),
+            # Test case 5: Map of arrays
+            ({"a": [1, 2], "b": [3, 4]}, lambda x: x * 2, False, True, False, True, {"a": [2, 4], "b": [6, 8]}),
+        ],
+    )
+    def test_apply_unboxing_function(self, value, unboxing_function, is_array, is_dict,
+                                     is_array_of_map, is_map_of_array, expected):
+        result = ApiHelper.apply_unboxing_function(
+            value,
+            unboxing_function,
+            is_array,
+            is_dict,
+            is_array_of_map,
+            is_map_of_array)
+        assert result == expected
