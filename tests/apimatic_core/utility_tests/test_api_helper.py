@@ -2,6 +2,8 @@ from datetime import datetime, date
 
 import jsonpickle
 import pytest
+from tests.apimatic_core.mocks.models.lion import Lion
+
 from tests.apimatic_core.mocks.models.atom import Atom
 
 from apimatic_core.types.union_types.leaf_type import LeafType
@@ -17,6 +19,11 @@ from tests.apimatic_core.base import Base
 from tests.apimatic_core.mocks.models.days import Days
 
 from tests.apimatic_core.mocks.models.grand_parent_class_model import ChildClassModel
+from tests.apimatic_core.mocks.models.model_with_additional_properties import \
+    ModelWithAdditionalPropertiesOfPrimitiveType, \
+    ModelWithAdditionalPropertiesOfPrimitiveArrayType, ModelWithAdditionalPropertiesOfPrimitiveDictType, \
+    ModelWithAdditionalPropertiesOfModelType, ModelWithAdditionalPropertiesOfModelArrayType, \
+    ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive, ModelWithAdditionalPropertiesOfModelDictType
 from tests.apimatic_core.mocks.models.person import Employee
 from requests.utils import quote
 
@@ -149,6 +156,17 @@ class TestApiHelper(Base):
         serialized_value = ApiHelper.json_serialize(input_value)
         assert serialized_value == expected_value
 
+    @pytest.mark.parametrize('input_value, expected_validation_message', [
+        (ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
+            'test@gmail.com', {'email': 10.55}),
+         "An additional property key, 'email' conflicts with one of the model's properties")
+    ])
+    def test_json_serialize_with_exception(self, input_value, expected_validation_message):
+        with pytest.raises(ValueError) as conflictingPropertyError:
+            ApiHelper.json_serialize(input_value)
+
+        assert conflictingPropertyError.value.args[0] == expected_validation_message
+
     @pytest.mark.parametrize('input_json_value, unboxing_function, as_dict, expected_value', [
         (None, None, False, None),
         ('true', None, False, 'true'),
@@ -171,8 +189,40 @@ class TestApiHelper(Base):
          '"name": "John", "uid": 7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], "hiredAt": "{1}",'
          ' "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday",'
          ' "Tuesday"], "personType": "Empl"}}}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                                        Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))))
-
+                                                        Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+        ('{"email": "test", "prop1": 1, "prop2": 2, "prop3": "invalid type"}',
+         ModelWithAdditionalPropertiesOfPrimitiveType.from_dictionary, False,
+         '{"email": "test", "prop1": 1, "prop2": 2}'),
+        ('{"email": "test", "prop1": [1, 2, 3], "prop2": [1, 2, 3], "prop3": "invalid type"}',
+         ModelWithAdditionalPropertiesOfPrimitiveArrayType.from_dictionary, False,
+         '{"email": "test", "prop1": [1, 2, 3], "prop2": [1, 2, 3]}'),
+        ('{"email": "test", "prop1": {"inner_prop1": 1, "inner_prop2": 2}, "prop2": {"inner_prop1": 1, "inner_prop2": 2}, "prop3": "invalid type"}',
+         ModelWithAdditionalPropertiesOfPrimitiveDictType.from_dictionary, False,
+         '{"email": "test", "prop1": {"inner_prop1": 1, "inner_prop2": 2}, "prop2": {"inner_prop1": 1, "inner_prop2": 2}}'),
+        ('{"email": "test", "prop1": {"id": 1, "weight": 50, "type": "Lion"}, "prop3": "invalid type"}',
+         ModelWithAdditionalPropertiesOfModelType.from_dictionary,
+         False,
+         '{"email": "test", "prop1": {"id": 1, "weight": 50, "type": "Lion"}}'),
+        ('{"email": "test", "prop": [{"id": 1, "weight": 50, "type": "Lion"}, {"id": 2, "weight": 100, "type": "Lion"}]}',
+         ModelWithAdditionalPropertiesOfModelArrayType.from_dictionary,
+         False,
+         '{"email": "test", "prop": [{"id": 1, "weight": 50, "type": "Lion"}, {"id": 2, "weight": 100, "type": "Lion"}]}'),
+        ('{"email": "test", "prop": {"inner prop 1": {"id": 1, "weight": 50, "type": "Lion"}, "inner prop 2": {"id": 2, "weight": 100, "type": "Lion"}}}',
+        ModelWithAdditionalPropertiesOfModelDictType.from_dictionary,
+        False,
+        '{"email": "test", "prop": {"inner prop 1": {"id": 1, "weight": 50, "type": "Lion"}, "inner prop 2": {"id": 2, "weight": 100, "type": "Lion"}}}'),
+        ('{"email": "test", "prop": true}',
+         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.from_dictionary,
+         False,
+         '{"email": "test", "prop": true}'),
+        ('{"email": "test", "prop": 100.65}',
+         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.from_dictionary,
+         False,
+         '{"email": "test", "prop": 100.65}'),
+        ('{"email": "test", "prop": "100.65"}',
+         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.from_dictionary,
+         False,
+         '{"email": "test"}')
     ])
     def test_json_deserialize(self, input_json_value, unboxing_function, as_dict, expected_value):
         deserialized_value = ApiHelper.json_deserialize(input_json_value, unboxing_function, as_dict)
@@ -498,7 +548,39 @@ class TestApiHelper(Base):
           ('form_param[hiredAt]', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
           ('form_param[joiningDay]', 'Monday'), ('form_param[name]', 'Bob'), ('form_param[salary]', 30000),
           ('form_param[uid]', 1234567), ('form_param[workingDays][0]', 'Monday'),
-          ('form_param[workingDays][1]', 'Tuesday'), ('form_param[personType]', 'Empl')], SerializationFormats.INDEXED)
+          ('form_param[workingDays][1]', 'Tuesday'), ('form_param[personType]', 'Empl')], SerializationFormats.INDEXED),
+        (ModelWithAdditionalPropertiesOfPrimitiveType(
+            'test@gmail.com', {'prop': 20}),
+         [('form_param[email]', 'test@gmail.com'), ('form_param[prop]', 20)], SerializationFormats.INDEXED),
+        (ModelWithAdditionalPropertiesOfPrimitiveArrayType(
+            'test@gmail.com', {'prop': [20, 30]}),
+         [('form_param[email]', 'test@gmail.com'), ('form_param[prop][0]', 20), ('form_param[prop][1]', 30)], SerializationFormats.INDEXED),
+        (ModelWithAdditionalPropertiesOfPrimitiveDictType(
+            'test@gmail.com', {'prop': {'inner prop 1': 20, 'inner prop 2': 30}}),
+         [('form_param[email]', 'test@gmail.com'), ('form_param[prop][inner prop 1]', 20), ('form_param[prop][inner prop 2]', 30)],
+         SerializationFormats.INDEXED),
+        (ModelWithAdditionalPropertiesOfModelType(
+            'test@gmail.com',{'prop': Lion('leo', 5, 'Lion')}),
+         [('form_param[email]', 'test@gmail.com'), ('form_param[prop][id]', 'leo'), ('form_param[prop][weight]', 5), ('form_param[prop][type]', 'Lion')],
+         SerializationFormats.INDEXED),
+        (ModelWithAdditionalPropertiesOfModelArrayType(
+            'test@gmail.com', {'prop': [Lion('leo 1', 5, 'Lion'), Lion('leo 2', 10, 'Lion')]}),
+         [('form_param[email]', 'test@gmail.com'), ('form_param[prop][0][id]', 'leo 1'), ('form_param[prop][0][weight]', 5),
+          ('form_param[prop][0][type]', 'Lion'), ('form_param[prop][1][id]', 'leo 2'), ('form_param[prop][1][weight]', 10),
+          ('form_param[prop][1][type]', 'Lion')],
+         SerializationFormats.INDEXED),
+        (ModelWithAdditionalPropertiesOfModelDictType(
+            'test@gmail.com', {'prop': {'leo 1': Lion('leo 1', 5, 'Lion'), 'leo 2': Lion('leo 2', 10, 'Lion')}}),
+         [('form_param[email]', 'test@gmail.com'), ('form_param[prop][leo 1][id]', 'leo 1'),
+          ('form_param[prop][leo 1][weight]', 5),
+          ('form_param[prop][leo 1][type]', 'Lion'), ('form_param[prop][leo 2][id]', 'leo 2'),
+          ('form_param[prop][leo 2][weight]', 10),
+          ('form_param[prop][leo 2][type]', 'Lion')],
+         SerializationFormats.INDEXED),
+        (ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
+            'test@gmail.com', {'prop': 10.55}),
+         [('form_param[email]', 'test@gmail.com'), ('form_param[prop]', 10.55)],
+         SerializationFormats.INDEXED)
     ])
     def test_form_params(self, input_form_param_value, expected_form_param_value, array_serialization_format):
         key = 'form_param'
@@ -511,6 +593,18 @@ class TestApiHelper(Base):
                        and item[1].value == expected_form_param_value[index][1].value
             else:
                 assert item == expected_form_param_value[index]
+
+    @pytest.mark.parametrize('input_form_param_value, expected_validation_message', [
+        (ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
+            'test@gmail.com', {'email': 10.55}),
+         "An additional property key, 'email' conflicts with one of the model's properties")
+    ])
+    def test_form_params_with_exception(self, input_form_param_value, expected_validation_message):
+        with pytest.raises(ValueError) as conflictingPropertyError:
+            ApiHelper.form_encode(input_form_param_value, 'form_param')
+
+        assert conflictingPropertyError.value.args[0] == expected_validation_message
+
 
     @pytest.mark.parametrize('input_form_param_value, expected_form_param_value, array_serialization_format', [
         ({'form_param1': 'string',
@@ -944,3 +1038,65 @@ class TestApiHelper(Base):
         """Tests if an empty list returns an empty list."""
         actual_output = ApiHelper.to_lower_case(input_list)
         assert actual_output == expected_output
+
+    @pytest.mark.parametrize(
+        "dictionary, expected_result, unboxing_func, is_array, is_dict",
+        [
+            ({}, {}, lambda x: int(x), False, False),
+            ({"a": 1, "b": 2}, {"a": 1, "b": 2}, lambda x: int(x), False, False),
+            ({"a": "1", "b": "2"}, {"a": "1", "b": "2"}, lambda x: str(x), False, False),
+            ({"a": "Test 1", "b": "Test 2"}, {}, lambda x: int(x), False, False),
+            ({"a": [1, 2], "b": [3, 4]}, {"a": [1, 2], "b": [3, 4]}, lambda x: int(x), True, False),
+            ({"a": {"x": 1, "y": 2}, "b": {"x": 3, "y": 4}}, {"a": {"x": 1, "y": 2}, "b": {"x": 3, "y": 4}}, lambda x: int(x), False, True),
+        ],
+    )
+    def test_get_additional_properties_success(self, dictionary, expected_result, unboxing_func, is_array, is_dict):
+        result = ApiHelper.get_additional_properties(
+            dictionary, lambda x: ApiHelper.apply_unboxing_function(
+                x, unboxing_func, is_array, is_dict))
+        assert result == expected_result
+
+    @pytest.mark.parametrize(
+        "dictionary",
+        [
+            ({"a": None}),
+            ({"a": lambda x: x}),
+        ],
+    )
+    def test_get_additional_properties_exception(self, dictionary):
+        result = ApiHelper.get_additional_properties(dictionary, ApiHelper.apply_unboxing_function)
+        assert result == {}  # expected result when exception occurs
+
+    @pytest.mark.parametrize(
+        "value, unboxing_function, is_array, is_dict, is_array_of_map, is_map_of_array, dimension_count, expected",
+        [
+            # Test case 1: Simple object
+            (5, lambda x: x * 2, False, False, False, False, 0, 10),
+            # Test case 2: Array
+            ([1, 2, 3], lambda x: x * 2, True, False, False, False, 0, [2, 4, 6]),
+            # Test case 3: Dictionary
+            ({"a": 1, "b": 2}, lambda x: x * 2, False, True, False, False, 0, {"a": 2, "b": 4}),
+            # Test case 4: Array of maps
+            ([{"a": 1}, {"b": 2}], lambda x: x * 2, True, False, True, False, 0, [{"a": 2}, {"b": 4}]),
+            # Test case 5: Map of arrays
+            ({"a": [1, 2], "b": [3, 4]}, lambda x: x * 2, False, True, False, True, 0, {"a": [2, 4], "b": [6, 8]}),
+            # Test case 6: Multi-dimensional array
+            ([[1], [2, 3], [4]], lambda x: x * 2, True, False, False, False, 2, [[2], [4, 6], [8]]),
+            # Test case 7: Array of arrays
+            ([[1, 2], [3, 4]], lambda x: x * 2, True, False, False, False, 2, [[2, 4], [6, 8]]),
+            # Test case 8: Array of arrays of arrays
+            ([[[1, 2], [3, 4]], [[5, 6], [7, 8]]], lambda x: x * 2, True, False, False, False, 3,
+             [[[2, 4], [6, 8]], [[10, 12], [14, 16]]]),
+        ],
+    )
+    def test_apply_unboxing_function(self, value, unboxing_function, is_array, is_dict,
+                                     is_array_of_map, is_map_of_array, dimension_count, expected):
+        result = ApiHelper.apply_unboxing_function(
+            value,
+            unboxing_function,
+            is_array,
+            is_dict,
+            is_array_of_map,
+            is_map_of_array,
+            dimension_count)
+        assert result == expected

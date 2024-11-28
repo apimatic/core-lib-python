@@ -123,8 +123,38 @@ class ApiHelper(object):
             return {k: unboxing_function(v) for k, v in decoded.items()}
         elif isinstance(decoded, list):
             return [unboxing_function(element) for element in decoded]
-        else:
-            return unboxing_function(decoded)
+
+        return unboxing_function(decoded)
+
+    @staticmethod
+    def apply_unboxing_function(value, unboxing_function, is_array=False, is_dict=False, is_array_of_map=False,
+                                is_map_of_array=False, dimension_count=1):
+        if is_dict:
+            if is_map_of_array:
+                return {k: ApiHelper.apply_unboxing_function(v,
+                                                             unboxing_function,
+                                                             is_array=True,
+                                                             dimension_count=dimension_count)
+                        for k, v in value.items()}
+            else:
+                return {k: unboxing_function(v) for k, v in value.items()}
+        elif is_array:
+            if is_array_of_map:
+                return [
+                    ApiHelper.apply_unboxing_function(element,
+                                                      unboxing_function,
+                                                      is_dict=True,
+                                                      dimension_count=dimension_count)
+                    for element in value]
+            elif dimension_count > 1:
+                return [ApiHelper.apply_unboxing_function(element, unboxing_function,
+                                                          is_array=True,
+                                                          dimension_count=dimension_count - 1)
+                        for element in value]
+            else:
+                return [unboxing_function(element) for element in value]
+
+        return unboxing_function(value)
 
     @staticmethod
     def dynamic_deserialize(dynamic_response):
@@ -527,23 +557,27 @@ class ApiHelper(object):
         # Loop through all additional properties in this model
         if hasattr(obj, "additional_properties"):
             for name in obj.additional_properties:
+
+                if name in dictionary.keys():
+                    raise ValueError(f'An additional property key, \'{name}\' conflicts with one of the model\'s properties')
+
                 value = obj.additional_properties.get(name)
                 if isinstance(value, list):
                     # Loop through each item
                     dictionary[name] = list()
                     for item in value:
                         dictionary[name].append(
-                            ApiHelper.to_dictionary(item, should_ignore_null_values) if hasattr(item, "additional_properties") else item)
+                            ApiHelper.to_dictionary(item, should_ignore_null_values) if hasattr(item, "_names") else item)
                 elif isinstance(value, dict):
                     # Loop through each item
                     dictionary[name] = dict()
                     for key in value:
                         dictionary[name][key] = ApiHelper.to_dictionary(value[key], should_ignore_null_values) if hasattr(value[key],
-                                                                                               "additional_properties") else \
+                                                                                               "_names") else \
                             value[key]
                 else:
                     dictionary[name] = ApiHelper.to_dictionary(value, should_ignore_null_values) if hasattr(value,
-                                                                                 "additional_properties") else value
+                                                                                 "_names") else value
 
         # Return the result
         return dictionary
@@ -667,6 +701,27 @@ class ApiHelper(object):
             return None
 
         return list(map(lambda x: x.lower(), list_of_string))
+
+    @staticmethod
+    def get_additional_properties(dictionary, unboxing_function):
+        """Extracts additional properties from the dictionary.
+
+        Args:
+            dictionary (dict): The dictionary to extract additional properties from.
+            unboxing_function (callable): The deserializer to apply to each item in the dictionary.
+
+        Returns:
+            dict: A dictionary containing the additional properties and their values.
+        """
+        additional_properties = {}
+        for key, value in dictionary.items():
+            try:
+                additional_properties[key] = unboxing_function(value)
+            except Exception:
+                pass
+
+        return additional_properties
+
 
     class CustomDate(object):
 
