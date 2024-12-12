@@ -33,7 +33,7 @@ jobs:
       - name: Generate coverage report
         run: coverage xml
       - name: Upload coverage report
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.12' && github.actor != 'dependabot[bot]' }}
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.13' && github.actor != 'dependabot[bot]' }}
         uses: paambaati/codeclimate-action@v3.0.0
         env:
           CC_TEST_REPORTER_ID: ${{ secrets.CODE_CLIMATE_TEST_REPORTER_ID }}
