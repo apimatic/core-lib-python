@@ -1,6 +1,6 @@
 name: Pylint Runner
 
-on: 
+on:
   workflow_dispatch
 
 jobs:
@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v3
       - name: Setup Python
@@ -33,5 +33,5 @@ jobs:
         run: |
               for file in $(find -name '*.py')
               do
-               pylint --disable=R,C,W "$file" --fail-under=10;    
+               pylint --disable=R,C,W "$file" --fail-under=10;
               done
