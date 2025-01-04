@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
+from apimatic_core.http.request.http_request import HttpRequest
+from pydantic import BaseModel
+from typing import Dict
 
 
-class HttpResponse(object):
+class HttpResponse(BaseModel):
     """Information about an HTTP Response including its status code, returned
         headers, and raw body
 
@@ -15,6 +18,12 @@ class HttpResponse(object):
         request (HttpRequest): The request that resulted in this response.
 
     """
+
+    status_code: int
+    reason_phrase: str
+    headers: Dict[str, str]
+    text: str
+    request: HttpRequest
 
     def __init__(self,
                  status_code,
@@ -32,8 +41,5 @@ class HttpResponse(object):
             request (HttpRequest): The request that resulted in this response.
 
         """
-        self.status_code = status_code
-        self.reason_phrase = reason_phrase
-        self.headers = headers
-        self.text = text
-        self.request = request
+        super().__init__(status_code=status_code, reason_phrase=reason_phrase,
+                         headers=headers, text=text, request=request)

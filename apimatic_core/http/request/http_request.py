@@ -2,9 +2,12 @@
 
 
 from apimatic_core.utilities.api_helper import ApiHelper
+from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
+from pydantic import BaseModel
+from typing import Optional, Dict, List, Any, Tuple
 
 
-class HttpRequest(object):
+class HttpRequest(BaseModel):
     """Information about an HTTP Request including its method, headers,
         parameters, URL, and Basic Auth details
 
@@ -19,13 +22,20 @@ class HttpRequest(object):
 
     """
 
+    http_method: str
+    query_url: str
+    headers: Optional[Dict[str, str]] = None
+    query_parameters: Optional[Dict[str, Any]] = None
+    parameters: Optional[List[Tuple[str, Any]]] = None
+    files: Optional[Dict[str, Any]] = None
+
     def __init__(self,
-                 http_method,
-                 query_url,
-                 headers=None,
-                 query_parameters=None,
-                 parameters=None,
-                 files=None):
+                 http_method: str,
+                 query_url: str,
+                 headers: Optional[Dict[str, str]]=None,
+                 query_parameters: Optional[Dict[str, Any]]=None,
+                 parameters: Optional[List[Tuple[str, Any]]]=None,
+                 files: Optional[Dict[str, Any]]=None) -> None:
         """Constructor for the HttpRequest class
 
         Args:
@@ -39,14 +49,10 @@ class HttpRequest(object):
             files (dict, optional): Files to be sent with the request.
 
         """
-        self.http_method = http_method
-        self.query_url = query_url
-        self.headers = headers
-        self.query_parameters = query_parameters
-        self.parameters = parameters
-        self.files = files
+        super().__init__(http_method=http_method, query_url=query_url, headers=headers,
+                         query_parameters=query_parameters, parameters=parameters, files=files)
 
-    def add_header(self, name, value):
+    def add_header(self, name: str, value: str) -> None:
         """ Add a header to the HttpRequest.
 
         Args:
@@ -56,7 +62,7 @@ class HttpRequest(object):
         """
         self.headers[name] = value
 
-    def add_parameter(self, name, value):  # pragma: no cover
+    def add_parameter(self, name: str, value: str) -> None:  # pragma: no cover
         """ Add a parameter to the HttpRequest.
 
         Args:
@@ -66,7 +72,7 @@ class HttpRequest(object):
         """
         self.parameters[name] = value
 
-    def add_query_parameter(self, name, value):
+    def add_query_parameter(self, name: str, value: str) -> None:
         """ Add a query parameter to the HttpRequest.
 
         Args:
@@ -80,5 +86,5 @@ class HttpRequest(object):
         )
         self.query_url = ApiHelper.clean_url(self.query_url)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return str(self.__dict__)

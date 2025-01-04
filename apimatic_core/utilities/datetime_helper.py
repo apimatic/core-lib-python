@@ -1,5 +1,6 @@
 from datetime import datetime, date
 from apimatic_core.types.datetime_format import DateTimeFormat
+from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class DateTimeHelper:
@@ -54,3 +55,15 @@ class DateTimeHelper:
             return True
         except (ValueError, AttributeError, TypeError):
             return False
+
+    @staticmethod
+    def to_rfc3339_date_time(value):
+        return ApiHelper.apply_datetime_converter(value, ApiHelper.RFC3339DateTime)
+
+    @staticmethod
+    def to_rfc1123_date_time(value):
+        return ApiHelper.apply_datetime_converter(value, ApiHelper.HttpDateTime)
+
+    @staticmethod
+    def to_unix_timestamp(value):
+        return ApiHelper.apply_datetime_converter(value, ApiHelper.UnixDateTime)

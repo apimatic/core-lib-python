@@ -10,6 +10,8 @@ from urllib.parse import urlsplit
 import jsonpickle
 import dateutil.parser
 from jsonpointer import JsonPointerException, resolve_pointer
+from pydantic import BaseModel
+
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -48,7 +50,7 @@ class ApiHelper(object):
         return jsonpickle.encode(val, False)
 
     @staticmethod
-    def json_serialize(obj, should_encode=True):
+    def json_serialize(obj: BaseModel, should_encode=True):
         """JSON Serialization of a given object.
 
         Args:
@@ -89,7 +91,7 @@ class ApiHelper(object):
             obj = value
         else:
             if hasattr(obj, "_names"):
-                obj = ApiHelper.to_dictionary(obj)
+                return obj.model_dump_json()
         if not should_encode:
             return obj
         return jsonpickle.encode(obj, False)
