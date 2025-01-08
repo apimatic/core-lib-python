@@ -4,7 +4,7 @@ from apimatic_core.types.union_types.union_type_context import UnionTypeContext
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.datetime_helper import DateTimeHelper
 from apimatic_core.utilities.union_type_helper import UnionTypeHelper
-
+from pydantic import BaseModel
 
 class LeafType(UnionType):
 
@@ -116,8 +116,12 @@ class LeafType(UnionType):
         if discriminator and discriminator_value:
             return self._validate_with_discriminator(discriminator, discriminator_value, value)
 
-        if hasattr(self.type_to_match, 'validate'):
-            return self.type_to_match.validate(value)
+        if issubclass(self.type_to_match, BaseModel):
+            try:
+                self.type_to_match.model_validate(value)
+                return True
+            except:
+                return False
 
         return type(value) is self.type_to_match
 
@@ -125,8 +129,12 @@ class LeafType(UnionType):
         if not isinstance(value, dict) or value.get(discriminator) != discriminator_value:
             return False
 
-        if hasattr(self.type_to_match, 'validate'):
-            return self.type_to_match.validate(value)
+        if issubclass(self.type_to_match, BaseModel):
+            try:
+                self.type_to_match.model_validate(value)
+                return True
+            except:
+                return False
 
         return type(value) is self.type_to_match
 

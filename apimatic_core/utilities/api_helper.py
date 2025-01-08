@@ -10,12 +10,11 @@ from urllib.parse import urlsplit
 import jsonpickle
 import dateutil.parser
 from jsonpointer import JsonPointerException, resolve_pointer
-from pydantic import BaseModel
-
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.types.array_serialization_format import SerializationFormats
 from requests.utils import quote
+from pydantic import BaseModel
 
 
 class ApiHelper(object):
@@ -50,7 +49,7 @@ class ApiHelper(object):
         return jsonpickle.encode(val, False)
 
     @staticmethod
-    def json_serialize(obj: BaseModel, should_encode=True):
+    def json_serialize(obj, should_encode=True):
         """JSON Serialization of a given object.
 
         Args:
@@ -74,8 +73,8 @@ class ApiHelper(object):
             for item in obj:
                 if isinstance(item, dict) or isinstance(item, list):
                     value.append(ApiHelper.json_serialize(item, False))
-                elif hasattr(item, "_names"):
-                    value.append(ApiHelper.to_dictionary(item))
+                elif ApiHelper.is_custom_type(item):
+                    value.append(item.model_dump_json()) if should_encode else obj.model_dump()
                 else:
                     value.append(item)
             obj = value
@@ -84,17 +83,23 @@ class ApiHelper(object):
             for key, item in obj.items():
                 if isinstance(item, list) or isinstance(item, dict):
                     value[key] = ApiHelper.json_serialize(item, False)
-                elif hasattr(item, "_names"):
-                    value[key] = ApiHelper.to_dictionary(item)
+                elif ApiHelper.is_custom_type(item):
+                    value[key] = item.model_dump_json() if should_encode else obj.model_dump()
                 else:
                     value[key] = item
             obj = value
         else:
-            if hasattr(obj, "_names"):
-                return obj.model_dump_json()
+            if ApiHelper.is_custom_type(obj):
+                return obj.model_dump_json() if should_encode else obj.model_dump()
         if not should_encode:
             return obj
         return jsonpickle.encode(obj, False)
+
+    @staticmethod
+    def is_custom_type(obj_or_class):
+        return (isinstance(obj_or_class, type) and
+                issubclass(obj_or_class, BaseModel) or
+                isinstance(obj_or_class, BaseModel))
 
     @staticmethod
     def json_deserialize(json, unboxing_function=None, as_dict=False):
@@ -477,8 +482,8 @@ class ApiHelper(object):
         """
         retval = []
         # If we received an object, resolve it's field names.
-        if hasattr(obj, "_names"):
-            obj = ApiHelper.to_dictionary(obj)
+        if ApiHelper.is_custom_type(obj):
+            obj = ApiHelper.json_serialize(obj, should_encode=False)
 
         if obj is None:
             return []

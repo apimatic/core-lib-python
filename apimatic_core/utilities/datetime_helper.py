@@ -58,12 +58,85 @@ class DateTimeHelper:
 
     @staticmethod
     def to_rfc3339_date_time(value):
-        return ApiHelper.apply_datetime_converter(value, ApiHelper.RFC3339DateTime)
+        if value is None:
+            return None
+
+        date_time: ApiHelper.CustomDate = ApiHelper.apply_datetime_converter(value, ApiHelper.RFC3339DateTime)
+        return DateTimeHelper._convert(date_time)
 
     @staticmethod
     def to_rfc1123_date_time(value):
-        return ApiHelper.apply_datetime_converter(value, ApiHelper.HttpDateTime)
+        if value is None:
+            return None
+
+        date_time: ApiHelper.CustomDate = ApiHelper.apply_datetime_converter(value, ApiHelper.HttpDateTime)
+        return DateTimeHelper._convert(date_time)
 
     @staticmethod
     def to_unix_timestamp(value):
-        return ApiHelper.apply_datetime_converter(value, ApiHelper.UnixDateTime)
+        if value is None:
+            return None
+
+        date_time: ApiHelper.CustomDate = ApiHelper.apply_datetime_converter(value, ApiHelper.UnixDateTime)
+        return DateTimeHelper._convert(date_time)
+
+    @staticmethod
+    def _convert(date_time):
+        if date_time is None:
+            return None
+
+        if isinstance(date_time, list):
+            return [DateTimeHelper._convert(element) for element in date_time]
+
+        if isinstance(date_time, dict):
+            return {key: DateTimeHelper._convert(element) for key, element in date_time.items()}
+
+        return date_time.value
+
+    @staticmethod
+    def try_parse_from_rfc3339_date_time(value):
+        if value is None:
+            return None
+
+        if isinstance(value, list):
+            return [DateTimeHelper.try_parse_from_rfc3339_date_time(element) for element in value]
+
+        if isinstance(value, dict):
+            return {key: DateTimeHelper.try_parse_from_rfc3339_date_time(element) for key, element in value.items()}
+
+        if isinstance(value, datetime):
+            return value
+
+        return ApiHelper.RFC3339DateTime.from_value(value).datetime
+
+    @staticmethod
+    def try_parse_from_rfc1123_date_time(value):
+        if value is None:
+            return None
+
+        if isinstance(value, list):
+            return [DateTimeHelper.try_parse_from_rfc1123_date_time(element) for element in value]
+
+        if isinstance(value, dict):
+            return {key: DateTimeHelper.try_parse_from_rfc1123_date_time(element) for key, element in value.items()}
+
+        if isinstance(value, datetime):
+            return value
+
+        return ApiHelper.HttpDateTime.from_value(value).datetime
+
+    @staticmethod
+    def try_parse_from_unix_timestamp(value):
+        if value is None:
+            return None
+
+        if isinstance(value, list):
+            return [DateTimeHelper.try_parse_from_unix_timestamp(element) for element in value]
+
+        if isinstance(value, dict):
+            return {key: DateTimeHelper.try_parse_from_unix_timestamp(element) for key, element in value.items()}
+
+        if isinstance(value, datetime):
+            return value
+
+        return ApiHelper.UnixDateTime.from_value(value).datetime
