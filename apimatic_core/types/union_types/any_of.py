@@ -1,20 +1,25 @@
 from apimatic_core_interfaces.types.union_type import UnionType
-from apimatic_core.types.union_types.union_type_context import UnionTypeContext
+from typing import List, Any
+
+from apimatic_core_interfaces.types.union_type_context import UnionTypeContext
+from pydantic import validate_call
+
 from apimatic_core.utilities.union_type_helper import UnionTypeHelper
 
 
 class AnyOf(UnionType):
 
-    def __init__(self, union_types, union_type_context: UnionTypeContext = UnionTypeContext()):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def __init__(self, union_types: List[UnionType], union_type_context: UnionTypeContext = UnionTypeContext()):
         super(AnyOf, self).__init__(union_types, union_type_context)
-        self.collection_cases = None
+        self.collection_cases: Any = None
 
-    def validate(self, value):
+    @validate_call
+    def validate(self, value: Any) -> 'UnionType':
         context = self._union_type_context
         UnionTypeHelper.update_nested_flag_for_union_types(self._union_types)
-        is_optional_or_nullable = UnionTypeHelper.is_optional_or_nullable_case(context,
-                                                                               [nested_type.get_context()
-                                                                                for nested_type in self._union_types])
+        is_optional_or_nullable = UnionTypeHelper.is_optional_or_nullable_case(
+            context, [nested_type.get_context() for nested_type in self._union_types])
 
         if value is None and is_optional_or_nullable:
             self.is_valid = True
@@ -22,36 +27,40 @@ class AnyOf(UnionType):
 
         if value is None:
             self.is_valid = False
-            self.error_messages = UnionTypeHelper.process_errors(value, self._union_types, self.error_messages,
-                                                                 self.get_context().is_nested, False)
+            self.error_messages = UnionTypeHelper.process_errors(
+                value, self._union_types, self.error_messages, self.get_context().is_nested, False)
             return self
 
         self._validate_value_against_case(value, context)
 
         if not self.is_valid:
-            self.error_messages = UnionTypeHelper.process_errors(value, self._union_types, self.error_messages,
-                                                                 self.get_context().is_nested, False)
+            self.error_messages = UnionTypeHelper.process_errors(
+                value, self._union_types, self.error_messages, self.get_context().is_nested, False)
 
         return self
 
-    def deserialize(self, value):
+    @validate_call
+    def deserialize(self, value: Any) -> Any:
         if value is None:
             return None
 
-        return UnionTypeHelper.deserialize_value(value, self._union_type_context, self.collection_cases,
-                                                 self._union_types)
+        return UnionTypeHelper.deserialize_value(
+            value, self._union_type_context, self.collection_cases, self._union_types)
 
-    def _validate_value_against_case(self, value, context):
-        if context.is_array() and context.is_dict() and context.is_array_of_dict():
-            self.is_valid, self.collection_cases = UnionTypeHelper.validate_array_of_dict_case(self._union_types, value,
-                                                                                               False)
-        elif context.is_array() and context.is_dict():
-            self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_of_array_case(self._union_types, value,
-                                                                                               False)
-        elif context.is_array():
-            self.is_valid, self.collection_cases = UnionTypeHelper.validate_array_case(self._union_types, value, False)
-        elif context.is_dict():
-            self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_case(self._union_types, value, False)
+    @validate_call
+    def _validate_value_against_case(self, value: Any, context: UnionTypeContext):
+        if context.is_array and context.is_dict and context.is_array_of_dict:
+            self.is_valid, self.collection_cases = UnionTypeHelper.validate_array_of_dict_case(
+                self._union_types, value, False)
+        elif context.is_array and context.is_dict:
+            self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_of_array_case(
+                self._union_types, value,False)
+        elif context.is_array:
+            self.is_valid, self.collection_cases = UnionTypeHelper.validate_array_case(
+                self._union_types, value, False)
+        elif context.is_dict:
+            self.is_valid, self.collection_cases = UnionTypeHelper.validate_dict_case(
+                self._union_types, value, False)
         else:
             self.is_valid = UnionTypeHelper.get_matched_count(value, self._union_types, False) >= 1
 

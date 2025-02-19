@@ -332,7 +332,7 @@ class TestXMLHelper:
          '</Items>'
          '</Root>', OneOfXML, 'Root',
          XmlHelper.serialize_to_xml(Base.one_of_xml_wolf_model(), 'Root')),
-        (None, None, None, None)
+        (None, int, None, None)
     ])
     def test_deserialize_xml(self, input_value, clazz, root_element_name, expected_value):
         actual_value = XmlHelper.deserialize_xml(input_value, clazz)
@@ -423,7 +423,7 @@ class TestXMLHelper:
                                           Base.xml_model(),
                                           Base.xml_model()],
                                          'Models', 'Item')),
-        (None, None, None, None, None)
+        (None, 'Item', int, 'Items', None)
     ])
     def test_deserialize_xml_to_list(self, input_value, item_name, clazz, root_element_name, expected_value):
         actual_value = XmlHelper.deserialize_xml_to_list(input_value, item_name, clazz)
@@ -477,11 +477,16 @@ class TestXMLHelper:
          '</Items>', ApiHelper.RFC3339DateTime,
          'Items',
          XmlHelper.serialize_dict_to_xml(
-             {'Item1': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-              'Item2': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-              'Item3': ApiHelper.RFC3339DateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15))},
+             {
+                 'Item1': ApiHelper.RFC3339DateTime.from_datetime(
+                     datetime(1994, 2, 13, 5, 30, 15)),
+                 'Item2': ApiHelper.RFC3339DateTime.from_datetime(
+                     datetime(1994, 2, 13, 5, 30, 15)),
+                 'Item3': ApiHelper.RFC3339DateTime.from_datetime(
+                     datetime(1994, 2, 13, 5, 30, 15))
+             },
              'Items')),
-        (None, None, None, None)
+        (None, int, None, None)
     ])
     def test_deserialize_xml_to_dict(self, input_value, clazz, root_element_name, expected_value):
         actual_value = XmlHelper.deserialize_xml_to_dict(input_value, clazz)
@@ -495,7 +500,7 @@ class TestXMLHelper:
         ('True', bool, True),
         ('70', int, 70),
         ('70.56443', float, 70.56443),
-        (None, None, None),
+        (None, int, None),
     ])
     def test_value_from_xml_attribute(self, input_value, clazz, expected_value):
         actual_value = XmlHelper.value_from_xml_attribute(input_value, clazz)
@@ -506,7 +511,7 @@ class TestXMLHelper:
         ('True', bool, 'root', True),
         ('70', int, 'root', 70),
         ('70.56443', float, 'root', 70.56443),
-        (None, None, None, None),
+        (None, int, None, None),
     ])
     def test_value_from_xml_element(self, input_value, root_element_name, clazz, expected_value):
         root_element = None
@@ -523,7 +528,7 @@ class TestXMLHelper:
                                  ([50.58, 60.58, 70.58], 'root', 'item', 'items', float, [50.58, 60.58, 70.58]),
                                  ([True, False, True], 'root', 'item', 'items', bool, [True, False, True]),
                                  ([True, False, True], 'root', 'item', 'items', bool, [True, False, True]),
-                                 (None, None, None, None, None, None),
+                                 (None, None, 'item', 'items', int, None),
                              ])
     def test_list_from_xml_element(self, input_value, root_element_name, item_name,
                                    wrapping_element_name, clazz, expected_value):
@@ -558,7 +563,7 @@ class TestXMLHelper:
          {'Item1': 50.58, 'Item2': 60.58, 'Item3': 70.58}),
         ({'Item1': True, 'Item2': False, 'Item3': True}, 'items', bool, {'Item1': True, 'Item2': False, 'Item3': True}),
         ({'Item1': True, 'Item2': False, 'Item3': True}, 'items', bool, {'Item1': True, 'Item2': False, 'Item3': True}),
-        (None, None, None, None),
+        (None, None, int, None),
     ])
     def test_dict_from_xml_element(self, input_value, wrapping_element_name,
                                    clazz, expected_value):

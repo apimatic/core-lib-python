@@ -1,8 +1,7 @@
 from apimatic_core.utilities.file_helper import FileHelper
-from tests.apimatic_core.base import Base
 
 
-class TestFileHelper(Base):
+class TestFileHelper:
 
     def test_get_file(self):
         file_url = 'https://gist.githubusercontent.com/asadali214/' \

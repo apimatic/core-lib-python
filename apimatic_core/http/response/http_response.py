@@ -24,22 +24,3 @@ class HttpResponse(BaseModel):
     headers: Dict[str, str]
     text: str
     request: HttpRequest
-
-    def __init__(self,
-                 status_code,
-                 reason_phrase,
-                 headers,
-                 text,
-                 request):
-        """Constructor for the HttpResponse class
-
-        Args:
-            status_code (int): The response status code.
-            reason_phrase (string): The response reason phrase.
-            headers (dict): The response headers.
-            text (string): The raw body from the server.
-            request (HttpRequest): The request that resulted in this response.
-
-        """
-        super().__init__(status_code=status_code, reason_phrase=reason_phrase,
-                         headers=headers, text=text, request=request)

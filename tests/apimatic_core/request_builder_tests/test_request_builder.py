@@ -3,7 +3,7 @@ import pytest
 import sys
 
 from apimatic_core.exceptions.auth_validation_exception import AuthValidationException
-from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
+from apimatic_core_interfaces.http.http_method_enum import HttpMethodEnum
 from apimatic_core.authentication.multiple.and_auth_group import And
 from apimatic_core.authentication.multiple.or_auth_group import Or
 from apimatic_core.authentication.multiple.single_auth import Single
@@ -27,29 +27,28 @@ class TestRequestBuilder(Base):
         (Server.AUTH_SERVER, 'http://authserver:5000/')
     ])
     def test_base_uri(self, input_server, expected_base_uri):
-        http_request = self.new_request_builder.server(input_server).path('/').build(self.global_configuration)
+        http_request = (self.new_request_builder
+                        .server(input_server)
+                        .http_method(HttpMethodEnum.POST)
+                        .path('/')
+                        .build(self.global_configuration))
         assert http_request.query_url == expected_base_uri
 
     def test_path(self):
-        http_request = self.new_request_builder.build(self.global_configuration)
+        http_request = self.new_request_builder.http_method(HttpMethodEnum.POST).build(self.global_configuration)
         assert http_request.query_url == 'http://localhost:3000/test'
 
     def test_required_param(self):
         with pytest.raises(ValueError) as validation_error:
             self.new_request_builder \
-                .query_param(Parameter()
-                             .key('query_param')
-                             .value(None)
-                             .is_required(True)) \
+                .query_param(Parameter(key='query_param', value=None, is_required=True)) \
                 .build(self.global_configuration)
         assert validation_error.value.args[0] == 'Required parameter query_param cannot be None.'
 
     def test_optional_param(self):
         http_request = self.new_request_builder \
-            .query_param(Parameter()
-                         .key('query_param')
-                         .value(None)
-                         .is_required(False)) \
+            .http_method(HttpMethodEnum.POST) \
+            .query_param(Parameter(key='query_param', value=None, is_required=False)) \
             .build(self.global_configuration)
         assert http_request.query_url == 'http://localhost:3000/test'
 
@@ -85,11 +84,10 @@ class TestRequestBuilder(Base):
     def test_template_params_with_encoding(self, input_template_param_value, expected_template_param_value,
                                            should_encode):
         http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.GET) \
             .path('/{template_param}') \
-            .template_param(Parameter()
-                            .key('template_param')
-                            .value(input_template_param_value)
-                            .should_encode(should_encode)) \
+            .template_param(Parameter(key='template_param', value=input_template_param_value,
+                                      should_encode=should_encode)) \
             .build(self.global_configuration)
         assert http_request.query_url == 'http://localhost:3000/{}'.format(expected_template_param_value)
 
@@ -136,6 +134,9 @@ class TestRequestBuilder(Base):
          '&query_param[birthday]=1994-02-13'
          '&query_param[birthtime]={}'.format(quote(
              Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
+         '&query_param[name]=Bob'
+         '&query_param[uid]=1234567'
+         '&query_param[personType]=Empl'
          '&query_param[department]=IT'
          '&query_param[dependents][0][address]=street%20abc'
          '&query_param[dependents][0][age]=12'
@@ -150,18 +151,16 @@ class TestRequestBuilder(Base):
          '&query_param[hiredAt]={}'.format(quote(
              Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[joiningDay]=Monday'
-         '&query_param[name]=Bob'
          '&query_param[salary]=30000'
-         '&query_param[uid]=1234567'
          '&query_param[workingDays][0]=Monday'
          '&query_param[workingDays][1]=Tuesday'
-         '&query_param[personType]=Empl', SerializationFormats.INDEXED)
+         '&query_param[key1]=value1'
+         '&query_param[key2]=value2', SerializationFormats.INDEXED)
     ])
     def test_query_params(self, input_query_param_value, expected_query_param_value, array_serialization_format):
         http_request = self.new_request_builder \
-            .query_param(Parameter()
-                         .key('query_param')
-                         .value(input_query_param_value)) \
+            .http_method(HttpMethodEnum.GET) \
+            .query_param(Parameter(key='query_param', value=input_query_param_value)) \
             .array_serialization_format(array_serialization_format) \
             .build(self.global_configuration)
         assert http_request.query_url == 'http://localhost:3000/test?{}'.format(expected_query_param_value)
@@ -171,6 +170,7 @@ class TestRequestBuilder(Base):
     ])
     def test_additional_query_params(self, input_additional_query_params_value, expected_additional_query_params_value):
         http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.GET) \
             .additional_query_params(input_additional_query_params_value) \
             .build(self.global_configuration)
         assert http_request.query_url == 'http://localhost:3000/test?{}'.format(expected_additional_query_params_value)
@@ -190,9 +190,8 @@ class TestRequestBuilder(Base):
     ])
     def test_local_headers(self, input_local_header_param_value, expected_local_header_param_value):
         http_request = self.new_request_builder \
-            .header_param(Parameter()
-                          .key('header_param')
-                          .value(input_local_header_param_value)) \
+            .http_method(HttpMethodEnum.GET) \
+            .header_param(Parameter(key='header_param', value=input_local_header_param_value)) \
             .build(self.global_configuration)
         assert http_request.headers == expected_local_header_param_value
 
@@ -210,9 +209,11 @@ class TestRequestBuilder(Base):
         ([100, 200, 300, 400], {'header_param': [100, 200, 300, 400]})
     ])
     def test_global_headers(self, input_global_header_param_value, expected_global_header_param_value):
+        global_configuration = self.global_configuration
+        global_configuration.global_headers = {'header_param': input_global_header_param_value}
         http_request = self.new_request_builder \
-            .build(self.global_configuration
-                   .global_header('header_param', input_global_header_param_value))
+            .http_method(HttpMethodEnum.GET) \
+            .build(global_configuration)
         assert http_request.headers == expected_global_header_param_value
 
     @pytest.mark.parametrize('input_additional_header_param_value, expected_additional_header_param_value', [
@@ -229,9 +230,11 @@ class TestRequestBuilder(Base):
         ([100, 200, 300, 400], {'header_param': [100, 200, 300, 400]})
     ])
     def test_additional_headers(self, input_additional_header_param_value, expected_additional_header_param_value):
+        global_configuration = self.global_configuration
+        global_configuration.additional_headers = {'header_param': input_additional_header_param_value}
         http_request = self.new_request_builder \
-            .build(self.global_configuration
-                   .additional_header('header_param', input_additional_header_param_value))
+            .http_method(HttpMethodEnum.GET) \
+            .build(global_configuration)
         assert http_request.headers == expected_additional_header_param_value
 
     @pytest.mark.parametrize('input_global_header_param_value,'
@@ -242,12 +245,12 @@ class TestRequestBuilder(Base):
                              ])
     def test_local_and_global_headers_precedence(self, input_global_header_param_value, input_local_header_param_value,
                                                  expected_header_param_value):
-        global_headers = {'header_param': input_global_header_param_value}
+        global_configuration = self.global_configuration
+        global_configuration.global_headers = {'header_param': input_global_header_param_value}
         http_request = self.new_request_builder \
-            .header_param(Parameter()
-                          .key('header_param')
-                          .value(input_local_header_param_value)) \
-            .build(self.global_configuration.global_headers(global_headers))
+            .http_method(HttpMethodEnum.GET) \
+            .header_param(Parameter(key='header_param', value=input_local_header_param_value)) \
+            .build(global_configuration)
         assert http_request.headers == expected_header_param_value
 
     @pytest.mark.parametrize('input_global_header_param_value,'
@@ -261,14 +264,13 @@ class TestRequestBuilder(Base):
                              ])
     def test_all_headers_precedence(self, input_global_header_param_value, input_local_header_param_value,
                                 input_additional_header_param_value, expected_header_param_value):
-        global_headers = {'header_param': input_global_header_param_value}
-        additional_headers = {'header_param': input_additional_header_param_value}
+        global_configuration = self.global_configuration
+        global_configuration.global_headers = {'header_param': input_global_header_param_value}
+        global_configuration.additional_headers = {'header_param': input_additional_header_param_value}
         http_request = self.new_request_builder \
-            .header_param(Parameter()
-                          .key('header_param')
-                          .value(input_local_header_param_value)) \
-            .build(self.global_configuration.global_headers(global_headers)
-                   .additional_headers(additional_headers))
+            .http_method(HttpMethodEnum.GET) \
+            .header_param(Parameter(key='header_param', value=input_local_header_param_value)) \
+            .build(global_configuration)
         assert http_request.headers == expected_header_param_value
 
     def test_useragent_header(self):
@@ -276,8 +278,9 @@ class TestRequestBuilder(Base):
         operating_systems = ['Linux', 'Windows', 'Darwin', 'FreeBSD', 'OpenBSD', 'macOS']
 
         http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.GET) \
             .build(self.global_configuration_with_useragent)
-        [lang, version, engine, engineVersion, osInfo] = http_request.headers['user-agent'].split('|')
+        [lang, version, engine, _, osInfo] = http_request.headers['user-agent'].split('|')
         assert lang == 'Python' and version == '31.8.0' \
                and engine in engines and osInfo in operating_systems
 
@@ -309,42 +312,36 @@ class TestRequestBuilder(Base):
          SerializationFormats.INDEXED),
         (Base.employee_model(),
          [('form_param[address]', 'street abc'), ('form_param[age]', 27), ('form_param[birthday]', '1994-02-13'),
-          ('form_param[birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
+          ('form_param[birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), True)),
+          ('form_param[name]', 'Bob'),
+          ('form_param[uid]', '1234567'),
+          ('form_param[personType]', 'Empl'),
           ('form_param[department]', 'IT'), ('form_param[dependents][0][address]', 'street abc'),
           ('form_param[dependents][0][age]', 12), ('form_param[dependents][0][birthday]', '1994-02-13'),
-          ('form_param[dependents][0][birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
-          ('form_param[dependents][0][name]', 'John'), ('form_param[dependents][0][uid]', 7654321),
+          ('form_param[dependents][0][birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), True)),
+          ('form_param[dependents][0][name]', 'John'), ('form_param[dependents][0][uid]', '7654321'),
           ('form_param[dependents][0][personType]', 'Per'), ('form_param[dependents][0][key1]', 'value1'),
           ('form_param[dependents][0][key2]', 'value2'),
-          ('form_param[hiredAt]', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
-          ('form_param[joiningDay]', 'Monday'), ('form_param[name]', 'Bob'), ('form_param[salary]', 30000),
-          ('form_param[uid]', 1234567), ('form_param[workingDays][0]', 'Monday'),
-          ('form_param[workingDays][1]', 'Tuesday'), ('form_param[personType]', 'Empl')], SerializationFormats.INDEXED)
+          ('form_param[hiredAt]', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15), True)),
+          ('form_param[joiningDay]', 'Monday'), ('form_param[salary]', 30000), ('form_param[workingDays][0]', 'Monday'),
+          ('form_param[workingDays][1]', 'Tuesday'),  ('form_param[key1]', 'value1'),
+          ('form_param[key2]', 'value2')], SerializationFormats.INDEXED)
     ])
     def test_form_params(self, input_form_param_value, expected_form_param_value, array_serialization_format):
         http_request = self.new_request_builder \
-            .form_param(Parameter()
-                        .key('form_param')
-                        .value(input_form_param_value)) \
+            .http_method(HttpMethodEnum.POST) \
+            .form_param(Parameter(key='form_param', value=input_form_param_value)) \
             .array_serialization_format(array_serialization_format) \
             .build(self.global_configuration)
-        for index, item in enumerate(http_request.parameters):
-            # form encoding stores the datetime object so converting datetime to string for assertions as assertions
-            # do not work for objects
-            if isinstance(item[1], ApiHelper.CustomDate):
-                try:
-                    assert item[0] == expected_form_param_value[index][0] \
-                           and item[1].value == expected_form_param_value[index][1].value
-                except:
-                    print("here")
-            else:
-                assert item == expected_form_param_value[index]
+
+        assert http_request.parameters == expected_form_param_value
 
     @pytest.mark.parametrize('input_additional_form_param_value, expected_additional_form_param_value', [
         ({'key1': 'value1', 'key2': 'value2'}, [('key1', 'value1'), ('key2', 'value2')])
     ])
     def test_addition_form_params(self, input_additional_form_param_value, expected_additional_form_param_value):
         http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.POST) \
             .additional_form_params(input_additional_form_param_value) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_additional_form_param_value
@@ -361,9 +358,8 @@ class TestRequestBuilder(Base):
     def test_form_params_with_additional_form_params(self, input_form_param_value, input_additional_form_param_value,
                                                      expected_form_param_value):
         http_request = self.new_request_builder \
-            .form_param(Parameter()
-                        .key('form_param')
-                        .value(input_form_param_value)) \
+            .http_method(HttpMethodEnum.POST) \
+            .form_param(Parameter(key='form_param', value=input_form_param_value)) \
             .additional_form_params(input_additional_form_param_value) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_form_param_value
@@ -381,8 +377,8 @@ class TestRequestBuilder(Base):
     ])
     def test_json_body_params_without_serializer(self, input_body_param_value, expected_body_param_value):
         http_request = self.new_request_builder \
-            .body_param(Parameter()
-                        .value(input_body_param_value)) \
+            .http_method(HttpMethodEnum.POST) \
+            .body_param(Parameter(value=input_body_param_value)) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 
@@ -394,12 +390,9 @@ class TestRequestBuilder(Base):
     def test_multiple_json_body_params_with_serializer(self, input_body_param_value1, input_body_param_value2,
                                                        expected_body_param_value):
         http_request = self.new_request_builder \
-            .body_param(Parameter()
-                        .key('param1')
-                        .value(input_body_param_value1)) \
-            .body_param(Parameter()
-                        .key('param2')
-                        .value(input_body_param_value2)) \
+            .http_method(HttpMethodEnum.POST) \
+            .body_param(Parameter(key='param1', value=input_body_param_value1)) \
+            .body_param(Parameter(key='param2', value=input_body_param_value2)) \
             .body_serializer(ApiHelper.json_serialize) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
@@ -410,25 +403,26 @@ class TestRequestBuilder(Base):
         ({'key1': 'value1', 'key2': [1, 2, 3, 4]}, '{"key1": "value1", "key2": [1, 2, 3, 4]}'),
         ({'key1': 'value1', 'key2': [1, 2, 3, {'key1': 'value1', 'key2': 'value2'}]},
          '{"key1": "value1", "key2": [1, 2, 3, {"key1": "value1", "key2": "value2"}]}'),
-        (Base.employee_model(), ApiHelper.json_serialize(Base.get_employee_dictionary()))
+        (Base.employee_model(), Base.get_serialized_employee())
     ])
     def test_json_body_params_with_serializer(self, input_body_param_value, expected_body_param_value):
         http_request = self.new_request_builder \
-            .body_param(Parameter()
-                        .value(input_body_param_value)) \
+            .http_method(HttpMethodEnum.POST) \
+            .body_param(Parameter(value=input_body_param_value)) \
             .body_serializer(ApiHelper.json_serialize) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 
     @pytest.mark.parametrize('input_value, expected_value', [
-        (100, '100'),
+        (100.0, '100.0'),
         (True, 'true')
     ])
     def test_type_combinator_validation_in_request(self, input_value, expected_value):
         http_request = self.new_request_builder \
-            .body_param(Parameter()
-                        .validator(lambda value: UnionTypeLookUp.get('ScalarTypes'))
-                        .value(input_value)) \
+            .http_method(HttpMethodEnum.POST) \
+            .body_param(Parameter(
+                validator=lambda value: UnionTypeLookUp.get('ScalarTypes').validate(value=value).is_valid,
+                value=input_value)) \
             .body_serializer(ApiHelper.json_serialize) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_value
@@ -451,9 +445,8 @@ class TestRequestBuilder(Base):
                 'string="String" number="10000" boolean="false">',
                 'boolean="false" number="10000" string="String">')
         http_request = self.new_request_builder \
-            .xml_attributes(XmlAttributes()
-                            .value(input_body_param_value)
-                            .root_element_name('AttributesAndElements')) \
+            .http_method(HttpMethodEnum.POST) \
+            .xml_attributes(XmlAttributes(value=input_body_param_value, root_element_name='AttributesAndElements')) \
             .body_serializer(XmlHelper.serialize_to_xml) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
@@ -489,106 +482,104 @@ class TestRequestBuilder(Base):
                 'string="String" number="10000" boolean="false">',
                 'boolean="false" number="10000" string="String">')
         http_request = self.new_request_builder \
-            .xml_attributes(XmlAttributes()
-                            .value(input_body_param_value)
-                            .root_element_name('arrayOfModels')
-                            .array_item_name('item')) \
+            .http_method(HttpMethodEnum.POST) \
+            .xml_attributes(XmlAttributes(value=input_body_param_value,
+                                          root_element_name='arrayOfModels',
+                                          array_item_name='item')) \
             .body_serializer(XmlHelper.serialize_list_to_xml) \
             .build(self.global_configuration)
         assert http_request.parameters == expected_body_param_value
 
-    @pytest.mark.parametrize('input_body_param_value, expected_body_param_value, expected_content_type', [
+    @pytest.mark.parametrize("input_body_param_value, expected_input_file, expected_content_type", [
         (FileWrapper(Base.read_file('apimatic.png'), 'image/png'),
          Base.read_file('apimatic.png'), 'image/png')])
-    def test_file_as_body_param(self, input_body_param_value, expected_body_param_value, expected_content_type):
+    def test_file_as_body_param(self, input_body_param_value, expected_input_file, expected_content_type):
+        http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.POST) \
+            .header_param(Parameter(key='content-type', value='application/xml')) \
+            .body_param(Parameter(value=input_body_param_value)) \
+            .build(self.global_configuration)
+        input_file = None
         try:
-            http_request = self.new_request_builder \
-                .header_param(Parameter().key('content-type').value('application/xml')) \
-                .body_param(Parameter().value(input_body_param_value)) \
-                .build(self.global_configuration)
+            input_file = http_request.parameters
 
-            actual_body_param_value = http_request.parameters
-
-            assert actual_body_param_value.read() == expected_body_param_value.read() \
+            assert input_file.read() == expected_input_file.read() \
                    and http_request.headers['content-type'] == expected_content_type
         finally:
-            actual_body_param_value.close()
-            expected_body_param_value.close()
+            input_file.close()
+            expected_input_file.close()
 
-    @pytest.mark.parametrize('input_multipart_param_value1, input_default_content_type1,'
-                             'input_multipart_param_value2, input_default_content_type2,'
-                             'expected_multipart_param_value1, expected_default_content_type1, '
-                             'expected_multipart_param_value2, expected_default_content_type2', [
+    @pytest.mark.parametrize(
+        "input_multipart_param_value1, input_default_content_type1,input_multipart_param_value2, input_default_content_type2,expected_file, expected_file_content_type, expected_model, expected_model_content_type", [
                                  (Base.read_file('apimatic.png'), 'image/png', Base.employee_model(),
                                   'application/json', Base.read_file('apimatic.png'), 'image/png',
-                                  ApiHelper.json_serialize(Base.get_employee_dictionary()), 'application/json')
+                                  Base.get_serialized_employee(), 'application/json')
                              ])
     def test_multipart_request_without_file_wrapper(self, input_multipart_param_value1,
                                                     input_default_content_type1,
                                                     input_multipart_param_value2,
                                                     input_default_content_type2,
-                                                    expected_multipart_param_value1,
-                                                    expected_default_content_type1,
-                                                    expected_multipart_param_value2,
-                                                    expected_default_content_type2):
+                                                    expected_file,
+                                                    expected_file_content_type,
+                                                    expected_model,
+                                                    expected_model_content_type):
+        http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.POST) \
+            .multipart_param(Parameter(key='file_wrapper', value=input_multipart_param_value1,
+                                       default_content_type=input_default_content_type1)) \
+            .multipart_param(Parameter(key='model', value=ApiHelper.json_serialize(input_multipart_param_value2),
+                                       default_content_type=input_default_content_type2)) \
+            .build(self.global_configuration)
+        actual_file = None
         try:
-            http_request = self.new_request_builder \
-                .multipart_param(Parameter().key('file_wrapper')
-                                 .value(input_multipart_param_value1)
-                                 .default_content_type(input_default_content_type1)) \
-                .multipart_param(Parameter().key('model')
-                                 .value(ApiHelper.json_serialize(input_multipart_param_value2))
-                                 .default_content_type(input_default_content_type2)) \
-                .build(self.global_configuration)
+            actual_file = http_request.files['file_wrapper'][1]
+            actual_file_content_type = http_request.files['file_wrapper'][2]
+            actual_model = http_request.files['model'][1]
+            actual_model_content_type = http_request.files['model'][2]
 
-            actual_multipart_param_value1 = http_request.files['file_wrapper'][1]
-            actual_multipart_param_content_type1 = http_request.files['file_wrapper'][2]
-            actual_multipart_param_value2 = http_request.files['model'][1]
-            actual_multipart_param_content_type2 = http_request.files['model'][2]
-
-            assert actual_multipart_param_value1.read() == expected_multipart_param_value1.read() \
-                   and actual_multipart_param_content_type1 == expected_default_content_type1 \
-                   and actual_multipart_param_value2 == expected_multipart_param_value2 \
-                   and actual_multipart_param_content_type2 == expected_default_content_type2
+            assert actual_file.read() == expected_file.read() \
+                   and actual_file_content_type == expected_file_content_type \
+                   and actual_model == expected_model \
+                   and actual_model_content_type == expected_model_content_type
         finally:
-            actual_multipart_param_value1.close()
-            expected_multipart_param_value1.close()
+            actual_file.close()
+            expected_file.close()
 
-    @pytest.mark.parametrize('input_multipart_param_value1, input_multipart_param_value2, input_default_content_type2,'
-                             'expected_multipart_param_value1, expected_default_content_type1,'
-                             'expected_multipart_param_value2, expected_default_content_type2', [
+    @pytest.mark.parametrize(
+        "input_multipart_param_value1, input_multipart_param_value2, input_default_content_type2,expected_file, expected_file_content_type,expected_model, expected_model_content_type", [
                                  (FileWrapper(Base.read_file('apimatic.png'), 'image/png'), Base.employee_model(),
                                   'application/json', Base.read_file('apimatic.png'), 'image/png',
-                                  ApiHelper.json_serialize(Base.get_employee_dictionary()), 'application/json')
+                                  Base.get_serialized_employee(), 'application/json')
                              ])
     def test_multipart_request_with_file_wrapper(self, input_multipart_param_value1,
                                                  input_multipart_param_value2,
                                                  input_default_content_type2,
-                                                 expected_multipart_param_value1,
-                                                 expected_default_content_type1,
-                                                 expected_multipart_param_value2,
-                                                 expected_default_content_type2):
+                                                 expected_file,
+                                                 expected_file_content_type,
+                                                 expected_model,
+                                                 expected_model_content_type):
+
+        http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.POST) \
+            .multipart_param(Parameter(key='file', value=input_multipart_param_value1)) \
+            .multipart_param(Parameter(key='model', value=ApiHelper.json_serialize(input_multipart_param_value2),
+                                       default_content_type=input_default_content_type2)) \
+            .build(self.global_configuration)
+
+        actual_file = None
         try:
-            http_request = self.new_request_builder \
-                .multipart_param(Parameter().key('file')
-                                 .value(input_multipart_param_value1)) \
-                .multipart_param(Parameter().key('model')
-                                 .value(ApiHelper.json_serialize(input_multipart_param_value2))
-                                 .default_content_type(input_default_content_type2)) \
-                .build(self.global_configuration)
+            actual_file = http_request.files['file'][1]
+            actual_file_content_type = http_request.files['file'][2]
+            actual_model = http_request.files['model'][1]
+            actual_model_content_type = http_request.files['model'][2]
 
-            actual_multipart_param_value1 = http_request.files['file'][1]
-            actual_multipart_param_content_type1 = http_request.files['file'][2]
-            actual_multipart_param_value2 = http_request.files['model'][1]
-            actual_multipart_param_content_type2 = http_request.files['model'][2]
-
-            assert actual_multipart_param_value1.read() == expected_multipart_param_value1.read() \
-                   and actual_multipart_param_content_type1 == expected_default_content_type1 \
-                   and actual_multipart_param_value2 == expected_multipart_param_value2 \
-                   and actual_multipart_param_content_type2 == expected_default_content_type2
+            assert actual_file.read() == expected_file.read() \
+                   and actual_file_content_type == expected_file_content_type \
+                   and actual_model == expected_model \
+                   and actual_model_content_type == expected_model_content_type
         finally:
-            actual_multipart_param_value1.close()
-            expected_multipart_param_value1.close()
+            actual_file.close()
+            expected_file.close()
 
     @pytest.mark.parametrize('input_auth_scheme, expected_auth_header_key, expected_auth_header_value', [
         (Single('basic_auth'), 'Basic-Authorization', 'Basic {}'.format(
@@ -598,6 +589,7 @@ class TestRequestBuilder(Base):
     ])
     def test_header_authentication(self, input_auth_scheme, expected_auth_header_key, expected_auth_header_value):
         http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.POST) \
             .auth(input_auth_scheme) \
             .build(self.global_configuration_with_auth)
 
@@ -605,6 +597,7 @@ class TestRequestBuilder(Base):
 
     def test_query_authentication(self):
         http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.POST) \
             .auth(Single('custom_query_auth')) \
             .build(self.global_configuration_with_auth)
 
@@ -618,6 +611,7 @@ class TestRequestBuilder(Base):
     def test_invalid_key_authentication(self, input_invalid_auth_scheme):
         with pytest.raises(ValueError) as validation_error:
             self.new_request_builder \
+                .http_method(HttpMethodEnum.POST) \
                 .auth(input_invalid_auth_scheme) \
                 .build(self.global_configuration_with_auth)
         assert validation_error.value.args[0] == 'Auth key is invalid.'
@@ -658,12 +652,12 @@ class TestRequestBuilder(Base):
                                       'Bearer-Authorization': None,
                                       'token': None
                                   }),
-                                 (Or('basic_auth', Or(None, 'custom_header_auth')),
+                                 (Or('basic_auth', Or('custom_header_auth')),
                                   {
                                       'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
                                       'token': None
                                   }),
-                                 (Or('basic_auth', And(None, 'custom_header_auth')),
+                                 (Or('basic_auth', And('custom_header_auth')),
                                   {
                                       'Basic-Authorization': 'Basic dGVzdF91c2VybmFtZTp0ZXN0X3Bhc3N3b3Jk',
                                       'token': None
@@ -671,47 +665,46 @@ class TestRequestBuilder(Base):
                              ])
     def test_success_case_of_multiple_authentications(self, input_auth_scheme, expected_request_headers):
         http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.POST) \
             .auth(input_auth_scheme) \
             .build(self.global_configuration_with_auth)
         for key in expected_request_headers.keys():
             assert http_request.headers.get(key) == expected_request_headers.get(key)
 
     @pytest.mark.parametrize('input_auth_scheme, expected_error_message', [
-        (Or('basic_auth', 'bearer_auth', 'custom_header_auth'), '[BasicAuth: _basic_auth_user_name or '
-                                                                '_basic_auth_password is undefined.] or ['
-                                                                'BearerAuth: _access_token is undefined.] or ['
-                                                                'CustomHeaderAuthentication: token is undefined.]'),
-        (And('basic_auth', 'bearer_auth', 'custom_header_auth'), '[BasicAuth: _basic_auth_user_name or '
-                                                                 '_basic_auth_password is undefined.] and ['
-                                                                 'BearerAuth: _access_token is undefined.] and ['
-                                                                 'CustomHeaderAuthentication: token is undefined.]'),
-        (Or('basic_auth', And('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
-                                                                     '_basic_auth_password is undefined.] or ['
-                                                                     'BearerAuth: _access_token is undefined.] and ['
-                                                                     'CustomHeaderAuthentication: token is '
-                                                                     'undefined.]'),
-        (And('basic_auth', Or('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
-                                                                     '_basic_auth_password is undefined.] and ['
-                                                                     'BearerAuth: _access_token is undefined.] or ['
-                                                                     'CustomHeaderAuthentication: token is '
-                                                                     'undefined.]'),
-        (And('basic_auth', And('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
-                                                                      '_basic_auth_password is undefined.] and ['
-                                                                      'BearerAuth: _access_token is undefined.] and ['
-                                                                      'CustomHeaderAuthentication: token is '
-                                                                      'undefined.]'),
-        (Or('basic_auth', Or('bearer_auth', 'custom_header_auth')), '[BasicAuth: _basic_auth_user_name or '
-                                                                    '_basic_auth_password is undefined.] or ['
-                                                                    'BearerAuth: _access_token is undefined.] or ['
-                                                                    'CustomHeaderAuthentication: token is undefined.]'),
-        (Or(None, None), ''),
-        (Or(None, 'basic_auth'), '[BasicAuth: _basic_auth_user_name or _basic_auth_password is undefined.]'),
-        (And(None, None), ''),
-        (And(None, 'basic_auth'), '[BasicAuth: _basic_auth_user_name or _basic_auth_password is undefined.]')
+        (Or('basic_auth', 'bearer_auth', 'custom_header_auth'),
+         '[BasicAuth: username or password is undefined.] or '
+         '[BearerAuth: access_token is undefined.] or '
+         '[CustomHeaderAuthentication: token is undefined.]'),
+        (And('basic_auth', 'bearer_auth', 'custom_header_auth'),
+         '[BasicAuth: username or password is undefined.] and '
+         '[BearerAuth: access_token is undefined.] and '
+         '[CustomHeaderAuthentication: token is undefined.]'),
+        (Or('basic_auth', And('bearer_auth', 'custom_header_auth')),
+         '[BasicAuth: username or password is undefined.] or '
+         '[BearerAuth: access_token is undefined.] and '
+         '[CustomHeaderAuthentication: token is undefined.]'),
+        (And('basic_auth', Or('bearer_auth', 'custom_header_auth')),
+         '[BasicAuth: username or password is undefined.] and '
+         '[BearerAuth: access_token is undefined.] or '
+         '[CustomHeaderAuthentication: token is undefined.]'),
+        (And('basic_auth', And('bearer_auth', 'custom_header_auth')),
+         '[BasicAuth: username or password is undefined.] and '
+         '[BearerAuth: access_token is undefined.] and '
+         '[CustomHeaderAuthentication: token is undefined.]'),
+        (Or('basic_auth', Or('bearer_auth', 'custom_header_auth')),
+         '[BasicAuth: username or password is undefined.] or '
+         '[BearerAuth: access_token is undefined.] or '
+         '[CustomHeaderAuthentication: token is undefined.]'),
+        (Or(), ''),
+        (Or('basic_auth'), '[BasicAuth: username or password is undefined.]'),
+        (And(), ''),
+        (And( 'basic_auth'), '[BasicAuth: username or password is undefined.]')
     ])
     def test_failed_case_of_multiple_authentications(self, input_auth_scheme, expected_error_message):
         with pytest.raises(AuthValidationException) as errors:
             self.new_request_builder \
+                .http_method(HttpMethodEnum.POST) \
                 .auth(input_auth_scheme) \
                 .build(self.global_configuration_with_uninitialized_auth_params)
         assert errors.value.args[0] == expected_error_message
@@ -726,6 +719,7 @@ class TestRequestBuilder(Base):
     def test_case_of_multiple_authentications(self, input_auth_scheme, expected_auth_header_key,
                                               expected_auth_header_value):
         http_request = self.new_request_builder \
+            .http_method(HttpMethodEnum.POST) \
             .auth(input_auth_scheme) \
             .build(self.global_configuration_with_partially_initialized_auth_params)
 

@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from apimatic_core_interfaces.http.http_request import HttpRequest
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from pydantic import validate_call
+
 
 class HttpCallBack(object):
     """An interface for  the callback to be called before and after the
@@ -9,7 +13,8 @@ class HttpCallBack(object):
 
     """
 
-    def on_before_request(self, request):  # pragma: no cover
+    @validate_call
+    def on_before_request(self, request: HttpRequest):  # pragma: no cover
         """The controller will call this method before making the HttpRequest.
 
         Args:
@@ -18,7 +23,8 @@ class HttpCallBack(object):
         """
         raise NotImplementedError("This method has not been implemented.")
 
-    def on_after_response(self, http_response):  # pragma: no cover
+    @validate_call
+    def on_after_response(self, http_response: HttpResponse):  # pragma: no cover
         """The controller will call this method after making the HttpRequest.
 
         Args:

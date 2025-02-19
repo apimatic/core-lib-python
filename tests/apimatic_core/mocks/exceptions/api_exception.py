@@ -1,3 +1,10 @@
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from pydantic import BaseModel
+
+
+class APIExceptionValidator(BaseModel):
+    reason: str
+    response: HttpResponse
 
 class APIException(Exception):
 
@@ -9,9 +16,13 @@ class APIException(Exception):
 
     """
 
+    reason: str
+    response: HttpResponse
+    response_code: int
+
     def __init__(self,
-                 reason,
-                 response):
+                 reason: str,
+                 response: HttpResponse):
         """Constructor for the APIException class
 
         Args:
@@ -20,6 +31,8 @@ class APIException(Exception):
             response (HttpResponse): The HttpResponse of the API call.
 
         """
+
+        APIExceptionValidator(reason=reason, response=response)
         super(APIException, self).__init__(reason)
         self.reason = reason
         self.response = response

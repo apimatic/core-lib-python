@@ -1,44 +1,46 @@
+from typing import Tuple
+
 
 class LoggerConstants:
-    METHOD = "method"
+    METHOD: str = 'method'
     """Key representing the method of the HTTP request."""
 
-    URL = "url"
+    URL: str = 'url'
     """Key representing the URL of the HTTP request."""
 
-    QUERY_PARAMETER = "query_parameter"
+    QUERY_PARAMETER: str = 'query_parameter'
     """Key representing the query parameters of the HTTP request."""
 
-    HEADERS = "headers"
+    HEADERS: str = 'headers'
     """Key representing the headers of the HTTP request or response."""
 
-    BODY = "body"
+    BODY: str = 'body'
     """Key representing the body of the HTTP request or response."""
 
-    STATUS_CODE = "status_code"
+    STATUS_CODE: str = 'status_code'
     """Key representing the status code of the HTTP response."""
 
-    CONTENT_LENGTH = "content_length"
+    CONTENT_LENGTH: str = 'content_length'
     """Key representing the content length of the HTTP response."""
 
-    CONTENT_TYPE = "content_type"
+    CONTENT_TYPE: str = 'content_type'
     """Key representing the content type of the HTTP response."""
 
-    CONTENT_LENGTH_HEADER = "content-length"
+    CONTENT_LENGTH_HEADER: str = 'content-length'
     """Key representing the content length header."""
 
-    CONTENT_TYPE_HEADER = "content-type"
+    CONTENT_TYPE_HEADER: str = 'content-type'
     """Key representing the content type header."""
 
-    NON_SENSITIVE_HEADERS = tuple(map(lambda x: x.lower(), [
-        "Accept", "Accept-Charset", "Accept-Encoding", "Accept-Language",
-        "Access-Control-Allow-Origin", "Cache-Control", "Connection",
-        "Content-Encoding", "Content-Language", "Content-Length", "Content-Location",
-        "Content-MD5", "Content-Range", "Content-Type", "Date", "ETag", "Expect",
-        "Expires", "From", "Host", "If-Match", "If-Modified-Since", "If-None-Match",
-        "If-Range", "If-Unmodified-Since", "Keep-Alive", "Last-Modified", "Location",
-        "Max-Forwards", "Pragma", "Range", "Referer", "Retry-After", "Server",
-        "Trailer", "Transfer-Encoding", "Upgrade", "User-Agent", "Vary", "Via",
-        "Warning", "X-Forwarded-For", "X-Requested-With", "X-Powered-By"
+    NON_SENSITIVE_HEADERS: Tuple[str, ...] = tuple(map(lambda x: x.lower(), [
+        'Accept', 'Accept-Charset', 'Accept-Encoding', 'Accept-Language',
+        'Access-Control-Allow-Origin', 'Cache-Control', 'Connection',
+        'Content-Encoding', 'Content-Language', 'Content-Length', 'Content-Location',
+        'Content-MD5', 'Content-Range', 'Content-Type', 'Date', 'ETag', 'Expect',
+        'Expires', 'From', 'Host', 'If-Match', 'If-Modified-Since', 'If-None-Match',
+        'If-Range', 'If-Unmodified-Since', 'Keep-Alive', 'Last-Modified', 'Location',
+        'Max-Forwards', 'Pragma', 'Range', 'Referer', 'Retry-After', 'Server',
+        'Trailer', 'Transfer-Encoding', 'Upgrade', 'User-Agent', 'Vary', 'Via',
+        'Warning', 'X-Forwarded-For', 'X-Requested-With', 'X-Powered-By'
     ]))
     """List of sensitive headers that need to be filtered."""

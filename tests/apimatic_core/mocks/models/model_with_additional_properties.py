@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
-from tests.apimatic_core.mocks.union_type_lookup import UnionTypeLookUp
+from typing import Optional, Dict, List, Union, Any
+
+from pydantic import BaseModel, Field, AliasChoices, model_validator, model_serializer
+from pydantic_core.core_schema import SerializerFunctionWrapHandler
+from typing_extensions import Annotated
+
 from tests.apimatic_core.mocks.models.lion import Lion
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
-class ModelWithAdditionalPropertiesOfPrimitiveType(object):
+class ModelWithAdditionalPropertiesOfPrimitiveType(BaseModel):
 
     """Implementation of the 'NonInheritEnabledNumber' model.
 
@@ -15,56 +20,117 @@ class ModelWithAdditionalPropertiesOfPrimitiveType(object):
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "email": 'email'
-    }
+    email: Annotated[
+        str,
+        Field(validation_alias=AliasChoices("email", "email"),
+              serialization_alias="email")
+    ]
 
-    def __init__(self,
-                 email=None,
-                 additional_properties=None):
-        """Constructor for the NonInheritEnabledNumber class
-        Args:
-            email (str): TODO: type description here.
-            additional_properties (dict[str, int]): TODO: type description here.
+    additional_properties: Optional[Dict[str, int]] = None
+
+    @model_validator(mode="before")
+    def populate_additional_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
-
-        # Initialize members of the class
-        if additional_properties is None:
-            additional_properties = {}
-        self.email = email
-        self.additional_properties = additional_properties
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
+        Collect all extra fields and move them into `additional_properties`.
+        Raise ValueError if an additional property has a name similar to a model property.
 
         Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
+            values (Dict[str, Any]): The input data for the model.
 
         Returns:
-            object: An instance of this structure class.
-
+            Dict[str, Any]: The modified data with additional properties populated.
         """
+        additional_props_field = "additional_properties"
 
-        if dictionary is None:
-            return None
+        if isinstance(values.get(additional_props_field), dict):
+            ApiHelper.check_conflicts_with_additional_properties(
+                cls, values[additional_props_field], additional_props_field)
+            return values
 
-        # Extract variables from the dictionary
-        email = dictionary.get("email") if dictionary.get("email") else None
+        aliases = [field.serialization_alias or name for name, field in cls.model_fields.items()]
 
-        additional_properties = ApiHelper.get_additional_properties(
-            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: int(x))
+        additional_properties = {
+            key: value for key, value in values.items() if key not in aliases
+        }
 
-        # Return an object of this model
-        return cls(email, additional_properties)
+        ApiHelper.check_conflicts_with_additional_properties(cls, additional_properties, additional_props_field)
+
+        values[additional_props_field] = additional_properties
+        return values
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _optional_fields = {"additional_properties"}
+
+        serialized_model = nxt(self)
+        additional_properties = serialized_model.pop("additional_properties", {})
+        sanitized_model = ApiHelper.sanitize_model(optional_fields=_optional_fields,
+                                                   model_dump=serialized_model, model_fields=self.model_fields,
+                                                   model_fields_set=self.model_fields_set)
+        return {**sanitized_model, **(additional_properties or {})}
 
 
-class ModelWithAdditionalPropertiesOfPrimitiveArrayType(object):
+class ModelWithAdditionalPropertiesOfPrimitiveArrayType(BaseModel):
+
+    """"Implementation of the 'NonInheritEnabledNumber' model.
+
+    TODO: type model description here.
+
+    Attributes:
+        email (str): TODO: type description here.
+
+    """
+
+    email: Annotated[
+        str,
+        Field(validation_alias=AliasChoices("email", "email"),
+              serialization_alias="email")
+    ]
+
+    additional_properties: Optional[Dict[str, List[int]]] = None
+
+    @model_validator(mode="before")
+    def populate_additional_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Collect all extra fields and move them into `additional_properties`.
+        Raise ValueError if an additional property has a name similar to a model property.
+
+        Args:
+            values (Dict[str, Any]): The input data for the model.
+
+        Returns:
+            Dict[str, Any]: The modified data with additional properties populated.
+        """
+        additional_props_field = "additional_properties"
+
+        if isinstance(values.get(additional_props_field), dict):
+            ApiHelper.check_conflicts_with_additional_properties(
+                cls, values[additional_props_field], additional_props_field)
+            return values
+
+        aliases = [field.serialization_alias or name for name, field in cls.model_fields.items()]
+
+        additional_properties = {
+            key: value for key, value in values.items() if key not in aliases
+        }
+
+        ApiHelper.check_conflicts_with_additional_properties(cls, additional_properties, additional_props_field)
+
+        values[additional_props_field] = additional_properties
+        return values
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _optional_fields = {"additional_properties"}
+
+        serialized_model = nxt(self)
+        additional_properties = serialized_model.pop("additional_properties", {})
+        sanitized_model = ApiHelper.sanitize_model(optional_fields=_optional_fields,
+                                                   model_dump=serialized_model, model_fields=self.model_fields,
+                                                   model_fields_set=self.model_fields_set)
+        return {**sanitized_model, **(additional_properties or {})}
+
+class ModelWithAdditionalPropertiesOfPrimitiveDictType(BaseModel):
 
     """Implementation of the 'NonInheritEnabledNumber' model.
 
@@ -75,57 +141,56 @@ class ModelWithAdditionalPropertiesOfPrimitiveArrayType(object):
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "email": 'email'
-    }
+    email: Annotated[
+        str,
+        Field(validation_alias=AliasChoices("email", "email"),
+              serialization_alias="email")
+    ]
 
-    def __init__(self,
-                 email=None,
-                 additional_properties=None):
-        """Constructor for the NonInheritEnabledNumber class
+    additional_properties: Optional[Dict[str, Dict[str, int]]] = None
 
-        Args:
-            email (str): TODO: type description here.
-            additional_properties (dict[str, list[int]]): TODO: type description here.
-
+    @model_validator(mode="before")
+    def populate_additional_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
-
-        # Initialize members of the class
-        if additional_properties is None:
-            additional_properties = {}
-        self.email = email
-        self.additional_properties = additional_properties
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
+        Collect all extra fields and move them into `additional_properties`.
+        Raise ValueError if an additional property has a name similar to a model property.
 
         Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
+            values (Dict[str, Any]): The input data for the model.
 
         Returns:
-            object: An instance of this structure class.
-
+            Dict[str, Any]: The modified data with additional properties populated.
         """
+        additional_props_field = "additional_properties"
 
-        if dictionary is None:
-            return None
+        if isinstance(values.get(additional_props_field), dict):
+            ApiHelper.check_conflicts_with_additional_properties(
+                cls, values[additional_props_field], additional_props_field)
+            return values
 
-        # Extract variables from the dictionary
-        email = dictionary.get("email") if dictionary.get("email") else None
+        aliases = [field.serialization_alias or name for name, field in cls.model_fields.items()]
 
-        additional_properties = ApiHelper.get_additional_properties(
-            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: int(item), is_array=True))
+        additional_properties = {
+            key: value for key, value in values.items() if key not in aliases
+        }
 
-        # Return an object of this model
-        return cls(email, additional_properties)
+        ApiHelper.check_conflicts_with_additional_properties(cls, additional_properties, additional_props_field)
 
-class ModelWithAdditionalPropertiesOfPrimitiveDictType(object):
+        values[additional_props_field] = additional_properties
+        return values
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _optional_fields = {"additional_properties"}
+
+        serialized_model = nxt(self)
+        additional_properties = serialized_model.pop("additional_properties", {})
+        sanitized_model = ApiHelper.sanitize_model(optional_fields=_optional_fields,
+                                                   model_dump=serialized_model, model_fields=self.model_fields,
+                                                   model_fields_set=self.model_fields_set)
+        return {**sanitized_model, **(additional_properties or {})}
+
+class ModelWithAdditionalPropertiesOfModelType(BaseModel):
 
     """Implementation of the 'NonInheritEnabledNumber' model.
 
@@ -136,57 +201,56 @@ class ModelWithAdditionalPropertiesOfPrimitiveDictType(object):
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "email": 'email'
-    }
+    email: Annotated[
+        str,
+        Field(validation_alias=AliasChoices("email", "email"),
+              serialization_alias="email")
+    ]
 
-    def __init__(self,
-                 email=None,
-                 additional_properties=None):
-        """Constructor for the NonInheritEnabledNumber class
+    additional_properties: Optional[Dict[str, Lion]] = None
 
-        Args:
-            email (str): TODO: type description here.
-            additional_properties (dict[str, dict[str, int]]): TODO: type description here.
-
+    @model_validator(mode="before")
+    def populate_additional_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
-
-        # Initialize members of the class
-        if additional_properties is None:
-            additional_properties = {}
-        self.email = email
-        self.additional_properties = additional_properties
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
+        Collect all extra fields and move them into `additional_properties`.
+        Raise ValueError if an additional property has a name similar to a model property.
 
         Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
+            values (Dict[str, Any]): The input data for the model.
 
         Returns:
-            object: An instance of this structure class.
-
+            Dict[str, Any]: The modified data with additional properties populated.
         """
+        additional_props_field = "additional_properties"
 
-        if dictionary is None:
-            return None
+        if isinstance(values.get(additional_props_field), dict):
+            ApiHelper.check_conflicts_with_additional_properties(
+                cls, values[additional_props_field], additional_props_field)
+            return values
 
-        # Extract variables from the dictionary
-        email = dictionary.get("email") if dictionary.get("email") else None
+        aliases = [field.serialization_alias or name for name, field in cls.model_fields.items()]
 
-        additional_properties = ApiHelper.get_additional_properties(
-            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: int(item), is_dict=True))
+        additional_properties = {
+            key: value for key, value in values.items() if key not in aliases
+        }
 
-        # Return an object of this model
-        return cls(email, additional_properties)
+        ApiHelper.check_conflicts_with_additional_properties(cls, additional_properties, additional_props_field)
 
-class ModelWithAdditionalPropertiesOfModelType(object):
+        values[additional_props_field] = additional_properties
+        return values
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _optional_fields = {"additional_properties"}
+
+        serialized_model = nxt(self)
+        additional_properties = serialized_model.pop("additional_properties", {})
+        sanitized_model = ApiHelper.sanitize_model(optional_fields=_optional_fields,
+                                                   model_dump=serialized_model, model_fields=self.model_fields,
+                                                   model_fields_set=self.model_fields_set)
+        return {**sanitized_model, **(additional_properties or {})}
+
+class ModelWithAdditionalPropertiesOfModelArrayType(BaseModel):
 
     """Implementation of the 'NonInheritEnabledNumber' model.
 
@@ -197,57 +261,56 @@ class ModelWithAdditionalPropertiesOfModelType(object):
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "email": 'email'
-    }
+    email: Annotated[
+        str,
+        Field(validation_alias=AliasChoices("email", "email"),
+              serialization_alias="email")
+    ]
 
-    def __init__(self,
-                 email=None,
-                 additional_properties=None):
-        """Constructor for the NonInheritEnabledNumber class
+    additional_properties: Optional[Dict[str, List[Lion]]] = None
 
-        Args:
-            email (str): TODO: type description here.
-            additional_properties (dict[str, Lion]): TODO: type description here.
-
+    @model_validator(mode="before")
+    def populate_additional_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
-
-        # Initialize members of the class
-        if additional_properties is None:
-            additional_properties = {}
-        self.email = email
-        self.additional_properties = additional_properties
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
+        Collect all extra fields and move them into `additional_properties`.
+        Raise ValueError if an additional property has a name similar to a model property.
 
         Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
+            values (Dict[str, Any]): The input data for the model.
 
         Returns:
-            object: An instance of this structure class.
-
+            Dict[str, Any]: The modified data with additional properties populated.
         """
+        additional_props_field = "additional_properties"
 
-        if dictionary is None:
-            return None
+        if isinstance(values.get(additional_props_field), dict):
+            ApiHelper.check_conflicts_with_additional_properties(
+                cls, values[additional_props_field], additional_props_field)
+            return values
 
-        # Extract variables from the dictionary
-        email = dictionary.get("email") if dictionary.get("email") else None
+        aliases = [field.serialization_alias or name for name, field in cls.model_fields.items()]
 
-        additional_properties = ApiHelper.get_additional_properties(
-            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: Lion.from_dictionary(item)))
+        additional_properties = {
+            key: value for key, value in values.items() if key not in aliases
+        }
 
-        # Return an object of this model
-        return cls(email, additional_properties)
+        ApiHelper.check_conflicts_with_additional_properties(cls, additional_properties, additional_props_field)
 
-class ModelWithAdditionalPropertiesOfModelArrayType(object):
+        values[additional_props_field] = additional_properties
+        return values
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _optional_fields = {"additional_properties"}
+
+        serialized_model = nxt(self)
+        additional_properties = serialized_model.pop("additional_properties", {})
+        sanitized_model = ApiHelper.sanitize_model(optional_fields=_optional_fields,
+                                                   model_dump=serialized_model, model_fields=self.model_fields,
+                                                   model_fields_set=self.model_fields_set)
+        return {**sanitized_model, **(additional_properties or {})}
+
+class ModelWithAdditionalPropertiesOfModelDictType(BaseModel):
 
     """Implementation of the 'NonInheritEnabledNumber' model.
 
@@ -258,57 +321,56 @@ class ModelWithAdditionalPropertiesOfModelArrayType(object):
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "email": 'email'
-    }
+    email: Annotated[
+        str,
+        Field(validation_alias=AliasChoices("email", "email"),
+              serialization_alias="email")
+    ]
 
-    def __init__(self,
-                 email=None,
-                 additional_properties=None):
-        """Constructor for the NonInheritEnabledNumber class
+    additional_properties: Optional[Dict[str, Dict[str, Lion]]] = None
 
-        Args:
-            email (str): TODO: type description here.
-            additional_properties (dict[str, list[Lion]]): TODO: type description here.
-
+    @model_validator(mode="before")
+    def populate_additional_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
-
-        # Initialize members of the class
-        if additional_properties is None:
-            additional_properties = {}
-        self.email = email
-        self.additional_properties = additional_properties
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
+        Collect all extra fields and move them into `additional_properties`.
+        Raise ValueError if an additional property has a name similar to a model property.
 
         Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
+            values (Dict[str, Any]): The input data for the model.
 
         Returns:
-            object: An instance of this structure class.
-
+            Dict[str, Any]: The modified data with additional properties populated.
         """
+        additional_props_field = "additional_properties"
 
-        if dictionary is None:
-            return None
+        if isinstance(values.get(additional_props_field), dict):
+            ApiHelper.check_conflicts_with_additional_properties(
+                cls, values[additional_props_field], additional_props_field)
+            return values
 
-        # Extract variables from the dictionary
-        email = dictionary.get("email") if dictionary.get("email") else None
+        aliases = [field.serialization_alias or name for name, field in cls.model_fields.items()]
 
-        additional_properties = ApiHelper.get_additional_properties(
-            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(x, lambda item: Lion.from_dictionary(item), is_array=True))
+        additional_properties = {
+            key: value for key, value in values.items() if key not in aliases
+        }
 
-        # Return an object of this model
-        return cls(email, additional_properties)
+        ApiHelper.check_conflicts_with_additional_properties(cls, additional_properties, additional_props_field)
 
-class ModelWithAdditionalPropertiesOfModelDictType(object):
+        values[additional_props_field] = additional_properties
+        return values
+
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _optional_fields = {"additional_properties"}
+
+        serialized_model = nxt(self)
+        additional_properties = serialized_model.pop("additional_properties", {})
+        sanitized_model = ApiHelper.sanitize_model(optional_fields=_optional_fields,
+                                                   model_dump=serialized_model, model_fields=self.model_fields,
+                                                   model_fields_set=self.model_fields_set)
+        return {**sanitized_model, **(additional_properties or {})}
+
+class ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(BaseModel):
 
     """Implementation of the 'NonInheritEnabledNumber' model.
 
@@ -319,116 +381,51 @@ class ModelWithAdditionalPropertiesOfModelDictType(object):
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "email": 'email'
-    }
+    email: Annotated[
+        str,
+        Field(validation_alias=AliasChoices("email", "email"),
+              serialization_alias="email")
+    ]
 
-    def __init__(self,
-                 email=None,
-                 additional_properties=None):
-        """Constructor for the NonInheritEnabledNumber class
+    additional_properties: Optional[Dict[str, Union[float, bool]]] = None
 
-        Args:
-            email (str): TODO: type description here.
-            additional_properties (dict[str, dict[str, Lion]]): TODO: type description here.
-
+    @model_validator(mode="before")
+    def populate_additional_properties(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         """
-
-        # Initialize members of the class
-        if additional_properties is None:
-            additional_properties = {}
-        self.email = email
-        self.additional_properties = additional_properties
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
+        Collect all extra fields and move them into `additional_properties`.
+        Raise ValueError if an additional property has a name similar to a model property.
 
         Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
+            values (Dict[str, Any]): The input data for the model.
 
         Returns:
-            object: An instance of this structure class.
-
+            Dict[str, Any]: The modified data with additional properties populated.
         """
+        additional_props_field = "additional_properties"
 
-        if dictionary is None:
-            return None
+        if isinstance(values.get(additional_props_field), dict):
+            ApiHelper.check_conflicts_with_additional_properties(
+                cls, values[additional_props_field], additional_props_field)
+            return values
 
-        # Extract variables from the dictionary
-        email = dictionary.get("email") if dictionary.get("email") else None
+        aliases = [field.serialization_alias or name for name, field in cls.model_fields.items()]
 
-        additional_properties = ApiHelper.get_additional_properties(
-            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.apply_unboxing_function(
-                x, lambda item: Lion.from_dictionary(item),
-                is_dict=True))
+        additional_properties = {
+            key: value for key, value in values.items() if key not in aliases
+        }
 
-        # Return an object of this model
-        return cls(email, additional_properties)
+        ApiHelper.check_conflicts_with_additional_properties(cls, additional_properties, additional_props_field)
 
-class ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(object):
+        values[additional_props_field] = additional_properties
+        return values
 
-    """Implementation of the 'NonInheritEnabledNumber' model.
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _optional_fields = {"additional_properties"}
 
-    TODO: type model description here.
-
-    Attributes:
-        email (str): TODO: type description here.
-
-    """
-
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "email": 'email'
-    }
-
-    def __init__(self,
-                 email=None,
-                 additional_properties=None):
-        """Constructor for the NonInheritEnabledNumber class
-
-        Args:
-            email (str): TODO: type description here.
-            additional_properties (dict[str, float|bool]): TODO: type description here.
-
-        """
-
-        # Initialize members of the class
-        if additional_properties is None:
-            additional_properties = {}
-        self.email = email
-        self.additional_properties = additional_properties
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
-
-        Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
-
-        Returns:
-            object: An instance of this structure class.
-
-        """
-
-        if dictionary is None:
-            return None
-
-        # Extract variables from the dictionary
-        email = dictionary.get("email") if dictionary.get("email") else None
-
-        additional_properties = ApiHelper.get_additional_properties(
-            dictionary={k: v for k, v in dictionary.items() if k not in cls._names.values()},
-            unboxing_function=lambda x: ApiHelper.deserialize_union_type(UnionTypeLookUp.get('ScalarModelAnyOfRequired'),
-                                                                         x, False))
-
-        # Return an object of this model
-        return cls(email, additional_properties)
+        serialized_model = nxt(self)
+        additional_properties = serialized_model.pop("additional_properties", {})
+        sanitized_model = ApiHelper.sanitize_model(optional_fields=_optional_fields,
+                                                   model_dump=serialized_model, model_fields=self.model_fields,
+                                                   model_fields_set=self.model_fields_set)
+        return {**sanitized_model, **(additional_properties or {})}

@@ -1,73 +1,49 @@
+from typing import Optional, List
+
+from pydantic import BaseModel, AliasChoices, Field, model_serializer
+from pydantic_core.core_schema import SerializerFunctionWrapHandler
+from typing_extensions import Annotated
+
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
-class GrandParentClassModel(object):
+class GrandParentClassModel(BaseModel):
 
     """Implementation of the 'Grand Parent Class' model.
 
     TODO: type model description here.
 
     Attributes:
-        grand_parent_optional (string): TODO: type description here.
-        grand_parent_required_nullable (string): TODO: type description here.
-        grand_parent_required (string): TODO: type description here.
+        grand_parent_optional (str): TODO: type description here.
+        grand_parent_required_nullable (str): TODO: type description here.
+        grand_parent_required (str): TODO: type description here.
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "grand_parent_required_nullable": 'Grand_Parent_Required_Nullable',
-        "grand_parent_required": 'Grand_Parent_Required',
-        "grand_parent_optional": 'Grand_Parent_Optional'
-    }
-
-    _optionals = [
-        'grand_parent_optional',
+    grand_parent_required_nullable: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("grand_parent_required_nullable", "Grand_Parent_Required_Nullable"),
+              serialization_alias="Grand_Parent_Required_Nullable")
     ]
+    grand_parent_required: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("grand_parent_required", "Grand_Parent_Required"),
+              serialization_alias="Grand_Parent_Required")
+    ] = 'not nullable and required'
+    grand_parent_optional: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("grand_parent_optional", "Grand_Parent_Optional"),
+              serialization_alias="Grand_Parent_Optional")
+    ] = None
 
-    _nullables = [
-        'grand_parent_required_nullable',
-    ]
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _nullable_fields = {'grand_parent_required_nullable'}
+        _optional_fields = {'grand_parent_optional'}
 
-    def __init__(self,
-                 grand_parent_required_nullable=None,
-                 grand_parent_required='not nullable and required',
-                 grand_parent_optional=ApiHelper.SKIP):
-        """Constructor for the GrandParentClassModel class"""
-
-        # Initialize members of the class
-        if grand_parent_optional is not ApiHelper.SKIP:
-            self.grand_parent_optional = grand_parent_optional
-        self.grand_parent_required_nullable = grand_parent_required_nullable
-        self.grand_parent_required = grand_parent_required
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
-
-        Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
-
-        Returns:
-            object: An instance of this structure class.
-
-        """
-        if dictionary is None:
-            return None
-
-        # Extract variables from the dictionary
-
-        grand_parent_required_nullable = dictionary.get("Grand_Parent_Required_Nullable") if dictionary.get("Grand_Parent_Required_Nullable") else None
-        grand_parent_required = dictionary.get("Grand_Parent_Required") if dictionary.get("Grand_Parent_Required") else 'not nullable and required'
-        grand_parent_optional = dictionary.get("Grand_Parent_Optional") if dictionary.get("Grand_Parent_Optional") else ApiHelper.SKIP
-        # Return an object of this model
-        return cls(grand_parent_required_nullable,
-                   grand_parent_required,
-                   grand_parent_optional)
-
+        return ApiHelper.sanitize_model(nullable_fields=_nullable_fields, optional_fields=_optional_fields,
+                                        model_dump=nxt(self), model_fields=self.model_fields,
+                                        model_fields_set=self.model_fields_set)
 
 class ParentClassModel(GrandParentClassModel):
 
@@ -80,117 +56,64 @@ class ParentClassModel(GrandParentClassModel):
         mclass (int): TODO: type description here.
         precision (float): TODO: type description here.
         big_decimal (float): TODO: type description here.
-        parent_optional_nullable_with_default_value (string): TODO: type
+        parent_optional_nullable_with_default_value (str): TODO: type
             description here.
-        parent_optional (string): TODO: type description here.
-        parent_required_nullable (string): TODO: type description here.
-        parent_required (string): TODO: type description here.
+        parent_optional (str): TODO: type description here.
+        parent_required_nullable (str): TODO: type description here.
+        parent_required (str): TODO: type description here.
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "parent_required_nullable": 'Parent_Required_Nullable',
-        "parent_required": 'Parent_Required',
-        "grand_parent_required_nullable": 'Grand_Parent_Required_Nullable',
-        "grand_parent_required": 'Grand_Parent_Required',
-        "mclass": 'class',
-        "precision": 'precision',
-        "big_decimal": 'Big_Decimal',
-        "parent_optional_nullable_with_default_value": 'Parent_Optional_Nullable_With_Default_Value',
-        "parent_optional": 'Parent_Optional',
-        "grand_parent_optional": 'Grand_Parent_Optional'
-    }
-
-    _optionals = [
-        'mclass',
-        'precision',
-        'big_decimal',
-        'parent_optional_nullable_with_default_value',
-        'parent_optional',
+    parent_required_nullable: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("parent_required_nullable", "Parent_Required_Nullable"),
+              serialization_alias="Parent_Required_Nullable")
     ]
-    _optionals.extend(GrandParentClassModel._optionals)
+    mclass: Annotated[
+        Optional[int],
+        Field(validation_alias=AliasChoices("mclass", "class"),
+              serialization_alias="class")
+    ] = 23
+    precision: Annotated[
+        Optional[float],
+        Field(validation_alias=AliasChoices("precision", "precision"),
+              serialization_alias="precision")
+    ] = None
+    big_decimal: Annotated[
+        Optional[float],
+        Field(validation_alias=AliasChoices("big_decimal", "Big_Decimal"),
+              serialization_alias="Big_Decimal")
+    ] = None
+    parent_optional_nullable_with_default_value: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("parent_optional_nullable_with_default_value", "Parent_Optional_Nullable_With_Default_Value"),
+              serialization_alias="Parent_Optional_Nullable_With_Default_Value")
+    ] = 'Has default value'
+    parent_optional: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("parent_optional", "Parent_Optional"),
+              serialization_alias="Parent_Optional")
+    ] = None
+    parent_required: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("parent_required", "Parent_Required"),
+              serialization_alias="Parent_Required")
+    ] = 'not nullable and required'
 
-    _nullables = [
-        'mclass',
-        'precision',
-        'big_decimal',
-        'parent_optional_nullable_with_default_value',
-        'parent_required_nullable',
-    ]
-    _nullables.extend(GrandParentClassModel._nullables)
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _nullable_fields = {
+            'mclass', 'precision', 'big_decimal', 'parent_optional_nullable_with_default_value',
+            'parent_required_nullable', 'grand_parent_required_nullable'
+        }
+        _optional_fields = {
+            'mclass', 'precision', 'big_decimal', 'parent_optional_nullable_with_default_value', 'parent_optional',
+            'grand_parent_optional'
+        }
 
-    def __init__(self,
-                 parent_required_nullable=None,
-                 parent_required='not nullable and required',
-                 grand_parent_required_nullable=None,
-                 grand_parent_required='not nullable and required',
-                 mclass=23,
-                 precision=ApiHelper.SKIP,
-                 big_decimal=ApiHelper.SKIP,
-                 parent_optional_nullable_with_default_value='Has default value',
-                 parent_optional=ApiHelper.SKIP,
-                 grand_parent_optional=ApiHelper.SKIP):
-        """Constructor for the ParentClassModel class"""
-
-        # Initialize members of the class
-        self.mclass = mclass
-        if precision is not ApiHelper.SKIP:
-            self.precision = precision
-        if big_decimal is not ApiHelper.SKIP:
-            self.big_decimal = big_decimal
-        self.parent_optional_nullable_with_default_value = parent_optional_nullable_with_default_value
-        if parent_optional is not ApiHelper.SKIP:
-            self.parent_optional = parent_optional
-        self.parent_required_nullable = parent_required_nullable
-        self.parent_required = parent_required
-
-        # Call the constructor for the base class
-        super(ParentClassModel, self).__init__(grand_parent_required_nullable,
-                                               grand_parent_required,
-                                               grand_parent_optional)
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
-
-        Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
-
-        Returns:
-            object: An instance of this structure class.
-
-        """
-        if dictionary is None:
-            return None
-
-        # Extract variables from the dictionary
-
-        parent_required_nullable = dictionary.get("Parent_Required_Nullable") if dictionary.get("Parent_Required_Nullable") else None
-        parent_required = dictionary.get("Parent_Required") if dictionary.get("Parent_Required") else 'not nullable and required'
-        grand_parent_required_nullable = dictionary.get("Grand_Parent_Required_Nullable") if dictionary.get("Grand_Parent_Required_Nullable") else None
-        grand_parent_required = dictionary.get("Grand_Parent_Required") if dictionary.get("Grand_Parent_Required") else 'not nullable and required'
-        mclass = dictionary.get("class") if dictionary.get("class") else 23
-        precision = dictionary.get("precision") if "precision" in dictionary.keys() else ApiHelper.SKIP
-        big_decimal = dictionary.get("Big_Decimal") if "Big_Decimal" in dictionary.keys() else ApiHelper.SKIP
-        parent_optional_nullable_with_default_value = dictionary.get("Parent_Optional_Nullable_With_Default_Value") if dictionary.get("Parent_Optional_Nullable_With_Default_Value") else 'Has default value'
-        parent_optional = dictionary.get("Parent_Optional") if dictionary.get("Parent_Optional") else ApiHelper.SKIP
-        grand_parent_optional = dictionary.get("Grand_Parent_Optional") if dictionary.get("Grand_Parent_Optional") else ApiHelper.SKIP
-        # Return an object of this model
-        return cls(parent_required_nullable,
-                   parent_required,
-                   grand_parent_required_nullable,
-                   grand_parent_required,
-                   mclass,
-                   precision,
-                   big_decimal,
-                   parent_optional_nullable_with_default_value,
-                   parent_optional,
-                   grand_parent_optional)
-
+        return ApiHelper.sanitize_model(nullable_fields=_nullable_fields, optional_fields=_optional_fields,
+                                        model_dump=nxt(self), model_fields=self.model_fields,
+                                        model_fields_set=self.model_fields_set)
 
 class ChildClassModel(ParentClassModel):
 
@@ -200,147 +123,105 @@ class ChildClassModel(ParentClassModel):
     NOTE: This class inherits from 'ParentClassModel'.
 
     Attributes:
-        optional_nullable (string): TODO: type description here.
-        optional_nullable_with_default_value (string): TODO: type description
+        optional_nullable (str): TODO: type description here.
+        optional_nullable_with_default_value (str): TODO: type description
             here.
-        optional (string): TODO: type description here.
-        required_nullable (string): TODO: type description here.
-        required (string): TODO: type description here.
-        child_class_array (list of ChildClassModel): TODO: type description
-            here.
+        optional (str): TODO: type description here.
+        required_nullable (str): TODO: type description here.
+        required (str): TODO: type description here.
+        child_class_array (List[ChildClassModel]): TODO: type description here.
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "required_nullable": 'Required_Nullable',
-        "required": 'Required',
-        "parent_required_nullable": 'Parent_Required_Nullable',
-        "parent_required": 'Parent_Required',
-        "grand_parent_required_nullable": 'Grand_Parent_Required_Nullable',
-        "grand_parent_required": 'Grand_Parent_Required',
-        "optional_nullable": 'Optional_Nullable',
-        "optional_nullable_with_default_value": 'Optional_Nullable_With_Default_Value',
-        "optional": 'Optional',
-        "child_class_array": 'Child_Class_Array',
-        "mclass": 'class',
-        "precision": 'precision',
-        "big_decimal": 'Big_Decimal',
-        "parent_optional_nullable_with_default_value": 'Parent_Optional_Nullable_With_Default_Value',
-        "parent_optional": 'Parent_Optional',
-        "grand_parent_optional": 'Grand_Parent_Optional'
-    }
-
-    _optionals = [
-        'optional_nullable',
-        'optional_nullable_with_default_value',
-        'optional',
-        'child_class_array',
+    required_nullable: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("required_nullable", "Required_Nullable"),
+              serialization_alias="Required_Nullable")
     ]
-    _optionals.extend(ParentClassModel._optionals)
+    required : Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("required", "Required"),
+              serialization_alias="Required")
+    ] = 'not nullable and required'
+    optional_nullable: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("optional_nullable", "Optional_Nullable"),
+              serialization_alias="Optional_Nullable")
+    ] = None
+    optional_nullable_with_default_value: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("optional_nullable_with_default_value", "Optional_Nullable_With_Default_Value"),
+              serialization_alias="Optional_Nullable_With_Default_Value")
+    ] = 'With default value'
+    optional: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("optional", "Optional"),
+              serialization_alias="Optional")
+    ] = None
+    child_class_array: Annotated[
+        Optional[List['ChildClassModel']],
+        Field(validation_alias=AliasChoices("child_class_array", "Child_Class_Array"),
+              serialization_alias="Child_Class_Array")
+    ] = None
 
-    _nullables = [
-        'optional_nullable',
-        'optional_nullable_with_default_value',
-        'required_nullable',
-        'child_class_array',
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _nullable_fields = {
+            'optional_nullable', 'optional_nullable_with_default_value', 'required_nullable', 'child_class_array',
+            'mclass', 'precision', 'big_decimal', 'parent_optional_nullable_with_default_value',
+            'parent_required_nullable', 'grand_parent_required_nullable'
+        }
+        _optional_fields = {
+            'optional_nullable', 'optional_nullable_with_default_value', 'optional', 'child_class_array',
+            'mclass', 'precision', 'big_decimal', 'parent_optional_nullable_with_default_value', 'parent_optional',
+            'grand_parent_optional'
+        }
+
+        return ApiHelper.sanitize_model(nullable_fields=_nullable_fields, optional_fields=_optional_fields,
+                                        model_dump=nxt(self), model_fields=self.model_fields,
+                                        model_fields_set=self.model_fields_set)
+
+class Child2ClassModel(ParentClassModel):
+
+    """Implementation of the 'Child2 Class' model.
+
+    TODO: type model description here.
+    NOTE: This class inherits from 'ParentClassModel'.
+
+    Attributes:
+        optional (str): TODO: type description here.
+        required_nullable (str): TODO: type description here.
+        required (str): TODO: type description here.
+
+    """
+
+    required_nullable: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("required_nullable", "Required_Nullable"),
+              serialization_alias="Required_Nullable")
     ]
-    _nullables.extend(ParentClassModel._nullables)
+    required: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("required", "Required"),
+              serialization_alias="Required")
+    ] = 'not nullable and required'
+    optional: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("optional", "Optional"),
+              serialization_alias="Optional")
+    ] = None
 
-    def __init__(self,
-                 required,
-                 required_nullable=None,
-                 parent_required_nullable=None,
-                 parent_required='not nullable and required',
-                 grand_parent_required_nullable=None,
-                 grand_parent_required='not nullable and required',
-                 optional_nullable=ApiHelper.SKIP,
-                 optional_nullable_with_default_value='With default value',
-                 optional=ApiHelper.SKIP,
-                 child_class_array=ApiHelper.SKIP,
-                 mclass=23,
-                 precision=ApiHelper.SKIP,
-                 big_decimal=ApiHelper.SKIP,
-                 parent_optional_nullable_with_default_value='Has default value',
-                 parent_optional=ApiHelper.SKIP,
-                 grand_parent_optional=ApiHelper.SKIP):
-        """Constructor for the ChildClassModel class"""
+    @model_serializer(mode="wrap")
+    def serialize_model(self, nxt: SerializerFunctionWrapHandler):
+        _nullable_fields = {
+            'required_nullable', 'mclass', 'precision', 'big_decimal', 'parent_optional_nullable_with_default_value',
+            'parent_required_nullable', 'grand_parent_required_nullable'
+        }
+        _optional_fields = {
+            'optional', 'mclass', 'precision', 'big_decimal', 'parent_optional_nullable_with_default_value',
+            'parent_optional', 'grand_parent_optional'
+        }
 
-        # Initialize members of the class
-        if optional_nullable is not ApiHelper.SKIP:
-            self.optional_nullable = optional_nullable
-        self.optional_nullable_with_default_value = optional_nullable_with_default_value
-        if optional is not ApiHelper.SKIP:
-            self.optional = optional
-        self.required_nullable = required_nullable
-        self.required = required
-        if child_class_array is not ApiHelper.SKIP:
-            self.child_class_array = child_class_array
-
-        # Call the constructor for the base class
-        super(ChildClassModel, self).__init__(parent_required_nullable,
-                                              parent_required,
-                                              grand_parent_required_nullable,
-                                              grand_parent_required,
-                                              mclass,
-                                              precision,
-                                              big_decimal,
-                                              parent_optional_nullable_with_default_value,
-                                              parent_optional,
-                                              grand_parent_optional)
-
-    @classmethod
-    def from_dictionary(cls,
-                        dictionary):
-        """Creates an instance of this model from a dictionary
-
-        Args:
-            dictionary (dictionary): A dictionary representation of the object
-            as obtained from the deserialization of the server's response. The
-            keys MUST match property names in the API description.
-
-        Returns:
-            object: An instance of this structure class.
-
-        """
-        if dictionary is None:
-            return None
-
-        # Extract variables from the dictionary
-
-        required_nullable = dictionary.get("Required_Nullable") if dictionary.get("Required_Nullable") else None
-        required = dictionary.get("Required")
-        parent_required_nullable = dictionary.get("Parent_Required_Nullable") if dictionary.get("Parent_Required_Nullable") else None
-        parent_required = dictionary.get("Parent_Required") if dictionary.get("Parent_Required") else 'not nullable and required'
-        grand_parent_required_nullable = dictionary.get("Grand_Parent_Required_Nullable") if dictionary.get("Grand_Parent_Required_Nullable") else None
-        grand_parent_required = dictionary.get("Grand_Parent_Required") if dictionary.get("Grand_Parent_Required") else 'not nullable and required'
-        optional_nullable = dictionary.get("Optional_Nullable") if "Optional_Nullable" in dictionary.keys() else ApiHelper.SKIP
-        optional_nullable_with_default_value = dictionary.get("Optional_Nullable_With_Default_Value") if dictionary.get("Optional_Nullable_With_Default_Value") else 'With default value'
-        optional = dictionary.get("Optional") if dictionary.get("Optional") else ApiHelper.SKIP
-        if 'Child_Class_Array' in dictionary.keys():
-            child_class_array = [ChildClassModel.from_dictionary(x) for x in dictionary.get('Child_Class_Array')] if dictionary.get('Child_Class_Array') else None
-        else:
-            child_class_array = ApiHelper.SKIP
-        mclass = dictionary.get("class") if dictionary.get("class") else 23
-        precision = dictionary.get("precision") if "precision" in dictionary.keys() else ApiHelper.SKIP
-        big_decimal = dictionary.get("Big_Decimal") if "Big_Decimal" in dictionary.keys() else ApiHelper.SKIP
-        parent_optional_nullable_with_default_value = dictionary.get("Parent_Optional_Nullable_With_Default_Value") if dictionary.get("Parent_Optional_Nullable_With_Default_Value") else 'Has default value'
-        parent_optional = dictionary.get("Parent_Optional") if dictionary.get("Parent_Optional") else ApiHelper.SKIP
-        grand_parent_optional = dictionary.get("Grand_Parent_Optional") if dictionary.get("Grand_Parent_Optional") else ApiHelper.SKIP
-        # Return an object of this model
-        return cls(required,
-                   required_nullable,
-                   parent_required_nullable,
-                   parent_required,
-                   grand_parent_required_nullable,
-                   grand_parent_required,
-                   optional_nullable,
-                   optional_nullable_with_default_value,
-                   optional,
-                   child_class_array,
-                   mclass,
-                   precision,
-                   big_decimal,
-                   parent_optional_nullable_with_default_value,
-                   parent_optional,
-                   grand_parent_optional)
+        return ApiHelper.sanitize_model(nullable_fields=_nullable_fields, optional_fields=_optional_fields,
+                                        model_dump=nxt(self), model_fields=self.model_fields,
+                                        model_fields_set=self.model_fields_set)

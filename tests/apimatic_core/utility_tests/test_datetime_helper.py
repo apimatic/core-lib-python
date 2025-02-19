@@ -18,7 +18,7 @@ class TestDateTimeHelper:
         (1480809600, DateTimeFormat.RFC3339_DATE_TIME, False),
         ('1994-11-06T08:49:37', DateTimeFormat.UNIX_DATE_TIME, False),
         ('Sun, 06 Nov 1994 03:49:37 GMT', DateTimeFormat.UNIX_DATE_TIME, False),
-        (None, None, False)
+        ('Sun, 06 Nov 1994 03:49:37 GMT', None, False)
     ])
     def test_is_valid_datetime(self, input_dt, input_datetime_format, expected_output):
         actual_output = DateTimeHelper.validate_datetime(input_dt, input_datetime_format)
@@ -32,8 +32,7 @@ class TestDateTimeHelper:
         ('19941106', False),
         ('941106', False),
         ('1941106', False),
-        ('1994=11=06', False),
-        (123, False)
+        ('1994=11=06', False)
     ])
     def test_is_valid_date(self, input_date, expected_output):
         actual_output = DateTimeHelper.validate_date(input_date)

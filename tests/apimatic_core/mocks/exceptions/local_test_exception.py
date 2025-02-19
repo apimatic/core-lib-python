@@ -1,9 +1,25 @@
+from typing import Optional
+
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from pydantic import BaseModel, Field, AliasChoices
+from typing_extensions import Annotated
+
 from apimatic_core.utilities.api_helper import ApiHelper
+from tests.apimatic_core.mocks.exceptions.api_exception import APIException
 from tests.apimatic_core.mocks.exceptions.global_test_exception import GlobalTestException
 
 
+class LocalTestExceptionValidator(BaseModel):
+    secret_message_for_endpoint: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("secret_message_for_endpoint", "SecretMessageForEndpoint"),
+              serialization_alias="SecretMessageForEndpoint")
+    ] = None
+
 class LocalTestException(GlobalTestException):
-    def __init__(self, reason, response):
+    secret_message_for_endpoint: Optional[str] = None
+
+    def __init__(self, reason: str, response: HttpResponse):
         """Constructor for the LocalTestException class
 
         Args:
@@ -13,18 +29,6 @@ class LocalTestException(GlobalTestException):
 
         """
         super(LocalTestException, self).__init__(reason, response)
-        dictionary = ApiHelper.json_deserialize(self.response.text)
-        if isinstance(dictionary, dict):
-            self.unbox(dictionary)
-
-    def unbox(self, dictionary):
-        """Populates the properties of this object by extracting them from a dictionary.
-
-        Args:
-            dictionary (dictionary): A dictionary representation of the object as
-            obtained from the deserialization of the server's response. The keys
-            MUST match property names in the API description.
-
-        """
-        super(LocalTestException, self).unbox(dictionary)
-        self.secret_message_for_endpoint = dictionary.get("SecretMessageForEndpoint") if dictionary.get("SecretMessageForEndpoint") else None
+        dictionary = ApiHelper.json_deserialize(self.response.text) or {}
+        validated_data = LocalTestExceptionValidator(**dictionary)
+        self.secret_message_for_endpoint = validated_data.secret_message_for_endpoint

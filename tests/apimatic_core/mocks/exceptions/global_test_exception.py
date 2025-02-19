@@ -1,9 +1,30 @@
+from typing import Optional
+
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from pydantic import BaseModel, Field, AliasChoices
+from typing_extensions import Annotated
+
 from apimatic_core.utilities.api_helper import ApiHelper
 from tests.apimatic_core.mocks.exceptions.api_exception import APIException
 
 
+class GlobalTestExceptionValidator(BaseModel):
+    server_message: Annotated[
+        Optional[str],
+        Field(validation_alias=AliasChoices("server_message", "ServerMessage"),
+              serialization_alias="ServerMessage")
+    ] = None
+    server_code: Annotated[
+        Optional[int],
+        Field(validation_alias=AliasChoices("server_code", "ServerCode"),
+              serialization_alias="ServerCode")
+    ] = None
+
 class GlobalTestException(APIException):
-    def __init__(self, reason, response):
+    server_message: Optional[str] = None
+    server_code: Optional[int] = None
+
+    def __init__(self, reason: str, response: HttpResponse):
         """Constructor for the GlobalTestException class
 
         Args:
@@ -13,18 +34,7 @@ class GlobalTestException(APIException):
 
         """
         super(GlobalTestException, self).__init__(reason, response)
-        dictionary = ApiHelper.json_deserialize(self.response.text)
-        if isinstance(dictionary, dict):
-            self.unbox(dictionary)
-
-    def unbox(self, dictionary):
-        """Populates the properties of this object by extracting them from a dictionary.
-
-        Args:
-            dictionary (dictionary): A dictionary representation of the object as
-            obtained from the deserialization of the server's response. The keys
-            MUST match property names in the API description.
-
-        """
-        self.server_message = dictionary.get("ServerMessage") if dictionary.get("ServerMessage") else None
-        self.server_code = dictionary.get("ServerCode") if dictionary.get("ServerCode") else None
+        dictionary = ApiHelper.json_deserialize(self.response.text) or {}
+        validated_data = GlobalTestExceptionValidator(**dictionary)
+        self.server_message = validated_data.server_message
+        self.server_code = validated_data.server_code

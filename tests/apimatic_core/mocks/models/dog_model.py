@@ -1,7 +1,12 @@
+from typing import Optional
+
+from pydantic import BaseModel, AliasChoices, Field
+from typing_extensions import Annotated
+import xml.etree.ElementTree as ET
 from apimatic_core.utilities.xml_helper import XmlHelper
 
 
-class DogModel(object):
+class DogModel(BaseModel):
 
     """Implementation of the 'Dog' model.
 
@@ -12,20 +17,13 @@ class DogModel(object):
 
     """
 
-    # Create a mapping from Model property names to API property names
-    _names = {
-        "barks": 'Barks'
-    }
-
-    def __init__(self,
-                 barks=None):
-        """Constructor for the DogModel class"""
-
-        # Initialize members of the class
-        self.barks = barks
+    barks: Annotated[
+        Optional[bool],
+        Field(AliasChoices("barks", "Barks"), serialization_alias="Barks")
+    ] = None
 
     @classmethod
-    def from_element(cls, root):
+    def from_element(cls, root: ET.Element) -> "DogModel":
         """Initialize an instance of this class using an xml.etree.Element.
 
         Args:
@@ -37,9 +35,9 @@ class DogModel(object):
         """
         barks = XmlHelper.value_from_xml_element(root.find('Barks'), bool)
 
-        return cls(barks)
+        return cls(barks=barks)
 
-    def to_xml_sub_element(self, root):
+    def to_xml_sub_element(self, root: ET.Element):
         """Convert this object to an instance of xml.etree.Element.
 
         Args:

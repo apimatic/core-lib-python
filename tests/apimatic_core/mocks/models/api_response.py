@@ -1,8 +1,10 @@
-from apimatic_core.http.response.api_response import ApiResponse
-from apimatic_core.http.response.http_response import HttpResponse
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from typing import Any, Optional, List
+
+from apimatic_core.http.response.api_response import ApiResponse as CoreApiResponse
 
 
-class ApiResponse(ApiResponse):
+class ApiResponse(CoreApiResponse):
     """Http response received.
 
     Attributes:
@@ -18,9 +20,9 @@ class ApiResponse(ApiResponse):
 
     """
 
-    def __init__(self, http_response,
-                 body=None,
-                 errors=None):
+    def __init__(self, http_response: HttpResponse,
+                 body: Any = None,
+                 errors: Optional[List[str]] = None):
         """The Constructor
 
         Args:
@@ -31,15 +33,14 @@ class ApiResponse(ApiResponse):
         """
 
         super().__init__(http_response, body, errors)
-        if type(self.body) is dict:
-            self.cursor = self.body.get('cursor')
 
     def __repr__(self):
         return '<Test ApiResponse [%s]>' % self.text
 
     @staticmethod
-    def create(_parent_instance):
+    def create(_parent_instance: CoreApiResponse):
         return ApiResponse(
-            HttpResponse(_parent_instance.status_code, _parent_instance.reason_phrase, _parent_instance.headers,
-                         _parent_instance.text, _parent_instance.request), _parent_instance.body,
-            _parent_instance.errors)
+            HttpResponse(
+                status_code=_parent_instance.status_code, reason_phrase=_parent_instance.reason_phrase,
+                headers=_parent_instance.headers, text=_parent_instance.text, request=_parent_instance.request),
+            body=_parent_instance.body, errors=_parent_instance.errors)

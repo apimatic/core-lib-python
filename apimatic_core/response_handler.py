@@ -1,66 +1,89 @@
+from __future__ import annotations
 import re
+
+from typing import Callable, Union, Any, Optional, Dict, List, Type, Literal
+
+from apimatic_core_interfaces.formats.datetime_format import DateTimeFormat
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from pydantic import validate_call
+
 from apimatic_core.http.response.api_response import ApiResponse
-from apimatic_core.types.error_case import ErrorCase
+from apimatic_core.types.error_case import ErrorCase, MessageType
 
 
 class ResponseHandler:
 
     def __init__(self):
-        self._deserializer = None
-        self._convertor = None
-        self._deserialize_into = None
-        self._is_api_response = False
-        self._is_nullify404 = False
-        self._local_errors = {}
-        self._datetime_format = None
-        self._is_xml_response = False
-        self._xml_item_name = None
+        self._deserializer: Any = None
+        self._convertor: Optional[Callable[[Any], Any]] = None
+        self._deserialize_into: Any = None
+        self._is_api_response: bool = False
+        self._is_nullify404: bool = False
+        self._local_errors: Dict[str, ErrorCase] = {}
+        self._datetime_format: Optional[DateTimeFormat] = None
+        self._is_xml_response: bool = False
+        self._xml_item_name: Optional[str] = None
 
-    def deserializer(self, deserializer):
+    @validate_call
+    def deserializer(self, deserializer: Optional[Callable[[Union[str, bytes]], Any]]) -> 'ResponseHandler':
         self._deserializer = deserializer
         return self
 
-    def convertor(self, convertor):
+    @validate_call
+    def convertor(self, convertor: Optional[Callable[[Any], Any]]) -> 'ResponseHandler':
         self._convertor = convertor
         return self
 
-    def deserialize_into(self, deserialize_into):
+    @validate_call
+    def deserialize_into(self, deserialize_into: Any) -> 'ResponseHandler':
         self._deserialize_into = deserialize_into
         return self
 
-    def is_api_response(self, is_api_response):
+    @validate_call
+    def is_api_response(self, is_api_response: bool) -> 'ResponseHandler':
         self._is_api_response = is_api_response
         return self
 
-    def is_nullify404(self, is_nullify404):
+    @validate_call
+    def is_nullify404(self, is_nullify404: bool) -> 'ResponseHandler':
         self._is_nullify404 = is_nullify404
         return self
 
-    def local_error(self, error_code, error_message, exception_type):
-        self._local_errors[str(error_code)] = ErrorCase()\
-            .error_message(error_message)\
-            .exception_type(exception_type)
+    @validate_call
+    def local_error(
+            self, error_code: Union[int, str], error_message: str, exception_type: Type[Any]
+    ) -> 'ResponseHandler':
+        self._local_errors[str(error_code)] = ErrorCase(message=error_message,
+                                                        message_type=MessageType.SIMPLE,
+                                                        exception_type=exception_type)
         return self
 
-    def local_error_template(self, error_code, error_message_template, exception_type):
-        self._local_errors[str(error_code)] = ErrorCase()\
-            .error_message_template(error_message_template)\
-            .exception_type(exception_type)
+    @validate_call
+    def local_error_template(
+            self, error_code: Union[int, str], error_message: str, exception_type: Type[Any]
+    ) -> 'ResponseHandler':
+        self._local_errors[str(error_code)] = ErrorCase(message=error_message,
+                                                        message_type=MessageType.TEMPLATE,
+                                                        exception_type=exception_type)
         return self
 
-    def datetime_format(self, datetime_format):
+    @validate_call
+    def datetime_format(self, datetime_format: DateTimeFormat) -> 'ResponseHandler':
         self._datetime_format = datetime_format
         return self
 
-    def is_xml_response(self, is_xml_response):
+    @validate_call
+    def is_xml_response(self, is_xml_response: bool) -> 'ResponseHandler':
         self._is_xml_response = is_xml_response
         return self
 
-    def xml_item_name(self, xml_item_name):
+    @validate_call
+    def xml_item_name(self, xml_item_name: Optional[str]) -> 'ResponseHandler':
         self._xml_item_name = xml_item_name
         return self
 
-    def handle(self, response, global_errors):
+    @validate_call
+    def handle(self, response: HttpResponse, global_errors: Dict[str, ErrorCase]) -> Any:
 
         # checking Nullify 404
         if response.status_code == 404 and self._is_nullify404:
@@ -80,7 +103,8 @@ class ResponseHandler:
 
         return deserialized_value
 
-    def validate(self, response, global_errors):
+    @validate_call
+    def validate(self, response: HttpResponse, global_errors: Dict[str, ErrorCase]):
         if response.status_code in range(200, 300):
             return
 
@@ -88,12 +112,17 @@ class ResponseHandler:
 
         self.validate_against_error_cases(response, global_errors)
 
-    def apply_xml_deserializer(self, response):
+    @validate_call
+    def apply_xml_deserializer(self, response: HttpResponse) -> Any:
+        if self._deserializer is None:
+            return
+
         if self._xml_item_name:
             return self._deserializer(response.text, self._xml_item_name, self._deserialize_into)
         return self._deserializer(response.text, self._deserialize_into)
 
-    def apply_deserializer(self, response):
+    @validate_call
+    def apply_deserializer(self, response: HttpResponse) -> Any:
         if self._is_xml_response:
             return self.apply_xml_deserializer(response)
         elif self._deserialize_into:
@@ -105,35 +134,40 @@ class ResponseHandler:
         else:
             return response.text
 
-    def apply_api_response(self, response, deserialized_value):
+    @validate_call
+    def apply_api_response(self, response: HttpResponse, deserialized_value: Any) -> Any:
         if self._is_api_response:
             return ApiResponse(response, body=deserialized_value,
                                errors=deserialized_value.get('errors') if type(deserialized_value) is dict else None)
 
         return deserialized_value
 
-    def apply_convertor(self, deserialized_value):
+    @validate_call
+    def apply_convertor(self, deserialized_value: Any) -> Any:
         if self._convertor:
             return self._convertor(deserialized_value)
 
         return deserialized_value
 
     @staticmethod
-    def validate_against_error_cases(response, error_cases):
-        actual_status_code = str(response.status_code)
+    @validate_call
+    def validate_against_error_cases(response: HttpResponse, error_cases: Dict[str, ErrorCase]):
+        actual_status_code: str = str(response.status_code)
         # Handling error case when configured as explicit error code
-        error_case = error_cases.get(actual_status_code) if error_cases else None
+        error_case: Optional[ErrorCase] = error_cases.get(actual_status_code) if error_cases else None
         if error_case:
             error_case.raise_exception(response)
 
         # Handling error case when configured as explicit error codes range
-        default_range_error_case = [error_cases[status_code] for status_code, error_case in error_cases.items()
-                                    if re.match(r'^[{}]XX$'.format(actual_status_code[0]),
-                                                status_code)] if error_cases else None
+        default_range_error_case: Optional[List[ErrorCase]] = [
+            error_cases[status_code]
+            for status_code, error_case in error_cases.items()
+            if re.match(r'^[{}]XX$'.format(actual_status_code[0]), status_code)
+        ] if error_cases else None
         if default_range_error_case:
             default_range_error_case[0].raise_exception(response)
 
         # Handling default error case if configured
-        default_error_case = error_cases.get('default') if error_cases else None
+        default_error_case: Optional[ErrorCase] = error_cases.get('default') if error_cases else None
         if default_error_case:
             default_error_case.raise_exception(response)

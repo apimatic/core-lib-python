@@ -1,16 +1,17 @@
-from apimatic_core.factories.http_response_factory import HttpResponseFactory
-from apimatic_core.http.response.http_response import HttpResponse
-from apimatic_core_interfaces.client.http_client import HttpClient
+from apimatic_core_interfaces.configuration.endpoint_configuration import EndpointConfiguration
+from apimatic_core_interfaces.http.http_client import HttpClient
+from apimatic_core_interfaces.http.http_request import HttpRequest
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from pydantic import validate_call
 
 
 class MockHttpClient(HttpClient):
 
-    def __init__(self):
-        self._should_retry = None
-        self._contains_binary_response = None
-        self.response_factory = HttpResponseFactory()
+    should_retry: bool = False
+    contains_binary_response: bool = False
 
-    def execute(self, request, endpoint_configuration):
+    @validate_call
+    def execute(self, request: HttpRequest, endpoint_configuration: EndpointConfiguration = None) -> HttpResponse:
         """Execute a given CoreHttpRequest to get a string response back
 
         Args:
@@ -21,12 +22,19 @@ class MockHttpClient(HttpClient):
             HttpResponse: The response of the CoreHttpRequest.
 
         """
-        self._should_retry = endpoint_configuration.should_retry
-        self._contains_binary_response = endpoint_configuration.contains_binary_response
-        return self.response_factory.create(status_code=200, reason=None,
-                            headers=request.headers, body=str(request.parameters), request=request)
+        self.should_retry = endpoint_configuration.should_retry
+        self.contains_binary_response = endpoint_configuration.has_binary_response
+        return HttpResponse(
+            status_code=200,
+            reason_phrase=None,
+            headers=request.headers,
+            text=str(request.parameters),
+            request=request)
 
-    def convert_response(self, response, contains_binary_response, http_request):
+    @validate_call
+    def convert_response(
+            self, response: HttpResponse, contains_binary_response: bool, http_request: HttpRequest
+    ) -> HttpResponse:
         """Converts the Response object of the CoreHttpClient into an
         CoreHttpResponse object.
 

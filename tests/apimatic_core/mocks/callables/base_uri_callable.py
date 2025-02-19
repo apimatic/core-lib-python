@@ -1,26 +1,29 @@
 from enum import Enum
+
+from typing import Dict
+
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
-class Environment(Enum):
+class Environment(int, Enum):
     TESTING = 1
 
 
-class Server(Enum):
+class Server(int, Enum):
     """An enum for API servers"""
     DEFAULT = 0
     AUTH_SERVER = 1
 
 
 class BaseUriCallable:
-    environments = {
+    environments: Dict[Environment, Dict[Server, str]] = {
         Environment.TESTING: {
             Server.DEFAULT: 'http://localhost:3000',
             Server.AUTH_SERVER: 'http://authserver:5000'
         }
     }
 
-    def get_base_uri(self, server=Server.DEFAULT):
+    def get_base_uri(self, server: Server=Server.DEFAULT):
         """Generates the appropriate base URI for the environment and the
         server.
 

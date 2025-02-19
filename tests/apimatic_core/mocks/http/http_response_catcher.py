@@ -1,3 +1,7 @@
+from apimatic_core_interfaces.http.http_request import HttpRequest
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from pydantic import validate_call
+
 from apimatic_core.http.http_callback import HttpCallBack
 
 
@@ -10,10 +14,14 @@ class HttpResponseCatcher(HttpCallBack):
     after a request is executed.
 
     """
-    def on_before_request(self, request):
+    response: HttpResponse = None
+
+    @validate_call
+    def on_before_request(self, request: HttpRequest):
         pass
 
-    def on_after_response(self, response):
+    @validate_call
+    def on_after_response(self, response: HttpResponse):
         self.response = response
 
 

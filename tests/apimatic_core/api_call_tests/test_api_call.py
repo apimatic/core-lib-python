@@ -1,10 +1,15 @@
 import pytest
-from apimatic_core.configurations.endpoint_configuration import EndpointConfiguration
+from apimatic_core_interfaces.configuration.endpoint_configuration import EndpointConfiguration
+from apimatic_core_interfaces.http.http_client import HttpClient
+
+from apimatic_core.api_call import ApiCall
+from apimatic_core.configurations.global_configuration import GlobalConfiguration
+from apimatic_core.http.http_callback import HttpCallBack
 from apimatic_core.request_builder import RequestBuilder
 from apimatic_core.response_handler import ResponseHandler
 from apimatic_core.types.parameter import Parameter
 from apimatic_core.utilities.api_helper import ApiHelper
-from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
+from apimatic_core_interfaces.http.http_method_enum import HttpMethodEnum
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.mocks.callables.base_uri_callable import Server
 from tests.apimatic_core.mocks.models.person import Employee
@@ -12,11 +17,11 @@ from tests.apimatic_core.mocks.models.person import Employee
 
 class TestApiCall(Base):
 
-    def setup_test(self, global_config):
-        self.global_config = global_config
-        self.http_response_catcher = self.global_config.get_http_client_configuration().http_callback
-        self.http_client = self.global_config.get_http_client_configuration().http_client
-        self.api_call_builder = self.new_api_call_builder(self.global_config)
+    def setup_test(self, global_config: GlobalConfiguration):
+        self.global_config: GlobalConfiguration = global_config
+        self.http_response_catcher: HttpCallBack = self.global_config.http_client_configuration.http_callback
+        self.http_client: HttpClient = self.global_config.http_client_configuration.http_client
+        self.api_call_builder: ApiCall = self.new_api_call_builder(self.global_config)
 
     def test_end_to_end_with_uninitialized_http_client(self):
         self.setup_test(self.default_global_configuration)
@@ -25,49 +30,37 @@ class TestApiCall(Base):
                 RequestBuilder().server(Server.DEFAULT)
                     .path('/body/model')
                     .http_method(HttpMethodEnum.POST)
-                    .header_param(Parameter()
-                                  .key('Content-Type')
-                                  .value('application/json'))
-                    .body_param(Parameter()
-                                .value(Base.employee_model())
-                                .is_required(True))
-                    .header_param(Parameter()
-                                  .key('accept')
-                                  .value('application/json'))
+                    .header_param(Parameter(key='Content-Type', value='application/json'))
+                    .body_param(Parameter(value=Base.employee_model(), is_required=True))
+                    .header_param(Parameter(key='accept', value='application/json'))
                     .body_serializer(ApiHelper.json_serialize)
             ).response(
                 ResponseHandler()
                     .is_nullify404(True)
                     .deserializer(ApiHelper.json_deserialize)
-                    .deserialize_into(Employee.from_dictionary)
+                    .deserialize_into(Employee.model_validate)
             ).execute()
         assert exception.value.args[0] == 'An HTTP client instance is required to execute an Api call.'
 
     def test_end_to_end_with_uninitialized_http_callback(self):
         self.setup_test(self.global_configuration_without_http_callback)
-        actual_employee_model = self.api_call_builder.new_builder.request(
+        actual_employee_model: Employee = self.api_call_builder.new_builder.request(
             RequestBuilder().server(Server.DEFAULT)
                 .path('/body/model')
                 .http_method(HttpMethodEnum.POST)
-                .header_param(Parameter()
-                              .key('Content-Type')
-                              .value('application/json'))
-                .body_param(Parameter()
-                            .value(Base.employee_model())
-                            .is_required(True))
-                .header_param(Parameter()
-                              .key('accept')
-                              .value('application/json'))
+                .header_param(Parameter(key='Content-Type', value='application/json'))
+                .body_param(Parameter(value=Base.employee_model(), is_required=True))
+                .header_param(Parameter(key='accept', value='application/json'))
                 .body_serializer(ApiHelper.json_serialize)
         ).response(
             ResponseHandler()
                 .is_nullify404(True)
                 .deserializer(ApiHelper.json_deserialize)
-                .deserialize_into(Employee.from_dictionary)
+                .deserialize_into(Employee.model_validate)
         ).execute()
 
-        assert self.http_client._should_retry is None
-        assert self.http_client._contains_binary_response is None
+        assert self.http_client.should_retry is False
+        assert self.http_client.contains_binary_response is False
         assert self.http_response_catcher is None
         assert ApiHelper.json_serialize(Base.employee_model()) == ApiHelper.json_serialize(actual_employee_model)
 
@@ -78,50 +71,38 @@ class TestApiCall(Base):
                 RequestBuilder().server(Server.DEFAULT)
                     .path('/body/model')
                     .http_method(HttpMethodEnum.POST)
-                    .header_param(Parameter()
-                                  .key('Content-Type')
-                                  .value('application/json'))
-                    .body_param(Parameter()
-                                .value(Base.employee_model())
-                                .is_required(True))
-                    .header_param(Parameter()
-                                  .key('accept')
-                                  .value('application/json'))
+                    .header_param(Parameter(key='Content-Type', value='application/json'))
+                    .body_param(Parameter(value=Base.employee_model(), is_required=True))
+                    .header_param(Parameter(key='accept', value='application/json'))
                     .body_serializer(ApiHelper.json_serialize)
             ).response(
                 ResponseHandler()
                     .is_nullify404(True)
                     .deserializer(ApiHelper.json_deserialize)
-                    .deserialize_into(Employee.from_dictionary)
+                    .deserialize_into(Employee.model_validate)
             ).execute()
 
         assert not_implemented_exception.value.args[0] == 'This method has not been implemented.'
 
     def test_end_to_end_without_endpoint_configurations(self):
         self.setup_test(self.global_configuration)
-        actual_employee_model = self.api_call_builder.new_builder.request(
+        actual_employee_model: Employee = self.api_call_builder.new_builder.request(
             RequestBuilder().server(Server.DEFAULT)
                 .path('/body/model')
                 .http_method(HttpMethodEnum.POST)
-                .header_param(Parameter()
-                              .key('Content-Type')
-                              .value('application/json'))
-                .body_param(Parameter()
-                            .value(Base.employee_model())
-                            .is_required(True))
-                .header_param(Parameter()
-                              .key('accept')
-                              .value('application/json'))
+                .header_param(Parameter(key='Content-Type', value='application/json'))
+                .body_param(Parameter(value=Base.employee_model(), is_required=True))
+                .header_param(Parameter(key='accept', value='application/json'))
                 .body_serializer(ApiHelper.json_serialize)
         ).response(
             ResponseHandler()
                 .is_nullify404(True)
                 .deserializer(ApiHelper.json_deserialize)
-                .deserialize_into(Employee.from_dictionary)
+                .deserialize_into(Employee.model_validate)
         ).execute()
 
-        assert self.http_client._should_retry is None
-        assert self.http_client._contains_binary_response is None
+        assert self.http_client.should_retry is False
+        assert self.http_client.contains_binary_response is False
         assert self.http_response_catcher.response.status_code == 200
         assert ApiHelper.json_serialize(Base.employee_model()) == ApiHelper.json_serialize(actual_employee_model)
 
@@ -136,32 +117,24 @@ class TestApiCall(Base):
     def test_end_to_end_with_endpoint_configurations(self, input_to_retry, input_contains_binary_response,
                                                      expected_to_retry, expected_contains_binary_response):
         self.setup_test(self.global_configuration)
-        actual_employee_model = self.api_call_builder.new_builder.request(
+        actual_employee_model: Employee = self.api_call_builder.new_builder.request(
             RequestBuilder().server(Server.DEFAULT)
                 .path('/body/model')
                 .http_method(HttpMethodEnum.POST)
-                .header_param(Parameter()
-                              .key('Content-Type')
-                              .value('application/json'))
-                .body_param(Parameter()
-                            .value(Base.employee_model())
-                            .is_required(True))
-                .header_param(Parameter()
-                              .key('accept')
-                              .value('application/json'))
+                .header_param(Parameter(key='Content-Type', value='application/json'))
+                .body_param(Parameter(value=Base.employee_model(), is_required=True))
+                .header_param(Parameter(key='accept', value='application/json'))
                 .body_serializer(ApiHelper.json_serialize)
         ).response(
             ResponseHandler()
                 .is_nullify404(True)
                 .deserializer(ApiHelper.json_deserialize)
-                .deserialize_into(Employee.from_dictionary)
+                .deserialize_into(Employee.model_validate)
         ).endpoint_configuration(
-            EndpointConfiguration()
-                .to_retry(input_to_retry)
-                .has_binary_response(input_contains_binary_response)
+            EndpointConfiguration(should_retry=input_to_retry, has_binary_response=input_contains_binary_response)
         ).execute()
 
-        assert self.http_client._should_retry == expected_to_retry
-        assert self.http_client._contains_binary_response == expected_contains_binary_response
+        assert self.http_client.should_retry == expected_to_retry
+        assert self.http_client.contains_binary_response == expected_contains_binary_response
         assert self.http_response_catcher.response.status_code == 200
         assert ApiHelper.json_serialize(Base.employee_model()) == ApiHelper.json_serialize(actual_employee_model)

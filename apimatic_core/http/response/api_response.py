@@ -1,5 +1,11 @@
+from apimatic_core_interfaces.http.http_request import HttpRequest
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from typing import Optional, List, Any, Dict
 
-class ApiResponse:
+from pydantic import BaseModel
+
+
+class ApiResponse(BaseModel):
 
     """Http response received.
 
@@ -15,39 +21,45 @@ class ApiResponse:
         errors (Array<String>): Any errors returned by the server
 
     """
+    status_code: int
+    reason_phrase: Optional[str]
+    headers: Dict[str, str]
+    text: Any
+    request: HttpRequest
+    body: Any
+    errors: Optional[List[str]]
 
-    def __init__(self, http_response,
-                 body=None,
-                 errors=None):
+    def __init__(self, http_response: HttpResponse,
+                 body: Any=None,
+                 errors: Optional[List[str]]=None):
 
         """The Constructor
 
         Args:
             http_response (HttpResponse): The original, raw response from the api
-            data (Object): The data field specified for the response
+            body (Any): The response body
             errors (Array<String>): Any errors returned by the server
 
         """
+        super().__init__(status_code=http_response.status_code,
+                         reason_phrase=http_response.reason_phrase,
+                         headers=http_response.headers,
+                         text=http_response.text,
+                         request=http_response.request,
+                         body=body,
+                         errors=errors)
 
-        self.status_code = http_response.status_code
-        self.reason_phrase = http_response.reason_phrase
-        self.headers = http_response.headers
-        self.text = http_response.text
-        self.request = http_response.request
-        self.body = body
-        self.errors = errors
-
-    def is_success(self):
+    def is_success(self) -> bool:
         """ Returns true if status code is between 200-300
 
         """
         return 200 <= self.status_code < 300
 
-    def is_error(self):
+    def is_error(self) -> bool:
         """ Returns true if status code is between 400-600
 
         """
         return 400 <= self.status_code < 600
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<CoreApiResponse {}>'.format(self.text)

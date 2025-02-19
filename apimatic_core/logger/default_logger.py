@@ -1,19 +1,24 @@
 import sys
+from logging import StreamHandler, Formatter
 
 from apimatic_core_interfaces.logger.logger import Logger
 import logging
+
+from pydantic import validate_call
+from typing import Dict, Any
 
 
 class ConsoleLogger(Logger):
 
     def __init__(self):
-        self._logger = logging.Logger(name='')
-        stdout = logging.StreamHandler(stream=sys.stdout)
-        fmt = logging.Formatter("%(levelname)s %(message)s")
+        self._logger: logging.Logger = logging.Logger(name='')
+        stdout: StreamHandler = logging.StreamHandler(stream=sys.stdout)
+        fmt: Formatter = logging.Formatter("%(levelname)s %(message)s")
         stdout.setFormatter(fmt)
         self._logger.addHandler(stdout)
 
-    def log(self, level, message, params):
+    @validate_call
+    def log(self, level: int, message: str, params: Dict[str, Any]):
         """Logs a message with a specified log level and additional parameters.
 
         Args:

@@ -1,17 +1,24 @@
+from apimatic_core_interfaces.authentication.authentication import Authentication
+from pydantic import validate_call
+from typing import Union
+
 from apimatic_core.authentication.multiple.auth_group import AuthGroup
 
 
 class And(AuthGroup):
 
     @property
-    def error_message(self):
+    @validate_call
+    def error_message(self) -> str:
         return " and ".join(self._error_messages)
 
-    def __init__(self, *auth_group):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def __init__(self, *auth_group: Union[str, Authentication]):
         super(And, self).__init__(auth_group)
         self._is_valid_group = True
 
-    def is_valid(self):
+    @validate_call
+    def is_valid(self) -> bool:
         if not self.mapped_group:
             return False
 

@@ -1,17 +1,7 @@
 
 class UnionTypeContext:
 
-    @classmethod
-    def create(cls, is_array=False, is_dict=False, is_array_of_dict=False, is_optional=False, is_nullable=False,
-               discriminator=None, discriminator_value=None, date_time_format=None, date_time_converter=None):
-        return cls().array(is_array).dict(is_dict)\
-            .array_of_dict(is_array_of_dict)\
-            .optional(is_optional)\
-            .nullable(is_nullable)\
-            .discriminator(discriminator)\
-            .discriminator_value(discriminator_value)\
-            .date_time_format(date_time_format)\
-            .date_time_converter(date_time_converter)
+
 
     def __init__(self):
         self._is_array = False

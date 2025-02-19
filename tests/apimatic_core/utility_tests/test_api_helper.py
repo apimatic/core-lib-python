@@ -1,24 +1,21 @@
 from datetime import datetime, date
 
-import jsonpickle
 import pytest
+from apimatic_core_interfaces.types.union_type_context import UnionTypeContext
+from pydantic import ValidationError
+
+from apimatic_core.types.array_serialization_format import SerializationFormats
 from tests.apimatic_core.mocks.models.lion import Lion
 
-from tests.apimatic_core.mocks.models.atom import Atom
 
 from apimatic_core.types.union_types.leaf_type import LeafType
 from apimatic_core.types.union_types.one_of import OneOf
-from apimatic_core.types.union_types.union_type_context import UnionTypeContext
 from dateutil.tz import tzutc
 
-from apimatic_core.types.array_serialization_format import SerializationFormats
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.utilities.api_helper import ApiHelper
 from tests.apimatic_core.base import Base
-from tests.apimatic_core.mocks.models.days import Days
-
-from tests.apimatic_core.mocks.models.grand_parent_class_model import ChildClassModel
 from tests.apimatic_core.mocks.models.model_with_additional_properties import \
     ModelWithAdditionalPropertiesOfPrimitiveType, \
     ModelWithAdditionalPropertiesOfPrimitiveArrayType, ModelWithAdditionalPropertiesOfPrimitiveDictType, \
@@ -33,13 +30,14 @@ class TestApiHelper(Base):
     @pytest.mark.parametrize('input_value, expected_value', [
         (None, None),
         (Base.wrapped_parameters(), '{{"bodyScalar": true, "bodyNonScalar": {{"address": "street abc", "age": 27, '
-                                    '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-                                    '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
+                                    '"birthday": "1994-02-13", "birthtime": "{0}", "name": "Bob", "uid": "1234567", '
+                                    '"personType": "Empl", "department": "IT", "dependents": '
+                                    '[{{"address": "street abc", "age": 12, "birthday": '
                                     '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-                                    '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-                                    '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-                                    '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-                                    '"Tuesday"], "personType": "Empl"}}}}'.format(
+                                    '"7654321", "personType": "Per", "key1": "value1", "key2": "value2"}}], '
+                                    '"hiredAt": "{1}", "joiningDay": "Monday", '
+                                    '"salary": 30000, "workingDays": ["Monday", '
+                                    '"Tuesday"], "key1": "value1", "key2": "value2"}}}}'.format(
             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
             Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
     ])
@@ -50,105 +48,18 @@ class TestApiHelper(Base):
     @pytest.mark.parametrize('input_value, expected_value', [
         (None, None),
         ([Base.employee_model(), Base.employee_model()],
-         '[{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}, '
-         '{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}]'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                                      Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+         '[{0}, {0}]'.format(Base.employee_model_str())),
         ([[Base.employee_model(), Base.employee_model()], [Base.employee_model(), Base.employee_model()]],
-         '[[{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}, '
-         '{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}], [{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}, '
-         '{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}]]'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                                      Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+         '[[{0}, {0}], [{0}, {0}]]'.format(Base.employee_model_str())),
         ({'key0': [Base.employee_model(), Base.employee_model()],
           'key1': [Base.employee_model(), Base.employee_model()]},
-         '{{"key0": [{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}, '
-         '{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}], "key1": [{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}, '
-         '{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}]}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                                      Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+         '{{"key0": [{0}, {0}], "key1": [{0}, {0}]}}'.format(Base.employee_model_str())),
         ([1, 2, 3], '[1, 2, 3]'),
         ({'key0': 1, 'key1': 'abc'}, '{"key0": 1, "key1": "abc"}'),
         ([[1, 2, 3], ['abc', 'def']], '[[1, 2, 3], ["abc", "def"]]'),
         ([{'key0': [1, 2, 3]}, {'key1': ['abc', 'def']}], '[{"key0": [1, 2, 3]}, {"key1": ["abc", "def"]}]'),
         ({'key0': [1, 2, 3], 'key1': ['abc', 'def']}, '{"key0": [1, 2, 3], "key1": ["abc", "def"]}'),
-        (Base.employee_model(),
-         '{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                                     Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
+        (Base.employee_model(), Base.employee_model_str(beautify_with_spaces=False)),
         (1, '1'),
         ('1', '1')
     ])
@@ -156,77 +67,74 @@ class TestApiHelper(Base):
         serialized_value = ApiHelper.json_serialize(input_value)
         assert serialized_value == expected_value
 
-    @pytest.mark.parametrize('input_value, expected_validation_message', [
-        (ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
-            'test@gmail.com', {'email': 10.55}),
-         "An additional property key, 'email' conflicts with one of the model's properties")
-    ])
-    def test_json_serialize_with_exception(self, input_value, expected_validation_message):
-        with pytest.raises(ValueError) as conflictingPropertyError:
-            ApiHelper.json_serialize(input_value)
-
-        assert conflictingPropertyError.value.args[0] == expected_validation_message
-
     @pytest.mark.parametrize('input_json_value, unboxing_function, as_dict, expected_value', [
         (None, None, False, None),
         ('true', None, False, 'true'),
         ('', None, False, None),
         ('    ', None, False, None),
-        (ApiHelper.json_serialize(Base.employee_model()), Employee.from_dictionary, False,
+        (ApiHelper.json_serialize(Base.employee_model()), Employee.model_validate, False,
          ApiHelper.json_serialize(Base.employee_model())),
         (ApiHelper.json_serialize([Base.employee_model(), Base.employee_model()]),
-         Employee.from_dictionary, False,
+         Employee.model_validate, False,
          ApiHelper.json_serialize([Base.employee_model(), Base.employee_model()])),
         (ApiHelper.json_serialize({'key1': Base.employee_model(), 'key2': Base.employee_model()}),
-         Employee.from_dictionary, True,
-         '{{"key1": {{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": "{0}", '
-         '"department": "IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": "1994-02-13", '
-         '"birthtime": "{0}", "name": "John", "uid": 7654321, "personType": "Per", "key1": "value1", '
-         '"key2": "value2"}}], "hiredAt": "{1}", "joiningDay": "Monday", "name": "Bob", "salary": 30000, '
-         '"uid": 1234567, "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}}, "key2": '
-         '{{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": "{0}", "department": "IT",'
-         ' "dependents": [{{"address": "street abc", "age": 12, "birthday": "1994-02-13", "birthtime": "{0}", '
-         '"name": "John", "uid": 7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], "hiredAt": "{1}",'
-         ' "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday",'
-         ' "Tuesday"], "personType": "Empl"}}}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                                        Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
-        ('{"email": "test", "prop1": 1, "prop2": 2, "prop3": "invalid type"}',
-         ModelWithAdditionalPropertiesOfPrimitiveType.from_dictionary, False,
-         '{"email": "test", "prop1": 1, "prop2": 2}'),
-        ('{"email": "test", "prop1": [1, 2, 3], "prop2": [1, 2, 3], "prop3": "invalid type"}',
-         ModelWithAdditionalPropertiesOfPrimitiveArrayType.from_dictionary, False,
-         '{"email": "test", "prop1": [1, 2, 3], "prop2": [1, 2, 3]}'),
-        ('{"email": "test", "prop1": {"inner_prop1": 1, "inner_prop2": 2}, "prop2": {"inner_prop1": 1, "inner_prop2": 2}, "prop3": "invalid type"}',
-         ModelWithAdditionalPropertiesOfPrimitiveDictType.from_dictionary, False,
-         '{"email": "test", "prop1": {"inner_prop1": 1, "inner_prop2": 2}, "prop2": {"inner_prop1": 1, "inner_prop2": 2}}'),
-        ('{"email": "test", "prop1": {"id": 1, "weight": 50, "type": "Lion"}, "prop3": "invalid type"}',
-         ModelWithAdditionalPropertiesOfModelType.from_dictionary,
+         Employee.model_validate, True, '{{"key1": {0}, "key2": {0}}}'.format(Base.employee_model_str())),
+        ('{"email": "test", "prop1": 1, "prop2": 2}',
+         ModelWithAdditionalPropertiesOfPrimitiveType.model_validate, False,
+         '{"email":"test","prop1":1,"prop2":2}'),
+        ('{"email": "test", "prop1": [1, 2, 3], "prop2": [1, 2, 3]}',
+         ModelWithAdditionalPropertiesOfPrimitiveArrayType.model_validate, False,
+         '{"email":"test","prop1":[1,2,3],"prop2":[1,2,3]}'),
+        ('{"email": "test", "prop1": {"inner_prop1": 1, "inner_prop2": 2}, "prop2": {"inner_prop1": 1, "inner_prop2": 2}}',
+         ModelWithAdditionalPropertiesOfPrimitiveDictType.model_validate, False,
+         '{"email":"test","prop1":{"inner_prop1":1,"inner_prop2":2},"prop2":{"inner_prop1":1,"inner_prop2":2}}'),
+        ('{"email": "test", "prop1": {"id": "1", "weight": 50, "type": "Lion"}}',
+         ModelWithAdditionalPropertiesOfModelType.model_validate,
          False,
-         '{"email": "test", "prop1": {"id": 1, "weight": 50, "type": "Lion"}}'),
-        ('{"email": "test", "prop": [{"id": 1, "weight": 50, "type": "Lion"}, {"id": 2, "weight": 100, "type": "Lion"}]}',
-         ModelWithAdditionalPropertiesOfModelArrayType.from_dictionary,
+         '{"email":"test","prop1":{"id":"1","weight":50,"type":"Lion"}}'),
+        ('{"email": "test", "prop": [{"id": "1", "weight": 50, "type": "Lion"}, {"id": "2", "weight": 100, "type": "Lion"}]}',
+         ModelWithAdditionalPropertiesOfModelArrayType.model_validate,
          False,
-         '{"email": "test", "prop": [{"id": 1, "weight": 50, "type": "Lion"}, {"id": 2, "weight": 100, "type": "Lion"}]}'),
-        ('{"email": "test", "prop": {"inner prop 1": {"id": 1, "weight": 50, "type": "Lion"}, "inner prop 2": {"id": 2, "weight": 100, "type": "Lion"}}}',
-        ModelWithAdditionalPropertiesOfModelDictType.from_dictionary,
+         '{"email":"test","prop":[{"id":"1","weight":50,"type":"Lion"},{"id":"2","weight":100,"type":"Lion"}]}'),
+        ('{"email": "test", "prop": {"inner prop 1": {"id": "1", "weight": 50, "type": "Lion"}, "inner prop 2": {"id": "2", "weight": 100, "type": "Lion"}}}',
+        ModelWithAdditionalPropertiesOfModelDictType.model_validate,
         False,
-        '{"email": "test", "prop": {"inner prop 1": {"id": 1, "weight": 50, "type": "Lion"}, "inner prop 2": {"id": 2, "weight": 100, "type": "Lion"}}}'),
+        '{"email":"test","prop":{"inner prop 1":{"id":"1","weight":50,"type":"Lion"},"inner prop 2":{"id":"2","weight":100,"type":"Lion"}}}'),
         ('{"email": "test", "prop": true}',
-         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.from_dictionary,
+         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.model_validate,
          False,
-         '{"email": "test", "prop": true}'),
+         '{"email":"test","prop":true}'),
         ('{"email": "test", "prop": 100.65}',
-         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.from_dictionary,
+         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.model_validate,
          False,
-         '{"email": "test", "prop": 100.65}'),
+         '{"email":"test","prop":100.65}'),
         ('{"email": "test", "prop": "100.65"}',
-         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.from_dictionary,
+         ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive.model_validate,
          False,
-         '{"email": "test"}')
+         '{"email":"test","prop":100.65}')
     ])
     def test_json_deserialize(self, input_json_value, unboxing_function, as_dict, expected_value):
         deserialized_value = ApiHelper.json_deserialize(input_json_value, unboxing_function, as_dict)
         assert ApiHelper.json_serialize(deserialized_value) == expected_value
+
+    @pytest.mark.parametrize('input_json_value, unboxing_function, expected_value', [
+        ('{"email": "test", "prop1": 1, "prop2": 2, "prop3": "invalid type"}',
+         ModelWithAdditionalPropertiesOfPrimitiveType.model_validate,
+         '{"email": "test", "prop1": 1, "prop2": 2}'),
+        ('{"email": "test", "prop1": [1, 2, 3], "prop2": [1, 2, 3], "prop3": "invalid type"}',
+         ModelWithAdditionalPropertiesOfPrimitiveArrayType.model_validate,
+         '{"email": "test", "prop1": [1, 2, 3], "prop2": [1, 2, 3]}'),
+        (
+        '{"email": "test", "prop1": {"inner_prop1": 1, "inner_prop2": 2}, "prop2": {"inner_prop1": 1, "inner_prop2": 2}, "prop3": "invalid type"}',
+        ModelWithAdditionalPropertiesOfPrimitiveDictType.model_validate,
+        '{"email": "test", "prop1": {"inner_prop1": 1, "inner_prop2": 2}, "prop2": {"inner_prop1": 1, "inner_prop2": 2}}'),
+        ('{"email": "test", "prop1": {"id": 1, "weight": 50, "type": "Lion"}, "prop3": "invalid type"}',
+         ModelWithAdditionalPropertiesOfModelType.model_validate,
+         '{"email": "test", "prop1": {"id": 1, "weight": 50, "type": "Lion"}}')
+    ])
+    def test_json_deserialize(self, input_json_value, unboxing_function, expected_value):
+        with pytest.raises(ValidationError):
+            ApiHelper.json_deserialize(input_json_value, unboxing_function)
 
     @pytest.mark.parametrize('input_url, input_file_value, expected_value', [
         ('C:\\PYTHON_GENERIC_LIB\\Tester\\models\\test_file.py', "test_file",
@@ -322,6 +230,9 @@ class TestApiHelper(Base):
          '&query_param[birthday]=1994-02-13'
          '&query_param[birthtime]={}'.format(quote(
              Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
+         '&query_param[name]=Bob'
+         '&query_param[uid]=1234567'
+         '&query_param[personType]=Empl'
          '&query_param[department]=IT'
          '&query_param[dependents][0][address]=street%20abc'
          '&query_param[dependents][0][age]=12'
@@ -336,12 +247,11 @@ class TestApiHelper(Base):
          '&query_param[hiredAt]={}'.format(quote(
              Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[joiningDay]=Monday'
-         '&query_param[name]=Bob'
          '&query_param[salary]=30000'
-         '&query_param[uid]=1234567'
          '&query_param[workingDays][0]=Monday'
          '&query_param[workingDays][1]=Tuesday'
-         '&query_param[personType]=Empl', SerializationFormats.INDEXED)
+         '&query_param[key1]=value1'
+         '&query_param[key2]=value2', SerializationFormats.INDEXED)
     ])
     def test_append_url_with_query_parameters(self, input_query_param_value, expected_query_param_value,
                                               array_serialization_format):
@@ -391,124 +301,6 @@ class TestApiHelper(Base):
     def test_clean_url(self, input_url, expected_url):
         assert ApiHelper.clean_url(input_url) == expected_url
 
-    @pytest.mark.parametrize('obj, expected_value', [
-        (Base.employee_model(),
-         '{{"address": "street abc", "age": 27, '
-         '"birthday": "1994-02-13", "birthtime": "{0}", "department": '
-         '"IT", "dependents": [{{"address": "street abc", "age": 12, "birthday": '
-         '"1994-02-13", "birthtime": "{0}", "name": "John", "uid": '
-         '7654321, "personType": "Per", "key1": "value1", "key2": "value2"}}], '
-         '"hiredAt": "{1}", "joiningDay": "Monday", "name": '
-         '"Bob", "salary": 30000, "uid": 1234567, "workingDays": ["Monday", '
-         '"Tuesday"], "personType": "Empl"}}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                                                     Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
-        (Base.get_complex_type(),
-         '{"innerComplexListType": [{"booleanType": true, "longType": 100003, "precisionType": 55.44, '
-         '"stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", "key1": 400}, '
-         '{"booleanType": true, "longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"],'
-         ' "stringType": "abc", "key0": "abc", "key1": 400}], "innerComplexType": {"booleanType": true, '
-         '"longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"], "stringType": "abc",'
-         ' "key0": "abc", "key1": 400}, "innerComplexListOfMapType": [{"key0": {"booleanType": true, '
-         '"longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"], '
-         '"stringType": "abc", "key0": "abc", "key1": 400}, "key1": {"booleanType": true, "longType": 100003, '
-         '"precisionType": 55.44, "stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", '
-         '"key1": 400}}], "innerComplexMapOfListType": {"key0": [{"booleanType": true, "longType": 100003, '
-         '"precisionType": 55.44, "stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", '
-         '"key1": 400}, {"booleanType": true, "longType": 100003, "precisionType": 55.44, "stringListType": '
-         '["item1", "item2"], "stringType": "abc", "key0": "abc", "key1": 400}], "key2": [{"booleanType": true, '
-         '"longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"], "stringType": "abc", '
-         '"key0": "abc", "key1": 400}, {"booleanType": true, "longType": 100003, "precisionType": 55.44, '
-         '"stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", "key1": 400}]}, '
-         '"innerComplexMapType": {"key0": {"booleanType": true, "longType": 100003, "precisionType": 55.44, '
-         '"stringListType": ["item1", "item2"], "stringType": "abc", "key0": "abc", "key1": 400}, "key1": '
-         '{"booleanType": true, "longType": 100003, "precisionType": 55.44, "stringListType": ["item1", "item2"], '
-         '"stringType": "abc", "key0": "abc", "key1": 400}}, "prop1": [1, 2, 3], "prop2": {"key0": "abc", '
-         '"key1": "def"}}'),
-        (ApiHelper.json_deserialize('{"Grand_Parent_Required_Nullable":{"key1": "value1", "key2": "value2"},'
-                                    '"Grand_Parent_Required":"not nullable and required","class":23,'
-                                    '"Parent_Optional_Nullable_With '
-                                    '_Default_Value":"Has default value","Parent_Required_Nullable":nul'
-                                    'l,"Parent_Required":"not nullable and required","Optional_Nullable'
-                                    '":"setted optionalNullable","Optional_Nullable_With_Default_Value"'
-                                    ':"With default value","Required_Nullable":null,"Required":"not nul'
-                                    'lable and required","Optional":"not nullable and optional","Child_'
-                                    'Class_Array":null}', ChildClassModel.from_dictionary),
-         '{"Required_Nullable": null, "Required": "not nullable and required", '
-         '"Parent_Required_Nullable": null, "Parent_Required": "not nullable and '
-         'required", "Grand_Parent_Required_Nullable": {"key1": "value1", "key2": '
-         '"value2"}, "Grand_Parent_Required": "not nullable and required", '
-         '"Optional_Nullable": "setted optionalNullable", '
-         '"Optional_Nullable_With_Default_Value": "With default value", "Optional": '
-         '"not nullable and optional", "Child_Class_Array": null, "class": 23, '
-         '"Parent_Optional_Nullable_With_Default_Value": "Has default value"}'
-         ),
-        (Base.employee_model_additional_dictionary(),
-         '{{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": '
-         '"{0}", "department": "IT", "dependents": [{{"address": '
-         '"street abc", "age": 12, "birthday": "1994-02-13", "birthtime": '
-         '"{0}", "name": "John", "uid": 7654321, "personType": "Per", '
-         '"key1": {{"inner_key1": "inner_val1", "inner_key2": "inner_val2"}}, "key2": '
-         '["value2", "value3"]}}], "hiredAt": "{1}", '
-         '"joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, '
-         '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}}'.format(
-             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-             Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
-        (Base.get_union_type_scalar_model(),
-         '{"anyOfRequired": 1.5, "oneOfReqNullable": "abc", "oneOfOptional": 200, "anyOfOptNullable": true}'),
-
-    ])
-    def test_to_dictionary(self, obj, expected_value):
-        assert jsonpickle.encode(ApiHelper.to_dictionary(obj), False) == expected_value
-
-    @pytest.mark.parametrize('obj, should_ignore_null_values, expected_value', [
-        (Base.employee_model_additional_dictionary(), True,
-         '{{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": '
-         '"{0}", "department": "IT", "dependents": [{{"address": '
-         '"street abc", "age": 12, "birthday": "1994-02-13", "birthtime": '
-         '"{0}", "name": "John", "uid": 7654321, "personType": "Per", '
-         '"key1": {{"inner_key1": "inner_val1", "inner_key2": "inner_val2"}}, "key2": '
-         '["value2", "value3"]}}], "hiredAt": "{1}", '
-         '"joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567, '
-         '"workingDays": ["Monday", "Tuesday"], "personType": "Empl"}}'.format(
-             Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-             Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))),
-        (ApiHelper.json_deserialize('{"Grand_Parent_Required_Nullable":{"key1": "value1", "key2": "value2"},'
-                                    '"Grand_Parent_Required":"not nullable and required","class":23,'
-                                    '"Parent_Optional_Nullable_With '
-                                    '_Default_Value":"Has default value","Parent_Required_Nullable":nul'
-                                    'l,"Parent_Required":"not nullable and required","Optional_Nullable'
-                                    '":"setted optionalNullable","Optional_Nullable_With_Default_Value"'
-                                    ':"With default value","Required_Nullable":null,"Required":"not nul'
-                                    'lable and required","Optional":"not nullable and optional","Child_'
-                                    'Class_Array":null}', ChildClassModel.from_dictionary), True,
-         '{"Required_Nullable": null, "Required": "not nullable and required", '
-         '"Parent_Required_Nullable": null, "Parent_Required": "not nullable and '
-         'required", "Grand_Parent_Required_Nullable": {"key1": "value1", "key2": '
-         '"value2"}, "Grand_Parent_Required": "not nullable and required", '
-         '"Optional_Nullable": "setted optionalNullable", '
-         '"Optional_Nullable_With_Default_Value": "With default value", "Optional": '
-         '"not nullable and optional", "Child_Class_Array": null, "class": 23, '
-         '"Parent_Optional_Nullable_With_Default_Value": "Has default value"}'
-         ),
-    ])
-    def test_to_dictionary_for_object(self, obj, should_ignore_null_values, expected_value):
-        assert jsonpickle.encode(ApiHelper.to_dictionary(obj), False) == expected_value
-
-    @pytest.mark.parametrize('obj, name', [
-        (ApiHelper.json_deserialize('{"Grand_Parent_Required_Nullable":{"key1": "value1", "key2": "value2"},'
-                                    '"Grand_Parent_Required":"not nullable and required","class":23,'
-                                    '"Parent_Optional_Nullable_With '
-                                    '_Default_Value":"Has default value","Parent_Required_Nullable":nul'
-                                    'l,"Parent_Required":"not nullable and required","Optional_Nullable'
-                                    '":"setted optionalNullable","Optional_Nullable_With_Default_Value"'
-                                    ':"With default value","Required_Nullable":null,"Optional":"not nullable and '
-                                    'optional","Child_Class_Array":null}', ChildClassModel.from_dictionary),
-         'required'),
-    ])
-    def test_to_dictionary_value_error(self, obj, name):
-        with pytest.raises(ValueError, match=f"The value for {name} can not be None for {obj}"):
-            ApiHelper.to_dictionary(obj)
-
     @pytest.mark.parametrize('input_form_param_value, expected_form_param_value, array_serialization_format', [
         (None, [], SerializationFormats.INDEXED),
         ('string', [('form_param', 'string')], SerializationFormats.INDEXED),
@@ -538,39 +330,46 @@ class TestApiHelper(Base):
          SerializationFormats.INDEXED),
         (Base.employee_model(),
          [('form_param[address]', 'street abc'), ('form_param[age]', 27), ('form_param[birthday]', '1994-02-13'),
-          ('form_param[birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
+          ('form_param[birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))),
+          ('form_param[name]', 'Bob'), ('form_param[uid]', '1234567'), ('form_param[personType]', 'Empl'),
           ('form_param[department]', 'IT'), ('form_param[dependents][0][address]', 'street abc'),
           ('form_param[dependents][0][age]', 12), ('form_param[dependents][0][birthday]', '1994-02-13'),
-          ('form_param[dependents][0][birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
-          ('form_param[dependents][0][name]', 'John'), ('form_param[dependents][0][uid]', 7654321),
+          ('form_param[dependents][0][birthtime]', Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15))),
+          ('form_param[dependents][0][name]', 'John'), ('form_param[dependents][0][uid]', '7654321'),
           ('form_param[dependents][0][personType]', 'Per'), ('form_param[dependents][0][key1]', 'value1'),
           ('form_param[dependents][0][key2]', 'value2'),
-          ('form_param[hiredAt]', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15), False)),
-          ('form_param[joiningDay]', 'Monday'), ('form_param[name]', 'Bob'), ('form_param[salary]', 30000),
-          ('form_param[uid]', 1234567), ('form_param[workingDays][0]', 'Monday'),
-          ('form_param[workingDays][1]', 'Tuesday'), ('form_param[personType]', 'Empl')], SerializationFormats.INDEXED),
-        (ModelWithAdditionalPropertiesOfPrimitiveType(
-            'test@gmail.com', {'prop': 20}),
+          ('form_param[hiredAt]', Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))),
+          ('form_param[joiningDay]', 'Monday'), ('form_param[salary]', 30000), ('form_param[workingDays][0]', 'Monday'),
+          ('form_param[workingDays][1]', 'Tuesday'), ('form_param[key1]', 'value1'),
+          ('form_param[key2]', 'value2'),], SerializationFormats.INDEXED),
+        (ModelWithAdditionalPropertiesOfPrimitiveType(email='test@gmail.com', additional_properties={'prop': 20}),
          [('form_param[email]', 'test@gmail.com'), ('form_param[prop]', 20)], SerializationFormats.INDEXED),
         (ModelWithAdditionalPropertiesOfPrimitiveArrayType(
-            'test@gmail.com', {'prop': [20, 30]}),
+            email='test@gmail.com', additional_properties={'prop': [20, 30]}),
          [('form_param[email]', 'test@gmail.com'), ('form_param[prop][0]', 20), ('form_param[prop][1]', 30)], SerializationFormats.INDEXED),
         (ModelWithAdditionalPropertiesOfPrimitiveDictType(
-            'test@gmail.com', {'prop': {'inner prop 1': 20, 'inner prop 2': 30}}),
+            email='test@gmail.com', additional_properties={'prop': {'inner prop 1': 20, 'inner prop 2': 30}}),
          [('form_param[email]', 'test@gmail.com'), ('form_param[prop][inner prop 1]', 20), ('form_param[prop][inner prop 2]', 30)],
          SerializationFormats.INDEXED),
         (ModelWithAdditionalPropertiesOfModelType(
-            'test@gmail.com',{'prop': Lion('leo', 5, 'Lion')}),
+            email='test@gmail.com', additional_properties={'prop': Lion(id='leo', weight=5, mtype='Lion')}),
          [('form_param[email]', 'test@gmail.com'), ('form_param[prop][id]', 'leo'), ('form_param[prop][weight]', 5), ('form_param[prop][type]', 'Lion')],
          SerializationFormats.INDEXED),
         (ModelWithAdditionalPropertiesOfModelArrayType(
-            'test@gmail.com', {'prop': [Lion('leo 1', 5, 'Lion'), Lion('leo 2', 10, 'Lion')]}),
+            email='test@gmail.com',
+            additional_properties={'prop': [Lion(id='leo 1', weight=5, mtype='Lion'), Lion(id='leo 2', weight=10, mtype='Lion')]}),
          [('form_param[email]', 'test@gmail.com'), ('form_param[prop][0][id]', 'leo 1'), ('form_param[prop][0][weight]', 5),
           ('form_param[prop][0][type]', 'Lion'), ('form_param[prop][1][id]', 'leo 2'), ('form_param[prop][1][weight]', 10),
           ('form_param[prop][1][type]', 'Lion')],
          SerializationFormats.INDEXED),
         (ModelWithAdditionalPropertiesOfModelDictType(
-            'test@gmail.com', {'prop': {'leo 1': Lion('leo 1', 5, 'Lion'), 'leo 2': Lion('leo 2', 10, 'Lion')}}),
+            email='test@gmail.com',
+            additional_properties={
+                'prop': {
+                    'leo 1': Lion(id='leo 1', weight=5, mtype='Lion'),
+                    'leo 2': Lion(id='leo 2', weight=10, mtype='Lion')
+                }
+            }),
          [('form_param[email]', 'test@gmail.com'), ('form_param[prop][leo 1][id]', 'leo 1'),
           ('form_param[prop][leo 1][weight]', 5),
           ('form_param[prop][leo 1][type]', 'Lion'), ('form_param[prop][leo 2][id]', 'leo 2'),
@@ -578,7 +377,7 @@ class TestApiHelper(Base):
           ('form_param[prop][leo 2][type]', 'Lion')],
          SerializationFormats.INDEXED),
         (ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
-            'test@gmail.com', {'prop': 10.55}),
+            email='test@gmail.com', additional_properties={'prop': 10.55}),
          [('form_param[email]', 'test@gmail.com'), ('form_param[prop]', 10.55)],
          SerializationFormats.INDEXED)
     ])
@@ -594,16 +393,13 @@ class TestApiHelper(Base):
             else:
                 assert item == expected_form_param_value[index]
 
-    @pytest.mark.parametrize('input_form_param_value, expected_validation_message', [
-        (ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
-            'test@gmail.com', {'email': 10.55}),
-         "An additional property key, 'email' conflicts with one of the model's properties")
-    ])
-    def test_form_params_with_exception(self, input_form_param_value, expected_validation_message):
+    def test_conflicting_additional_property(self):
         with pytest.raises(ValueError) as conflictingPropertyError:
-            ApiHelper.form_encode(input_form_param_value, 'form_param')
+            ModelWithAdditionalPropertiesOfTypeCombinatorPrimitive(
+                email='test@gmail.com', additional_properties={'email': 10.55})
 
-        assert conflictingPropertyError.value.args[0] == expected_validation_message
+        assert ("Invalid additional properties: {'email'}. These names conflict with existing model properties."
+                in str(conflictingPropertyError.value))
 
 
     @pytest.mark.parametrize('input_form_param_value, expected_form_param_value, array_serialization_format', [
@@ -620,17 +416,6 @@ class TestApiHelper(Base):
         assert ApiHelper.form_encode_parameters(input_form_param_value, array_serialization_format) == \
                expected_form_param_value
 
-    @pytest.mark.parametrize('input_function, input_body, expected_value', [
-        (ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime.from_value('1994-02-13T14:01:54.9571247Z').datetime,
-         '1994-02-13T14:01:54.957124+00:00'),
-        (ApiHelper.RFC3339DateTime, None, None)
-    ])
-    def test_when_defined(self, input_function, input_body, expected_value):
-        if input_body is not None:
-            assert str(ApiHelper.when_defined(input_function, input_body)) == expected_value
-        else:
-            assert ApiHelper.when_defined(input_function, input_body) == expected_value
-
     @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
         (datetime(1994, 2, 13, 5, 30, 15), ApiHelper.RFC3339DateTime,
          ApiHelper.RFC3339DateTime),
@@ -645,6 +430,13 @@ class TestApiHelper(Base):
             assert ApiHelper.apply_datetime_converter(input_value, input_converter) == expected_obj
         else:
             assert isinstance(ApiHelper.apply_datetime_converter(input_value, input_converter), expected_obj)
+
+    @pytest.mark.parametrize('input_function, input_body, expected_value', [
+        (ApiHelper.RFC3339DateTime, ApiHelper.RFC3339DateTime.from_value('1994-02-13T14:01:54.9571247Z').datetime,
+         '1994-02-13T14:01:54.957124+00:00')
+    ])
+    def test_when_defined(self, input_function, input_body, expected_value):
+        assert str(ApiHelper.when_defined(input_function, input_body)) == expected_value
 
     @pytest.mark.parametrize('input_value, input_converter, expected_obj', [
         ([datetime(1994, 2, 13, 5, 30, 15), datetime(1994, 2, 13, 5, 30, 15)], ApiHelper.RFC3339DateTime,
@@ -730,7 +522,7 @@ class TestApiHelper(Base):
                 for index, actual_value in enumerate(actual_outer_value.values()):
                     assert isinstance(actual_value, expected_obj[outer_key][index])
 
-    @pytest.mark.parametrize('input_array,formatting, is_query, expected_array', [
+    @pytest.mark.parametrize('input_array, formatting, is_query, expected_array', [
         ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
           str(date(1994, 2, 13))], SerializationFormats.INDEXED, False, [('test_array[0]', 1),
                                                                          ('test_array[1]', True),
@@ -773,22 +565,22 @@ class TestApiHelper(Base):
     ])
     def test_serialize_array(self, input_array, formatting, is_query, expected_array):
         serialized_array = ApiHelper.serialize_array('test_array', input_array, formatting, is_query)
-        if hasattr(input_array[0], '_names'):
+        if ApiHelper.is_custom_type(input_array[0]):
             assert serialized_array[0][0] == 'test_array[0]' and serialized_array[1][0] == 'test_array[1]' and \
                    ApiHelper.json_serialize(serialized_array[0][1]) == expected_array[0] \
                    and ApiHelper.json_serialize(serialized_array[1][1]) == expected_array[1]
         else:
             assert ApiHelper.serialize_array('test_array', input_array, formatting, is_query) == expected_array
 
-    @pytest.mark.parametrize('input_array,formatting, is_query', [
+    @pytest.mark.parametrize('input_array, formatting, is_query', [
         ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-          str(date(1994, 2, 13))], SerializationFormats.TSV, False),
-        ([1, True, 'string', 2.36, Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-          str(date(1994, 2, 13))], 'not a serialization format', True)
+          str(date(1994, 2, 13))], SerializationFormats.TSV, False)
     ])
     def test_serialize_array_value_error(self, input_array, formatting, is_query):
-        with pytest.raises(ValueError, match="Invalid format provided."):
+        with pytest.raises(ValueError) as exception:
             ApiHelper.serialize_array('key', input_array, formatting, is_query)
+
+        assert 'Invalid format provided.' in str(exception.value)
 
     @pytest.mark.parametrize('input_date, expected_date', [
         (str(date(1994, 2, 13)), date(1994, 2, 13)),
@@ -885,7 +677,7 @@ class TestApiHelper(Base):
         assert ApiHelper.dynamic_deserialize(input_value) == output_value
 
     @pytest.mark.parametrize('input_placeholders, input_values, input_template, expected_message', [
-        ({}, '400', 'Test template -- {$statusCode}', 'Test template -- {$statusCode}'),
+        (set(), '400', 'Test template -- {$statusCode}', 'Test template -- {$statusCode}'),
         ({'{$statusCode}'}, '400', 'Test template -- {$statusCode}', 'Test template -- 400'),
         ({'{$response.header.accept}'}, {'accept': 'application/json'},
          'Test template -- {$response.header.accept}', 'Test template -- application/json'),
@@ -899,7 +691,7 @@ class TestApiHelper(Base):
         assert actual_message == expected_message
 
     @pytest.mark.parametrize('input_placeholders, input_value, input_template, expected_message', [
-        ({},
+        (set(),
          {"scalar": 123.2,
           "object": {"keyA": {"keyC": True, "keyD": 34}, "keyB": "some string", "arrayScalar": ["value1", "value2"],
                      "arrayObjects":[{"key1": 123, "key2": False}, {"key3": 1234, "key4": None}]}},
@@ -938,77 +730,16 @@ class TestApiHelper(Base):
     ])
     def test_resolve_template_placeholders_using_json_pointer(self, input_placeholders, input_value, input_template,
                                                               expected_message):
-        actual_message = ApiHelper.resolve_template_placeholders_using_json_pointer(input_placeholders, input_value,
-                                                                                    input_template)
+        actual_message = ApiHelper.resolve_template_placeholders_using_json_pointer(
+            input_placeholders, input_value, input_template)
         assert actual_message == expected_message
 
-    @pytest.mark.parametrize(
-        'input_value, input_callable, is_value_nullable, is_model_dict, is_inner_model_dict, expected_value', [
-            (100, lambda value: isinstance(value, int), False, False, False, True),
-            ('100', lambda value: isinstance(value, str), False, False, False, True),
-            ("Sunday", lambda value: Days.validate(value), False, False, False, True),
-            (100.5, lambda value: isinstance(value, str), False, False, False, False),
-            ("Invalid", lambda value: Days.validate(value), False, False, False, False),
-            (None, lambda value: isinstance(value, str), False, False, False, False),
-            (None, lambda value: isinstance(value, str), True, False, False, True),
-            (None, None, False, False, False, False),
-            (None, None, True, False, False, True),
-
-            ([100, 200], lambda value: isinstance(value, int), False, False, False, True),
-            (['100', '200'], lambda value: isinstance(value, str), False, False, False, True),
-            (["Sunday", "Monday"], lambda value: Days.validate(value), False, False, False, True),
-            ([100.5, 200], lambda value: isinstance(value, str), False, False, False, False),
-            (["Invalid1", "Invalid2"], lambda value: Days.validate(value), False, False, False, False),
-            ([None, None], lambda value: isinstance(value, str), False, False, False, False),
-
-            ([[100, 200], [300, 400]], lambda value: isinstance(value, int), False, False, False, True),
-            ([['100', '200'], ['abc', 'def']], lambda value: isinstance(value, str), False, False, False, True),
-            ([["Sunday", "Monday"], ["Tuesday", "Friday"]], lambda value: Days.validate(value), False, False, False,
-             True),
-            ([[100.5, 200], [400, 500]], lambda value: isinstance(value, str), False, False, False, False),
-            (
-            [["Invalid1", "Invalid2"], ["Sunday", "Invalid4"]], lambda value: Days.validate(value), False, False, False,
-            False),
-            ([[None, None], [None, None]], lambda value: isinstance(value, str), False, False, False, False),
-
-            ({'key0': 100, 'key2': 200}, lambda value: isinstance(value, int), False, False, False, True),
-            ({'key0': 'abc', 'key2': 'def'}, lambda value: isinstance(value, str), False, False, False, True),
-            ({'key0': 'Sunday', 'key2': 'Tuesday'}, lambda value: Days.validate(value), False, False, False, True),
-            ({'key0': 100.5, 'key2': 200}, lambda value: isinstance(value, str), False, False, False, False),
-            ({'key0': "Invalid1", 'key2': "Invalid2"}, lambda value: Days.validate(value), False, False, False, False),
-            ({'key0': None, 'key2': None}, lambda value: isinstance(value, str), False, False, False, False),
-
-            ({"AtomNumberOfElectrons": 3}, lambda value: Atom.validate(value), False, True, False, True),
-            ([{"AtomNumberOfElectrons": 3}, {"AtomNumberOfElectrons": 3}],
-             lambda value: Atom.validate(value), False, True, False, True),
-            ({"item": {"AtomNumberOfElectrons": 3}}, lambda value: Atom.validate(value), False, True, True, True),
-            ([{"item": {"AtomNumberOfElectrons": 3}}, {"item": {"AtomNumberOfElectrons": 3}}],
-             lambda value: Atom.validate(value), False, True, True, True),
-            ({"item": [{"AtomNumberOfElectrons": 3}, {"AtomNumberOfElectrons": 3}]},
-             lambda value: Atom.validate(value), False, True, True, True),
-
-            ({"InvalidAtomNumberOfElectrons": 3}, lambda value: Atom.validate(value), False, True, False, False),
-            ([{"InvalidAtomNumberOfElectrons": 3}, {"InvalidAtomNumberOfElectrons": 3}],
-             lambda value: Atom.validate(value), False, True, False, False),
-            ({"item": {"InvalidAtomNumberOfElectrons": 3}},
-             lambda value: Atom.validate(value), False, True, True, False),
-            ([{"item": {"InvalidAtomNumberOfElectrons": 3}}, {"item": {"InvalidAtomNumberOfElectrons": 3}}],
-             lambda value: Atom.validate(value), False, True, True, False),
-            ({"item": [{"InvalidAtomNumberOfElectrons": 3}, {"AtomNumberOfElectrons": 3}]},
-             lambda value: Atom.validate(value), False, True, True, False),
-        ])
-    def test_is_valid_type(self, input_value, input_callable, is_value_nullable, is_model_dict,
-                           is_inner_model_dict, expected_value):
-        actual_value = ApiHelper.is_valid_type(input_value, input_callable, is_value_nullable, is_model_dict,
-                                               is_inner_model_dict)
-        assert actual_value == expected_value
-
-    @pytest.mark.parametrize('input_value, input_union_type, input_should_deserialize, expected_value', [
-        (100, OneOf([LeafType(int), LeafType(str)]), False, 100),
-        ('[100, "200"]', OneOf([LeafType(int), LeafType(str)], UnionTypeContext.create(is_array=True)), True,
+    @pytest.mark.parametrize('input_union_type, input_value, input_should_deserialize, expected_value', [
+        (OneOf([LeafType(int), LeafType(str)]), 100, False, 100),
+        (OneOf([LeafType(int), LeafType(str)], UnionTypeContext(is_array=True)), '[100, "200"]', True,
          [100, '200']),
     ])
-    def test_union_type_deserialize(self, input_value, input_union_type, input_should_deserialize, expected_value):
+    def test_union_type_deserialize(self, input_union_type, input_value, input_should_deserialize, expected_value):
         actual_value = ApiHelper.deserialize_union_type(input_union_type, input_value, input_should_deserialize)
         assert actual_value == expected_value
 

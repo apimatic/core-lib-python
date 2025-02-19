@@ -1,7 +1,15 @@
+import json
 import logging
 import os
 import platform
 from datetime import datetime, date
+
+from apimatic_core_interfaces.http.http_client import HttpClient
+from apimatic_core_interfaces.http.http_request import HttpRequest
+from apimatic_core_interfaces.http.http_response import HttpResponse
+from typing import Optional, Union, Dict, IO, Any, List
+
+from apimatic_core_interfaces.logger.logger import Logger
 
 from apimatic_core.api_call import ApiCall
 from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
@@ -9,17 +17,17 @@ from apimatic_core.http.http_callback import HttpCallBack
 from apimatic_core.logger.configuration.api_logging_configuration import ApiLoggingConfiguration, \
     ApiRequestLoggingConfiguration, ApiResponseLoggingConfiguration
 from apimatic_core.utilities.api_helper import ApiHelper
-from apimatic_core_interfaces.types.http_method_enum import HttpMethodEnum
+from apimatic_core_interfaces.http.http_method_enum import HttpMethodEnum
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
-from apimatic_core.http.request.http_request import HttpRequest
-from apimatic_core.http.response.http_response import HttpResponse
 from apimatic_core.request_builder import RequestBuilder
 from apimatic_core.response_handler import ResponseHandler
-from apimatic_core.types.error_case import ErrorCase
-from tests.apimatic_core.mocks.authentications.basic_auth import BasicAuth
-from tests.apimatic_core.mocks.authentications.bearer_auth import BearerAuth
-from tests.apimatic_core.mocks.authentications.custom_header_authentication import CustomHeaderAuthentication
-from tests.apimatic_core.mocks.authentications.custom_query_authentication import CustomQueryAuthentication
+from apimatic_core.types.error_case import ErrorCase, MessageType
+from tests.apimatic_core.mocks.authentications.basic_auth import BasicAuth, BasicAuthCredentials
+from tests.apimatic_core.mocks.authentications.bearer_auth import BearerAuth, BearerAuthCredentials
+from tests.apimatic_core.mocks.authentications.custom_header_authentication import CustomHeaderAuthentication, \
+    CustomHeaderAuthenticationCredentials
+from tests.apimatic_core.mocks.authentications.custom_query_authentication import CustomQueryAuthentication, \
+    CustomQueryAuthenticationCredentials
 from tests.apimatic_core.mocks.exceptions.global_test_exception import GlobalTestException
 from tests.apimatic_core.mocks.exceptions.nested_model_exception import NestedModelException
 from tests.apimatic_core.mocks.http.http_response_catcher import HttpResponseCatcher
@@ -40,120 +48,227 @@ from tests.apimatic_core.mocks.callables.base_uri_callable import Server, BaseUr
 class Base:
 
     @staticmethod
-    def employee_model():
-        return Employee(name='Bob', uid=1234567, address='street abc', department='IT', birthday=str(date(1994, 2, 13)),
-                        birthtime=datetime(1994, 2, 13, 5, 30, 15), age=27,
-                        additional_properties={'key1': 'value1', 'key2': 'value2'},
-                        hired_at=datetime(1994, 2, 13, 5, 30, 15), joining_day=Days.MONDAY,
-                        working_days=[Days.MONDAY, Days.TUESDAY], salary=30000,
-                        dependents=[Person(name='John',
-                                           uid=7654321,
-                                           address='street abc',
-                                           birthday=str(date(1994, 2, 13)),
-                                           birthtime=datetime(1994, 2, 13, 5, 30, 15),
-                                           age=12,
-                                           additional_properties={'key1': 'value1', 'key2': 'value2'})])
+    def employee_model() -> Employee:
+        return Employee(
+            name='Bob', uid='1234567', address='street abc', department='IT',
+            birthday=date(1994, 2, 13),
+            birthtime=datetime(1994, 2, 13, 5, 30, 15), age=27,
+            additional_properties={'key1': 'value1', 'key2': 'value2'},
+            hired_at=datetime(1994, 2, 13, 5, 30, 15), joining_day=Days.MONDAY,
+            working_days=[Days.MONDAY, Days.TUESDAY], salary=30000,
+            dependents=[
+                Person(name='John', uid='7654321', address='street abc', birthday=date(1994, 2, 13),
+                       birthtime=datetime(1994, 2, 13, 5, 30, 15), age=12,
+                       additional_properties={
+                           'key1': 'value1',
+                           'key2': 'value2'
+                       }, person_type="Per")],
+            person_type="Empl")
 
     @staticmethod
-    def employee_model_additional_dictionary():
-        return Employee(name='Bob', uid=1234567, address='street abc', department='IT', birthday=str(date(1994, 2, 13)),
-                        birthtime=datetime(1994, 2, 13, 5, 30, 15), age=27,
-                        additional_properties={'key1': 'value1', 'key2': 'value2'},
-                        hired_at=datetime(1994, 2, 13, 5, 30, 15), joining_day=Days.MONDAY,
-                        working_days=[Days.MONDAY, Days.TUESDAY], salary=30000,
-                        dependents=[Person(name='John',
-                                           uid=7654321,
-                                           address='street abc',
-                                           birthday=str(date(1994, 2, 13)),
-                                           birthtime=datetime(1994, 2, 13, 5, 30, 15),
-                                           age=12,
-                                           additional_properties={
-                                               'key1': {'inner_key1': 'inner_val1', 'inner_key2': 'inner_val2'},
-                                               'key2': ['value2', 'value3']})])
+    def employee_model_str(beautify_with_spaces: bool=True) -> Union[Employee, str]:
+        if beautify_with_spaces:
+            return ('{{"address": "street abc", "age": 27, "birthday": "1994-02-13", "birthtime": "{1}", "name": "Bob",'
+                    ' "uid": "1234567", "personType": "Empl", "department": "IT", "dependents": [{{"address": "street abc",'
+                    ' "age": 12, "birthday": "1994-02-13", "birthtime": "{1}", "name": "John", "uid": "7654321",'
+                    ' "personType": "Per", "key1": "value1", "key2": "value2"}}], "hiredAt": "{0}", "joiningDay": "Monday",'
+                    ' "salary": 30000, "workingDays": ["Monday", "Tuesday"], "key1": "value1", "key2": "value2"}}').format(
+                Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+                Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))
+
+        return ('{{"address":"street abc","age":27,"birthday":"1994-02-13","birthtime":"{1}","name":"Bob",'
+                '"uid":"1234567","personType":"Empl","department":"IT","dependents":[{{"address":"street abc",'
+                '"age":12,"birthday":"1994-02-13","birthtime":"{1}","name":"John","uid":"7654321",'
+                '"personType":"Per","key1":"value1","key2":"value2"}}],"hiredAt":"{0}","joiningDay":"Monday",'
+                '"salary":30000,"workingDays":["Monday","Tuesday"],"key1":"value1","key2":"value2"}}').format(
+            Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+            Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))
 
     @staticmethod
-    def get_employee_dictionary():
-        return {"address": "street abc", "age": 27, "birthday": "1994-02-13",
-                "birthtime": Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                "department": "IT", "dependents": [{"address": "street abc", "age": 12, "birthday": "1994-02-13",
-                                                    "birthtime": Base.get_rfc3339_datetime(
-                                                        datetime(1994, 2, 13, 5, 30, 15)),
-                                                    "name": "John", "uid": 7654321, "personType": "Per",
-                                                    "key1": "value1", "key2": "value2"}],
-                "hiredAt": Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-                "joiningDay": "Monday", "name": "Bob", "salary": 30000, "uid": 1234567,
-                "workingDays": ["Monday", "Tuesday"], "personType": "Empl"}
+    def employee_model_additional_dictionary() -> Employee:
+        return Employee(
+            name='Bob',
+            uid='1234567',
+            address='street abc',
+            department='IT',
+            birthday=date(1994, 2, 13),
+            birthtime=datetime(1994, 2, 13, 5, 30, 15),
+            age=27,
+            additional_properties={
+                'key1': 'value1',
+                'key2': 'value2'
+            },
+            hired_at=datetime(1994, 2, 13, 5, 30, 15),
+            joining_day=Days.MONDAY,
+            working_days=[
+                Days.MONDAY,
+                Days.TUESDAY
+            ],
+            salary=30000,
+            dependents=[
+                Person(
+                    name='John',
+                    uid='7654321',
+                    address='street abc',
+                    birthday=date(1994, 2, 13),
+                    birthtime=datetime(1994, 2, 13, 5, 30, 15), age=12,
+                    additional_properties={
+                        'key1': {
+                            'inner_key1': 'inner_val1',
+                            'inner_key2': 'inner_val2'
+                        },
+                        'key2': ['value2', 'value3']
+                    },
+                    person_type="Per")
+            ],
+            person_type="Empl")
 
     @staticmethod
-    def basic_auth():
-        return BasicAuth(basic_auth_user_name='test_username', basic_auth_password='test_password')
+    def get_employee_dictionary() -> Dict[str, Employee]:
+        return {
+            "address": "street abc",
+            "age": 27,
+            "birthday": "1994-02-13",
+            "birthtime": Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+            "name": "Bob",
+            "uid": '1234567',
+            "personType": "Empl",
+            "department": "IT",
+            "dependents": [
+                {
+                    "address": "street abc",
+                    "age": 12,
+                    "birthday": "1994-02-13",
+                    "birthtime": Base.get_rfc3339_datetime(
+                        datetime(1994, 2, 13, 5, 30, 15)),
+                    "name": "John",
+                    "uid": '7654321',
+                    "personType": "Per",
+                    "key1": "value1",
+                    "key2": "value2"
+                }
+            ],
+            "hiredAt": Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
+            "joiningDay": "Monday",
+            "salary": 30000,
+            "workingDays": ["Monday", "Tuesday"],
+            "key1": "value1",
+            "key2": "value2"
+        }
 
     @staticmethod
-    def bearer_auth():
-        return BearerAuth(access_token='0b79bab50daca910b000d4f1a2b675d604257e42')
+    def get_complex_type() -> ComplexType:
+        inner_complex_type = InnerComplexType(
+            boolean_type=True, long_type=100003, string_type='abc', precision_type=55.44,
+            string_list_type=['item1', 'item2'], additional_properties={'key0': 'abc', 'key1': 400})
+
+        return ComplexType(
+            inner_complex_type=inner_complex_type, inner_complex_list_type=[inner_complex_type, inner_complex_type],
+            inner_complex_list_of_map_type=[{'key0': inner_complex_type, 'key1': inner_complex_type}],
+            inner_complex_map_type={'key0': inner_complex_type, 'key1': inner_complex_type},
+            inner_complex_map_of_list_type={'key0': [inner_complex_type, inner_complex_type],
+                                            'key2': [inner_complex_type, inner_complex_type]},
+            additional_properties={'prop1': [1, 2, 3], 'prop2': {'key0': 'abc', 'key1': 'def'}})
 
     @staticmethod
-    def custom_header_auth():
-        return CustomHeaderAuthentication(token='Qaws2W233WedeRe4T56G6Vref2')
+    def get_union_type_scalar_model() -> UnionTypeScalarModel:
+        return UnionTypeScalarModel(
+            any_of_required=1.5,
+            one_of_req_nullable='abc',
+            one_of_optional=200,
+            any_of_opt_nullable=True
+        )
 
     @staticmethod
-    def custom_query_auth():
-        return CustomQueryAuthentication(api_key='W233WedeRe4T56G6Vref2', token='Qaws2W233WedeRe4T56G6Vref2')
+    def get_serialized_employee() -> str:
+        employee_dictionary = Base.get_employee_dictionary()
+        return json.dumps(employee_dictionary, separators=(',', ':'))
 
     @staticmethod
-    def xml_model():
+    def basic_auth() -> BasicAuth:
+        return BasicAuth(BasicAuthCredentials(username='test_username', password='test_password'))
+
+    @staticmethod
+    def bearer_auth() -> BearerAuth:
+        return BearerAuth(BearerAuthCredentials(access_token='0b79bab50daca910b000d4f1a2b675d604257e42'))
+
+    @staticmethod
+    def custom_header_auth() -> CustomHeaderAuthentication:
+        return CustomHeaderAuthentication(CustomHeaderAuthenticationCredentials(token='Qaws2W233WedeRe4T56G6Vref2'))
+
+    @staticmethod
+    def custom_query_auth() -> CustomQueryAuthentication:
+        return CustomQueryAuthentication(
+            CustomQueryAuthenticationCredentials(api_key='W233WedeRe4T56G6Vref2', token='Qaws2W233WedeRe4T56G6Vref2'))
+
+    @staticmethod
+    def xml_model() -> XMLModel:
+        model = XMLModel(string_attr='String', number_attr=10000, boolean_attr=False,
+                 string_element='Hey! I am being tested.', number_element=5000,
+                 boolean_element=False, elements=['a', 'b', 'c'])
         return XMLModel(string_attr='String', number_attr=10000, boolean_attr=False,
                         string_element='Hey! I am being tested.', number_element=5000,
                         boolean_element=False, elements=['a', 'b', 'c'])
 
     @staticmethod
-    def one_of_xml_dog_model():
+    def one_of_xml_dog_model() -> OneOfXML:
         return OneOfXML(value=DogModel(barks=True))
 
     @staticmethod
-    def one_of_xml_cat_model():
-        return OneOfXML(value=[CatModel(meows=True), CatModel(meows=False)])
+    def one_of_xml_cat_model() -> OneOfXML:
+        return OneOfXML(value=[
+            CatModel(meows=True),
+            CatModel(meows=False)
+        ])
 
     @staticmethod
-    def one_of_xml_wolf_model():
-        return OneOfXML(value=[WolfModel(howls=True), WolfModel(howls=False)])
+    def one_of_xml_wolf_model() -> OneOfXML:
+        return OneOfXML(value=[
+            WolfModel(howls=True),
+            WolfModel(howls=False)
+        ])
 
     @staticmethod
-    def read_file(file_name):
+    def read_file(file_name) -> IO:
         real_path = os.path.realpath(os.path.join(os.path.dirname(__file__), '..'))
         file_path = os.path.join(real_path, 'apimatic_core', 'mocks/files', file_name)
         return open(file_path, "rb")
 
     @staticmethod
-    def global_errors():
+    def global_errors() -> Dict[str, ErrorCase]:
         return {
-            '400': ErrorCase().error_message('400 Global').exception_type(GlobalTestException),
-            '412': ErrorCase().error_message('Precondition Failed').exception_type(NestedModelException),
-            '3XX': ErrorCase().error_message('3XX Global').exception_type(GlobalTestException),
-            'default': ErrorCase().error_message('Invalid response').exception_type(GlobalTestException),
+            '400': ErrorCase(message='400 Global', exception_type=GlobalTestException),
+            '412': ErrorCase(message='Precondition Failed', exception_type=NestedModelException),
+            '3XX': ErrorCase(message='3XX Global', exception_type=GlobalTestException),
+            'default': ErrorCase(message='Invalid response', exception_type=GlobalTestException),
         }
 
     @staticmethod
-    def global_errors_with_template_message():
+    def global_errors_with_template_message() -> Dict[str, ErrorCase]:
         return {
-            '400': ErrorCase()
-            .error_message_template('error_code => {$statusCode}, header => {$response.header.accept}, '
-                                    'body => {$response.body#/ServerCode} - {$response.body#/ServerMessage}')
-            .exception_type(GlobalTestException),
-            '412': ErrorCase()
-            .error_message_template('global error message -> error_code => {$statusCode}, header => '
-                                    '{$response.header.accept}, body => {$response.body#/ServerCode} - '
-                                    '{$response.body#/ServerMessage} - {$response.body#/model/name}')
-            .exception_type(NestedModelException)
+            '400': ErrorCase(
+                message='error_code => {$statusCode}, header => {$response.header.accept}, '
+                        'body => {$response.body#/ServerCode} - {$response.body#/ServerMessage}',
+                message_type=MessageType.TEMPLATE, exception_type=GlobalTestException),
+            '412': ErrorCase(
+                message='global error message -> error_code => {$statusCode}, header => '
+                        '{$response.header.accept}, body => {$response.body#/ServerCode} - '
+                        '{$response.body#/ServerMessage} - {$response.body#/model/name}',
+                message_type=MessageType.TEMPLATE, exception_type=NestedModelException)
         }
 
     @staticmethod
-    def request(http_method=HttpMethodEnum.GET,
-                query_url='http://localhost:3000/test',
-                headers=None,
-                query_parameters=None,
-                parameters=None,
-                files=None):
+    def request(http_method: HttpMethodEnum=HttpMethodEnum.GET,
+                query_url: str='http://localhost:3000/test',
+                headers: Dict[str, Any]=None,
+                query_parameters: Dict[str, Any]=None,
+                parameters: Any=None,
+                files: Any=None) -> HttpRequest:
+        if headers is None:
+            headers = {}
+        if query_parameters is None:
+            query_parameters = {}
+
         return HttpRequest(http_method=http_method,
                            query_url=query_url,
                            headers=headers,
@@ -162,32 +277,42 @@ class Base:
                            files=files)
 
     @staticmethod
-    def response(status_code=200, reason_phrase=None, headers=None, text=None):
-        return HttpResponse(status_code=status_code, reason_phrase=reason_phrase,
-                            headers=headers, text=text, request=Base.request())
+    def response(
+            status_code: int=200, reason_phrase: Optional[str]=None, headers: Dict[str, Any]=None, text: Any=None
+    ) -> HttpResponse:
+        if headers is None:
+            headers = {}
+        return HttpResponse(
+            status_code=status_code, reason_phrase=reason_phrase,
+            headers=headers, text=text, request=Base.request()
+        )
 
     @staticmethod
-    def get_http_datetime(datetime_value, should_return_string=True):
+    def get_http_datetime(
+            datetime_value: datetime, should_return_string: bool=True
+    ) -> Union[ApiHelper.CustomDate, str]:
         if should_return_string is True:
             return ApiHelper.HttpDateTime.from_datetime(datetime_value)
         return ApiHelper.HttpDateTime(datetime_value)
 
     @staticmethod
-    def get_rfc3339_datetime(datetime_value, should_return_string=True):
+    def get_rfc3339_datetime(
+            datetime_value: datetime, should_return_string: bool=True
+    ) -> Union[ApiHelper.CustomDate, str]:
         if should_return_string is True:
             return ApiHelper.RFC3339DateTime.from_datetime(datetime_value)
         return ApiHelper.RFC3339DateTime(datetime_value)
 
     @staticmethod
-    def new_api_call_builder(global_configuration):
+    def new_api_call_builder(global_configuration: GlobalConfiguration) -> ApiCall:
         return ApiCall(global_configuration)
 
     @staticmethod
-    def user_agent():
+    def user_agent() -> str:
         return 'Python|31.8.0|{engine}|{engine-version}|{os-info}'
 
     @staticmethod
-    def user_agent_parameters():
+    def user_agent_parameters() -> Dict[str, Dict[str, Any]]:
         return {
             'engine': {'value': platform.python_implementation(), 'encode': False},
             'engine-version': {'value': "", 'encode': False},
@@ -195,132 +320,133 @@ class Base:
         }
 
     @staticmethod
-    def wrapped_parameters():
+    def wrapped_parameters() -> Dict[str, Any]:
         return {
             'bodyScalar': True,
             'bodyNonScalar': Base.employee_model(),
         }
 
     @staticmethod
-    def mocked_http_client():
+    def mocked_http_client() -> HttpClient:
         return MockHttpClient()
 
     @staticmethod
-    def http_client_configuration(http_callback=HttpResponseCatcher(), logging_configuration=None):
-        http_client_configurations = HttpClientConfiguration(http_call_back=http_callback,
-                                                             logging_configuration=logging_configuration)
-        http_client_configurations.set_http_client(Base.mocked_http_client())
-        return http_client_configurations
+    def http_client_configuration(
+            http_callback: Optional[HttpCallBack]=HttpResponseCatcher(),
+            logging_configuration: Optional[ApiLoggingConfiguration]=None
+    ) -> HttpClientConfiguration:
+        return HttpClientConfiguration(
+            http_callback=http_callback, logging_configuration=logging_configuration,
+            http_client=Base.mocked_http_client()
+        )
 
     @property
-    def new_request_builder(self):
+    def new_request_builder(self) -> RequestBuilder:
         return RequestBuilder().path('/test') \
             .server(Server.DEFAULT)
 
     @property
-    def new_response_handler(self):
+    def new_response_handler(self) -> ResponseHandler:
         return ResponseHandler()
 
     @property
-    def global_configuration(self):
-        return GlobalConfiguration(self.http_client_configuration()) \
-            .base_uri_executor(BaseUriCallable().get_base_uri) \
-            .global_errors(self.global_errors())
+    def global_configuration(self) -> GlobalConfiguration:
+        return GlobalConfiguration(
+            http_client_configuration=self.http_client_configuration(),
+            base_uri_executor=BaseUriCallable().get_base_uri,
+            global_errors=self.global_errors())
 
     @property
-    def global_configuration_without_http_callback(self):
-        return GlobalConfiguration(self.http_client_configuration(None)) \
-            .base_uri_executor(BaseUriCallable().get_base_uri)
+    def global_configuration_without_http_callback(self) -> GlobalConfiguration:
+        return GlobalConfiguration(
+            http_client_configuration=self.http_client_configuration(None),
+            base_uri_executor=BaseUriCallable().get_base_uri)
 
     @property
-    def global_configuration_unimplemented_http_callback(self):
-        return GlobalConfiguration(self.http_client_configuration(HttpCallBack())) \
-            .base_uri_executor(BaseUriCallable().get_base_uri)
+    def global_configuration_unimplemented_http_callback(self) -> GlobalConfiguration:
+        return GlobalConfiguration(
+            http_client_configuration=self.http_client_configuration(HttpCallBack()),
+            base_uri_executor=BaseUriCallable().get_base_uri)
 
     @property
-    def default_global_configuration(self):
+    def default_global_configuration(self) -> GlobalConfiguration:
         return GlobalConfiguration()
 
     @property
-    def global_configuration_with_useragent(self):
-        return self.global_configuration \
-            .user_agent(self.user_agent(), self.user_agent_parameters())
+    def global_configuration_with_useragent(self) -> GlobalConfiguration:
+        global_configuration = self.global_configuration
+        global_configuration.add_user_agent(self.user_agent(), self.user_agent_parameters())
+        return global_configuration
 
     @property
-    def global_configuration_with_auth(self):
-        return self.global_configuration.auth_managers(
-            {'basic_auth': self.basic_auth(), 'bearer_auth': self.bearer_auth(),
-             'custom_header_auth': self.custom_header_auth(), 'custom_query_auth': self.custom_query_auth()})
+    def global_configuration_with_auth(self) -> GlobalConfiguration:
+        global_configuration = self.global_configuration
+        global_configuration.auth_managers = {
+            'basic_auth': self.basic_auth(),
+            'bearer_auth': self.bearer_auth(),
+            'custom_header_auth': self.custom_header_auth(),
+            'custom_query_auth': self.custom_query_auth()
+        }
+        return global_configuration
 
     @staticmethod
-    def api_request_logging_configuration(log_body=False, log_headers=False, headers_to_include=None,
-                                          headers_to_exclude=None, headers_to_unmask=None,
-                                          include_query_in_path=False):
-        return ApiRequestLoggingConfiguration(log_body=log_body, log_headers=log_headers,
-                                              headers_to_include=headers_to_include,
-                                              headers_to_exclude=headers_to_exclude,
-                                              headers_to_unmask=headers_to_unmask,
-                                              include_query_in_path=include_query_in_path)
+    def api_request_logging_configuration(
+            log_body: bool=False, log_headers: bool=False, headers_to_include: List[str]=None,
+            headers_to_exclude: List[str]=None, headers_to_unmask: List[str]=None,
+            include_query_in_path: bool=False
+    ) -> ApiRequestLoggingConfiguration:
+        return ApiRequestLoggingConfiguration(
+            log_body=log_body, log_headers=log_headers, headers_to_include=headers_to_include,
+            headers_to_exclude=headers_to_exclude, headers_to_unmask=headers_to_unmask,
+            include_query_in_path=include_query_in_path)
 
     @staticmethod
-    def api_response_logging_configuration(log_body=False, log_headers=False, headers_to_include=None,
-                                           headers_to_exclude=None, headers_to_unmask=None):
-        return ApiResponseLoggingConfiguration(log_body=log_body, log_headers=log_headers,
-                                               headers_to_include=headers_to_include,
-                                               headers_to_exclude=headers_to_exclude,
-                                               headers_to_unmask=headers_to_unmask)
+    def api_response_logging_configuration(
+            log_body: bool=False, log_headers: bool=False, headers_to_include: List[str]=None,
+            headers_to_exclude: List[str]=None, headers_to_unmask: List[str]=None
+    ) -> ApiResponseLoggingConfiguration:
+        return ApiResponseLoggingConfiguration(
+            log_body=log_body, log_headers=log_headers, headers_to_include=headers_to_include,
+            headers_to_exclude=headers_to_exclude, headers_to_unmask=headers_to_unmask)
 
     @staticmethod
-    def api_logging_configuration(logger, log_level=logging.INFO, mask_sensitive_headers=True,
-                                  request_logging_configuration=None,
-                                  response_logging_configuration=None):
+    def api_logging_configuration(
+            logger: Logger, log_level: int=logging.INFO, mask_sensitive_headers: bool=True,
+            request_logging_configuration: Optional[ApiRequestLoggingConfiguration]=None,
+            response_logging_configuration: Optional[ApiResponseLoggingConfiguration]=None
+    ) -> ApiLoggingConfiguration:
         if request_logging_configuration is None:
             request_logging_configuration = Base.api_request_logging_configuration()
 
         if response_logging_configuration is None:
             response_logging_configuration = Base.api_response_logging_configuration()
 
-        return ApiLoggingConfiguration(logger, log_level, mask_sensitive_headers,
-                                       request_logging_configuration,
-                                       response_logging_configuration)
+        return ApiLoggingConfiguration(
+            logger=logger, log_level=log_level, mask_sensitive_headers=mask_sensitive_headers,
+            request_logging_config=request_logging_configuration,
+            response_logging_config=response_logging_configuration)
 
     @staticmethod
-    def global_configuration_with_logging(logger):
-        return GlobalConfiguration(Base.http_client_configuration(
-            logging_configuration=Base.api_logging_configuration(logger))) \
-            .base_uri_executor(BaseUriCallable().get_base_uri)
+    def global_configuration_with_logging(logger: Logger) -> GlobalConfiguration:
+        return GlobalConfiguration(
+            http_client_configuration=Base.http_client_configuration(
+                logging_configuration=Base.api_logging_configuration(logger)),
+            base_uri_executor=BaseUriCallable().get_base_uri)
 
     @property
-    def global_configuration_with_uninitialized_auth_params(self):
-        return self.global_configuration.auth_managers(
-            {'basic_auth': BasicAuth(None, None), 'bearer_auth': BearerAuth(None),
-             'custom_header_auth': CustomHeaderAuthentication(None)})
+    def global_configuration_with_uninitialized_auth_params(self) -> GlobalConfiguration:
+        global_configuration = self.global_configuration
+        global_configuration.auth_managers = {
+            'basic_auth': BasicAuth(None), 'bearer_auth': BearerAuth(None),
+             'custom_header_auth': CustomHeaderAuthentication(None)
+        }
+        return global_configuration
 
     @property
-    def global_configuration_with_partially_initialized_auth_params(self):
-        return self.global_configuration.auth_managers(
-            {'basic_auth': BasicAuth(None, None), 'custom_header_auth': self.custom_header_auth()})
-
-    @staticmethod
-    def get_complex_type():
-        inner_complex_type = InnerComplexType(boolean_type=True,
-                                              long_type=100003,
-                                              string_type='abc',
-                                              precision_type=55.44,
-                                              string_list_type=['item1', 'item2'],
-                                              additional_properties={'key0': 'abc', 'key1': 400})
-
-        return ComplexType(inner_complex_type=inner_complex_type,
-                           inner_complex_list_type=[inner_complex_type, inner_complex_type],
-                           inner_complex_list_of_map_type=[{'key0': inner_complex_type, 'key1': inner_complex_type}],
-                           inner_complex_map_type={'key0': inner_complex_type, 'key1': inner_complex_type},
-                           inner_complex_map_of_list_type={'key0': [inner_complex_type, inner_complex_type],
-                                                           'key2': [inner_complex_type, inner_complex_type]},
-                           additional_properties={'prop1': [1, 2, 3], 'prop2': {'key0': 'abc', 'key1': 'def'}})
-
-    @staticmethod
-    def get_union_type_scalar_model():
-        return UnionTypeScalarModel(any_of_required=1.5,
-                                    one_of_req_nullable='abc',
-                                    one_of_optional=200,
-                                    any_of_opt_nullable=True)
+    def global_configuration_with_partially_initialized_auth_params(self) -> GlobalConfiguration:
+        global_configuration = self.global_configuration
+        global_configuration.auth_managers = {
+            'basic_auth': BasicAuth(None),
+            'custom_header_auth': self.custom_header_auth()
+        }
+        return global_configuration

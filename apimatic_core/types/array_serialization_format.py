@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class SerializationFormats(Enum):
+class SerializationFormats(str, Enum):
     """Enumeration of Array serialization formats
 
     Attributes:

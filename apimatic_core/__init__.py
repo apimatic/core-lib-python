@@ -7,7 +7,6 @@ __all__ = [
     'decorators',
     'http',
     'utilities',
-    'factories',
     'types',
     'logger',
     'exceptions',
