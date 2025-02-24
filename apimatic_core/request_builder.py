@@ -1,10 +1,10 @@
-from __future__ import annotations
 from typing import Optional, Dict, Any, List, Union, Tuple
 
 from apimatic_core_interfaces.authentication.authentication import Authentication
 from apimatic_core_interfaces.http.http_method_enum import HttpMethodEnum
 from apimatic_core_interfaces.http.http_request import HttpRequest
 from pydantic import validate_call
+from typing_extensions import Self
 
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
 from apimatic_core.exceptions.auth_validation_exception import AuthValidationException
@@ -36,22 +36,22 @@ class RequestBuilder:
         self._xml_attributes: Optional[XmlAttributes] = None
 
     @validate_call
-    def server(self, server: Any) -> 'RequestBuilder':
+    def server(self, server: Any) -> Self:
         self._server = server
         return self
 
     @validate_call
-    def path(self, path: str) -> 'RequestBuilder':
+    def path(self, path: str) -> Self:
         self._path = path
         return self
 
     @validate_call
-    def http_method(self, http_method: HttpMethodEnum) -> 'RequestBuilder':
+    def http_method(self, http_method: HttpMethodEnum) -> Self:
         self._http_method = http_method
         return self
 
     @validate_call
-    def template_param(self, template_param: Parameter) -> 'RequestBuilder':
+    def template_param(self, template_param: Parameter) -> Self:
         if template_param.is_valid_parameter() and template_param.key is not None:
             self._template_params[template_param.key] = {
                 'value': template_param.value, 'encode': template_param.should_encode
@@ -59,35 +59,35 @@ class RequestBuilder:
         return self
 
     @validate_call
-    def header_param(self, header_param: Parameter) -> 'RequestBuilder':
+    def header_param(self, header_param: Parameter) -> Self:
         if header_param.is_valid_parameter() and header_param.key is not None:
             self._header_params[header_param.key] = header_param.value
         return self
 
     @validate_call
-    def query_param(self, query_param: Parameter) -> 'RequestBuilder':
+    def query_param(self, query_param: Parameter) -> Self:
         if query_param.is_valid_parameter() and query_param.key is not None:
             self._query_params[query_param.key] = query_param.value
         return self
 
     @validate_call
-    def form_param(self, form_param: Parameter) -> 'RequestBuilder':
+    def form_param(self, form_param: Parameter) -> Self:
         if form_param.is_valid_parameter() and form_param.key is not None:
             self._form_params[form_param.key] = form_param.value
         return self
 
     @validate_call
-    def additional_form_params(self, additional_form_params: Dict[str, Any]) -> 'RequestBuilder':
+    def additional_form_params(self, additional_form_params: Dict[str, Any]) -> Self:
         self._additional_form_params = additional_form_params
         return self
 
     @validate_call
-    def additional_query_params(self, additional_query_params: Dict[str, Any]) -> 'RequestBuilder':
+    def additional_query_params(self, additional_query_params: Dict[str, Any]) -> Self:
         self._additional_query_params = additional_query_params
         return self
 
     @validate_call
-    def multipart_param(self, multipart_param: Parameter) -> 'RequestBuilder':
+    def multipart_param(self, multipart_param: Parameter) -> Self:
         if multipart_param.is_valid_parameter():
             self._multipart_params.append(multipart_param)
         return self
@@ -104,22 +104,22 @@ class RequestBuilder:
         return self
 
     @validate_call
-    def body_serializer(self, body_serializer: Any) -> 'RequestBuilder':
+    def body_serializer(self, body_serializer: Any) -> Self:
         self._body_serializer = body_serializer
         return self
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    def auth(self, auth: Authentication) -> 'RequestBuilder':
+    def auth(self, auth: Authentication) -> Self:
         self._auth = auth
         return self
 
     @validate_call
-    def array_serialization_format(self, array_serialization_format: SerializationFormats) -> 'RequestBuilder':
+    def array_serialization_format(self, array_serialization_format: SerializationFormats) -> Self:
         self._array_serialization_format = array_serialization_format
         return self
 
     @validate_call
-    def xml_attributes(self, xml_attributes: XmlAttributes) -> 'RequestBuilder':
+    def xml_attributes(self, xml_attributes: XmlAttributes) -> Self:
         self._xml_attributes = xml_attributes
         return self
 

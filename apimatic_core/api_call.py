@@ -1,9 +1,9 @@
-from __future__ import annotations
-
 from apimatic_core_interfaces.configuration.endpoint_configuration import EndpointConfiguration
 from apimatic_core_interfaces.logger.api_logger import ApiLogger
 from pydantic import validate_call
-from typing import Any
+from typing import Any, __all__
+
+from typing_extensions import Self
 
 from apimatic_core.configurations.global_configuration import GlobalConfiguration
 from apimatic_core.logger.sdk_logger import LoggerFactory
@@ -14,7 +14,7 @@ from apimatic_core.response_handler import ResponseHandler
 class ApiCall:
 
     @property
-    def new_builder(self) -> 'ApiCall':
+    def new_builder(self) -> Self:
         return ApiCall(self._global_configuration)
 
     def __init__(
@@ -30,17 +30,17 @@ class ApiCall:
         )
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    def request(self, request_builder: RequestBuilder) -> 'ApiCall':
+    def request(self, request_builder: RequestBuilder) -> Self:
         self._request_builder = request_builder
         return self
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    def response(self, response_handler: ResponseHandler) -> 'ApiCall':
+    def response(self, response_handler: ResponseHandler) -> Self:
         self._response_handler = response_handler
         return self
 
     @validate_call(config=dict(arbitrary_types_allowed=True))
-    def endpoint_configuration(self, endpoint_configuration: EndpointConfiguration) -> 'ApiCall':
+    def endpoint_configuration(self, endpoint_configuration: EndpointConfiguration) -> Self:
         self._endpoint_configuration = endpoint_configuration
         return self
 

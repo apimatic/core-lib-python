@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 from apimatic_core_interfaces.configuration.endpoint_configuration import EndpointConfiguration
 from apimatic_core_interfaces.http.http_client import HttpClient

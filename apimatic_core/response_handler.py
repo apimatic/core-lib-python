@@ -1,4 +1,3 @@
-from __future__ import annotations
 import re
 
 from typing import Callable, Union, Any, Optional, Dict, List, Type, Literal
@@ -6,6 +5,7 @@ from typing import Callable, Union, Any, Optional, Dict, List, Type, Literal
 from apimatic_core_interfaces.formats.datetime_format import DateTimeFormat
 from apimatic_core_interfaces.http.http_response import HttpResponse
 from pydantic import validate_call
+from typing_extensions import Self
 
 from apimatic_core.http.response.api_response import ApiResponse
 from apimatic_core.types.error_case import ErrorCase, MessageType
@@ -25,34 +25,34 @@ class ResponseHandler:
         self._xml_item_name: Optional[str] = None
 
     @validate_call
-    def deserializer(self, deserializer: Any) -> 'ResponseHandler':
+    def deserializer(self, deserializer: Any) -> Self:
         self._deserializer = deserializer
         return self
 
     @validate_call
-    def convertor(self, convertor: Optional[Callable[[Any], Any]]) -> 'ResponseHandler':
+    def convertor(self, convertor: Optional[Callable[[Any], Any]]) -> Self:
         self._convertor = convertor
         return self
 
     @validate_call
-    def deserialize_into(self, deserialize_into: Any) -> 'ResponseHandler':
+    def deserialize_into(self, deserialize_into: Any) -> Self:
         self._deserialize_into = deserialize_into
         return self
 
     @validate_call
-    def is_api_response(self, is_api_response: bool) -> 'ResponseHandler':
+    def is_api_response(self, is_api_response: bool) -> Self:
         self._is_api_response = is_api_response
         return self
 
     @validate_call
-    def is_nullify404(self, is_nullify404: bool) -> 'ResponseHandler':
+    def is_nullify404(self, is_nullify404: bool) -> Self:
         self._is_nullify404 = is_nullify404
         return self
 
     @validate_call
     def local_error(
             self, error_code: Union[int, str], error_message: str, exception_type: Type[Any]
-    ) -> 'ResponseHandler':
+    ) -> Self:
         self._local_errors[str(error_code)] = ErrorCase(message=error_message,
                                                         message_type=MessageType.SIMPLE,
                                                         exception_type=exception_type)
@@ -61,24 +61,24 @@ class ResponseHandler:
     @validate_call
     def local_error_template(
             self, error_code: Union[int, str], error_message: str, exception_type: Type[Any]
-    ) -> 'ResponseHandler':
+    ) -> Self:
         self._local_errors[str(error_code)] = ErrorCase(message=error_message,
                                                         message_type=MessageType.TEMPLATE,
                                                         exception_type=exception_type)
         return self
 
     @validate_call
-    def datetime_format(self, datetime_format: DateTimeFormat) -> 'ResponseHandler':
+    def datetime_format(self, datetime_format: DateTimeFormat) -> Self:
         self._datetime_format = datetime_format
         return self
 
     @validate_call
-    def is_xml_response(self, is_xml_response: bool) -> 'ResponseHandler':
+    def is_xml_response(self, is_xml_response: bool) -> Self:
         self._is_xml_response = is_xml_response
         return self
 
     @validate_call
-    def xml_item_name(self, xml_item_name: Optional[str]) -> 'ResponseHandler':
+    def xml_item_name(self, xml_item_name: Optional[str]) -> Self:
         self._xml_item_name = xml_item_name
         return self
 
