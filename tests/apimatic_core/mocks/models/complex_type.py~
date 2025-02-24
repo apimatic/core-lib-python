@@ -39,7 +39,7 @@ class ComplexType(BaseModel):
               serialization_alias="innerComplexListOfMapType")
     ] = None
     inner_complex_map_of_list_type: Annotated[
-        Optional[Dict[str, List[InnerComplexType]]],
+        Optional[List[InnerComplexType]],
         Field(validation_alias=AliasChoices("inner_complex_map_of_list_type", "innerComplexMapOfListType"),
               serialization_alias="innerComplexMapOfListType")
     ] = None

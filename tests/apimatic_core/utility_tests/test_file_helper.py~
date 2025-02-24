@@ -1,13 +1,10 @@
 from typing import IO
 
-from pydantic import validate_call
-
 from apimatic_core.utilities.file_helper import FileHelper
 
 
 class TestFileHelper:
 
-    @validate_call
     def test_get_file(self):
         file_url: str = 'https://gist.githubusercontent.com/asadali214/' \
                    '0a64efec5353d351818475f928c50767/raw/8ad3533799ecb4e01a753aaf04d248e6702d4947/testFile.txt'

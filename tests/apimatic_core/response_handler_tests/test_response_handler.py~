@@ -39,7 +39,7 @@ class TestResponseHandler(Base):
     ])
     @validate_call
     def test_global_error(
-            self, http_response: HttpResponse, expected_exception_type: Type[APIException], expected_error_message: str
+            self, http_response: HttpResponse, expected_exception_type: Type[E], expected_error_message: str
     ):
         with pytest.raises(expected_exception_type) as error:
             self.new_response_handler.handle(http_response, self.global_errors())

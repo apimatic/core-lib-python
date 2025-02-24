@@ -2,7 +2,6 @@ from datetime import date
 from typing import Union, Optional
 
 import pytest
-from apimatic_core_interfaces.formats.datetime_format import DateTimeFormat
 from pydantic import validate_call
 
 from apimatic_core.utilities.datetime_helper import DateTimeHelper

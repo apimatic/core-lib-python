@@ -1,6 +1,10 @@
 from datetime import datetime, date, timezone
+from typing import Any, List, Union
+
 import pytest
+from apimatic_core_interfaces.types.union_type import UnionType
 from apimatic_core_interfaces.types.union_type_context import UnionTypeContext
+from pydantic import validate_call
 
 from apimatic_core.exceptions.oneof_validation_exception import OneOfValidationException
 from apimatic_core.types.datetime_format import DateTimeFormat
@@ -288,9 +292,11 @@ class TestOneOf:
                     UnionTypeContext(is_array=True)), LeafType(int, UnionTypeContext(is_array=True))],
              UnionTypeContext(is_array=True), False, None),
         ])
-
-    def test_one_of_primitive_type(self, input_value, input_types, input_context, expected_is_valid_output,
-                                   expected_deserialized_value_output):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def test_one_of_primitive_type(
+            self, input_value: Any, input_types: List[UnionType], input_context: UnionTypeContext,
+            expected_is_valid_output: bool, expected_deserialized_value_output: Any
+    ):
         try:
             union_type_result = OneOf(input_types, input_context).validate(input_value)
             actual_is_valid = union_type_result.is_valid
@@ -303,27 +309,36 @@ class TestOneOf:
         assert actual_deserialized_value == expected_deserialized_value_output
 
     @pytest.mark.parametrize(
-        'input_value, input_types, input_context, expected_validity, expected_value', [
-            (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
+        'input_value, input_date, input_types, input_context, expected_validity, expected_value', [
+            (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37), False),
+             Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
              [LeafType(datetime, UnionTypeContext(date_time_format=DateTimeFormat.RFC3339_DATE_TIME)),
               LeafType(date)], UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
-            (Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37)),
+            (Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37), False),
+             Base.get_http_datetime(datetime(1994, 11, 6, 8, 49, 37)),
              [LeafType(datetime, UnionTypeContext(date_time_format=DateTimeFormat.HTTP_DATE_TIME)), LeafType(date)],
              UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
-            (1480809600,
+            (ApiHelper.UnixDateTime(datetime(1994, 11, 6, 8, 49, 37)), 1480809600,
              [LeafType(datetime, UnionTypeContext(date_time_format=DateTimeFormat.UNIX_DATE_TIME)), LeafType(date)],
              UnionTypeContext(), True, datetime.utcfromtimestamp(1480809600)),
-            (Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
-             [LeafType(datetime, UnionTypeContext(date_time_converter=ApiHelper.RFC3339DateTime, date_time_format=DateTimeFormat.RFC3339_DATE_TIME)), LeafType(date)],
+            (datetime(1994, 11, 6, 8, 49, 37), Base.get_rfc3339_datetime(datetime(1994, 11, 6, 8, 49, 37)),
+             [LeafType(datetime, UnionTypeContext(date_time_converter=ApiHelper.RFC3339DateTime,
+                                                  date_time_format=DateTimeFormat.RFC3339_DATE_TIME)), LeafType(date)],
              UnionTypeContext(), True, datetime(1994, 11, 6, 8, 49, 37)),
-            ('1994-11-06', [LeafType(date), LeafType(datetime, UnionTypeContext(date_time_format=DateTimeFormat.RFC3339_DATE_TIME))], UnionTypeContext(),
+            ('1994-11-06', '1994-11-06',
+             [LeafType(date), LeafType(datetime, UnionTypeContext(date_time_format=DateTimeFormat.RFC3339_DATE_TIME))],
+             UnionTypeContext(),
              True, date(1994, 11, 6))
         ])
-    def test_one_of_date_and_datetime(self, input_value, input_types, input_context, expected_validity, expected_value):
-        union_type = OneOf(input_types, input_context)
-        union_type_result = union_type.validate(input_value)
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def test_any_of_date_and_datetime(
+            self, input_value: Any, input_date: Union[str, float, int], input_types: List[UnionType],
+            input_context: UnionTypeContext, expected_validity: bool, expected_value: Union[date, datetime]
+    ):
+        union_type_result = OneOf(input_types, input_context).validate(input_value)
+
         assert union_type_result.is_valid == expected_validity
-        actual_deserialized_value = union_type_result.deserialize(input_value)
+        actual_deserialized_value = union_type_result.deserialize(input_date)
         assert actual_deserialized_value == expected_value
 
     @pytest.mark.parametrize(
@@ -341,8 +356,13 @@ class TestOneOf:
             ({'key0': 1, 'key3': 2}, [LeafType(int, UnionTypeContext(is_nullable=True)), LeafType(str)],
              UnionTypeContext(is_dict=True), True, {'key0': 1, 'key3': 2})
         ])
-    def test_one_of_optional_nullable(self, input_value, input_types, input_context, expected_validity, expected_value):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def test_one_of_optional_nullable(
+            self, input_value: Any, input_types: List[UnionType], input_context: UnionTypeContext,
+            expected_validity: bool, expected_value: Any
+    ):
         union_type_result = OneOf(input_types, input_context).validate(input_value)
+
         assert union_type_result.is_valid == expected_validity
         actual_deserialized_value = union_type_result.deserialize(input_value)
         assert actual_deserialized_value == expected_value
@@ -646,8 +666,11 @@ class TestOneOf:
              UnionTypeContext(is_dict=True, is_array=True), True,
              {'key0': [Orbit(orbit_number_of_electrons=10), Atom(atom_number_of_electrons=2, atom_number_of_protons=10)], 'key1': [Orbit(orbit_number_of_electrons=12), Atom(atom_number_of_electrons=2, atom_number_of_protons=12)]}),
         ])
-    def test_one_of_custom_type(self, input_value, input_types, input_context, expected_is_valid_output,
-                                expected_deserialized_value_output):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def test_one_of_custom_type(
+            self, input_value: Any, input_types: List[UnionType], input_context: UnionTypeContext,
+            expected_is_valid_output: bool, expected_deserialized_value_output: Any
+    ):
         try:
             union_type_result = OneOf(input_types, input_context).validate(input_value)
             actual_is_valid = union_type_result.is_valid
@@ -713,7 +736,11 @@ class TestOneOf:
         ('{"name": "sam", "weight": 5, "type": "deer", "kind": "hunter"}',
          [LeafType(dict), LeafType(dict)], UnionTypeContext(), False),
     ])
-    def test_one_of_with_discriminator_custom_type(self, input_value, input_types, input_context, expected_output):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def test_one_of_with_discriminator_custom_type(
+            self, input_value: Any, input_types: List[UnionType], input_context: UnionTypeContext,
+            expected_output: Any
+    ):
         try:
             deserialized_dict_input = ApiHelper.json_deserialize(input_value, as_dict=True)
             union_type_result = OneOf(input_types, input_context).validate(deserialized_dict_input)
@@ -788,8 +815,11 @@ class TestOneOf:
                                         LeafType(Days, UnionTypeContext(is_array=True))],
          UnionTypeContext(is_array=True), True, [[1, 2], ['Monday', 'Tuesday']]),
     ])
-    def test_one_of_enum_type(self, input_value, input_types, input_context, expected_is_valid_output,
-                              expected_deserialized_value_output):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def test_one_of_enum_type(
+            self, input_value: Any, input_types: List[UnionType], input_context: UnionTypeContext,
+            expected_is_valid_output: bool, expected_deserialized_value_output: Any
+    ):
         try:
             union_type_result = OneOf(input_types, input_context).validate(input_value)
             actual_is_valid = union_type_result.is_valid
@@ -813,7 +843,12 @@ class TestOneOf:
              '{} \nActual Value: 100.5\nExpected Type: One Of int, bool, str.'.format(
                  UnionTypeHelper.NONE_MATCHED_ERROR_MESSAGE))
         ])
-    def test_one_of_validation_errors(self, input_value, input_types, input_context, expected_validation_message):
+    @validate_call(config=dict(arbitrary_types_allowed=True))
+    def test_one_of_validation_errors(
+            self, input_value: Any, input_types: List[UnionType], input_context: UnionTypeContext,
+            expected_validation_message: str
+    ):
         with pytest.raises(OneOfValidationException) as validation_error:
             OneOf(input_types, input_context).validate(input_value)
+
         assert validation_error.value.message == expected_validation_message

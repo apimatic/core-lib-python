@@ -170,7 +170,7 @@ class TestRequestBuilder(Base):
          '&query_param[dependents][0][key1]=value1'
          '&query_param[dependents][0][key2]=value2'
          '&query_param[hiredAt]={}'.format(quote(
-             Base.get_http_datetime_str(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
+             Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)), safe='')) +
          '&query_param[joiningDay]=Monday'
          '&query_param[salary]=30000'
          '&query_param[workingDays][0]=Monday'

@@ -7,5 +7,5 @@ ignore_missing_imports = True
 [mypy-jsonpointer.*]
 ignore_missing_imports = True
 
-[mypy-testfixtures.*]
+[mypy-jsonpointer.*]
 ignore_missing_imports = True

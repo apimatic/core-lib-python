@@ -68,7 +68,7 @@ class XmlHelper:
 
     @staticmethod
     @validate_call
-    def serialize_dict_to_xml(value: Optional[Dict[str, Any]], root_element_name: str) -> Optional[str]:
+    def serialize_dict_to_xml(value: Optional[Dict[str, Any][], root_element_name: str) -> str:
         """Serializes a given dictionary of values to an XML document.
 
         Args:

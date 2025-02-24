@@ -461,6 +461,7 @@ class TestXMLHelper:
             expected_value: Optional[str]
     ):
         deserialized_value = XmlHelper.deserialize_xml_to_list(input_value, item_name, clazz)
+
         actual_value = XmlHelper.serialize_list_to_xml(deserialized_value, root_element_name, item_name)
 
         assert actual_value == expected_value

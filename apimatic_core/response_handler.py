@@ -25,7 +25,7 @@ class ResponseHandler:
         self._xml_item_name: Optional[str] = None
 
     @validate_call
-    def deserializer(self, deserializer: Optional[Callable[[Union[str, bytes]], Any]]) -> 'ResponseHandler':
+    def deserializer(self, deserializer: Any) -> 'ResponseHandler':
         self._deserializer = deserializer
         return self
 

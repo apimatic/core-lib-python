@@ -13,7 +13,7 @@ class MockHttpClient(HttpClient):
     contains_binary_response: bool = False
 
     @validate_call
-    def execute(self, request: HttpRequest, endpoint_configuration: EndpointConfiguration) -> HttpResponse:
+    def execute(self, request: HttpRequest, endpoint_configuration: EndpointConfiguration = None) -> HttpResponse:
         """Execute a given CoreHttpRequest to get a string response back
 
         Args:

@@ -16,7 +16,6 @@ from apimatic_core_interfaces.http.http_method_enum import HttpMethodEnum
 from tests.apimatic_core.base import Base
 from tests.apimatic_core.mocks.callables.base_uri_callable import Server
 from tests.apimatic_core.mocks.http.http_client import MockHttpClient
-from tests.apimatic_core.mocks.http.http_response_catcher import HttpResponseCatcher
 from tests.apimatic_core.mocks.models.person import Employee
 
 

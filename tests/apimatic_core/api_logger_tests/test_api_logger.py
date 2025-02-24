@@ -1,6 +1,6 @@
 import logging
 from logging import LogRecord
-from typing import Any, Iterable, Callable, List
+from typing import List, Optional
 
 import pytest
 
@@ -9,6 +9,7 @@ from apimatic_core_interfaces.http.http_request import HttpRequest
 from apimatic_core_interfaces.http.http_response import HttpResponse
 from apimatic_core_interfaces.logger.api_logger import ApiLogger
 from apimatic_core_interfaces.logger.logger import Logger
+from pydantic import validate_call
 
 from apimatic_core.logger.configuration.api_logging_configuration import ApiRequestLoggingConfiguration, \
     ApiResponseLoggingConfiguration
@@ -27,16 +28,18 @@ from tests.apimatic_core.mocks.models.person import Employee
 
 class TestApiLogger(Base):
 
+    @validate_call
     @pytest.fixture
     def log_capture(self) -> LogCapture:
         """Fixture to capture logs during the test."""
         with LogCapture() as capture:
             yield capture
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def init_sdk_logger(
             self, logger: Logger, log_level: int=logging.INFO, mask_sensitive_headers: bool=True,
-            request_logging_configuration: ApiRequestLoggingConfiguration=None,
-            response_logging_configuration: ApiResponseLoggingConfiguration=None):
+            request_logging_configuration: Optional[ApiRequestLoggingConfiguration]=None,
+            response_logging_configuration: Optional[ApiResponseLoggingConfiguration]=None):
         self._api_request: HttpRequest = self.request(
             http_method=HttpMethodEnum.POST,
             query_url='http://localhost:3000/body/model?key=value',
@@ -55,57 +58,65 @@ class TestApiLogger(Base):
         self._api_logger: ApiLogger = self.get_api_logger(
             logger, log_level, mask_sensitive_headers, request_logging_configuration, response_logging_configuration)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def get_api_logger(
             self, logger: Logger, log_level: int=logging.INFO, mask_sensitive_headers: bool=True,
-            request_logging_configuration: ApiRequestLoggingConfiguration=None,
-            response_logging_configuration: ApiResponseLoggingConfiguration=None
+            request_logging_configuration: Optional[ApiRequestLoggingConfiguration]=None,
+            response_logging_configuration: Optional[ApiResponseLoggingConfiguration]=None
     ) -> ApiLogger:
         return SdkLogger(self.api_logging_configuration(
             logger, log_level=log_level, mask_sensitive_headers=mask_sensitive_headers,
             request_logging_configuration=request_logging_configuration,
             response_logging_configuration=response_logging_configuration))
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_request(self, log_capture: LogCapture):
         self.init_sdk_logger(logger=MockedApiLogger())
         self._api_logger.log_request(self._api_request)
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Request %s %s %s' and
-                                     record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
-                                     record.message == 'Request POST http://localhost:3000/body/model application/json',
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Request %s %s %s' and
+            record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
+            record.message == 'Request POST http://localhost:3000/body/model application/json'
+            for record in records)
+
         assert all(record.levelname == "INFO" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_request_with_log_level(self, log_capture: LogCapture):
         self.init_sdk_logger(logger=MockedApiLogger(), log_level=logging.WARN)
         self._api_logger.log_request(self._api_request)
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Request %s %s %s' and
-                                     record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
-                                     record.message == 'Request POST http://localhost:3000/body/model application/json',
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Request %s %s %s' and
+            record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
+            record.message == 'Request POST http://localhost:3000/body/model application/json'
+            for record in records)
+
         assert all(record.levelname == "WARNING" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_request_with_include_query_in_path(self, log_capture: LogCapture):
         self.init_sdk_logger(logger=MockedApiLogger(),
                              request_logging_configuration=self.api_request_logging_configuration(
                                  include_query_in_path=True))
         self._api_logger.log_request(self._api_request)
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Request %s %s %s' and
-                                     record.args == ('POST', 'http://localhost:3000/body/model?key=value', 'application/json') and
-                                     record.message == 'Request POST http://localhost:3000/body/model?key=value application/json',
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Request %s %s %s' and
+            record.args == ('POST', 'http://localhost:3000/body/model?key=value', 'application/json') and
+            record.message == 'Request POST http://localhost:3000/body/model?key=value application/json'
+            for record in records)
+
         assert all(record.levelname == "INFO" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_request_with_log_request_header(self, log_capture: LogCapture):
         self.init_sdk_logger(
             logger=MockedApiLogger(),
@@ -113,68 +124,77 @@ class TestApiLogger(Base):
         self._api_logger.log_request(self._api_request)
 
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Request %s %s %s' and
-                                     record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
-                                     record.message == 'Request POST http://localhost:3000/body/model application/json',
-            max_checks=1)
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Request Headers %s' and
-                                     record.args == {'Content-Type': 'application/json', 'Accept': 'application/json'} and
-                                     record.message == "Request Headers {'Content-Type': 'application/json', 'Accept': 'application/json'}",
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Request %s %s %s' and
+            record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
+            record.message == 'Request POST http://localhost:3000/body/model application/json'
+            for record in records)
+
+        assert any(
+            record.msg == 'Request Headers %s' and
+            record.args == {'Content-Type': 'application/json', 'Accept': 'application/json'} and
+            record.message == "Request Headers {'Content-Type': 'application/json', 'Accept': 'application/json'}"
+            for record in records)
+
         assert all(record.levelname == "INFO" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_request_with_log_request_body(self, log_capture: LogCapture):
         self.init_sdk_logger(logger=MockedApiLogger(),
                              request_logging_configuration=self.api_request_logging_configuration(log_body=True))
         self._api_logger.log_request(self._api_request)
 
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Request %s %s %s' and
-                                     record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
-                                     record.message == 'Request POST http://localhost:3000/body/model application/json',
-            max_checks=1)
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Request Body %s' and
-                                     record.args == ('{"Key": "Value"}',) and
-                                     record.message == 'Request Body {"Key": "Value"}',
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Request %s %s %s' and
+            record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
+            record.message == 'Request POST http://localhost:3000/body/model application/json'
+            for record in records)
+
+        assert any(
+            record.msg == 'Request Body %s' and
+            record.args == ('{"Key": "Value"}',) and
+            record.message == 'Request Body {"Key": "Value"}'
+            for record in records)
+
         assert all(record.levelname == "INFO" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_response(self, log_capture: LogCapture):
         self.init_sdk_logger(logger=MockedApiLogger())
         self._api_logger.log_response(self._api_response)
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Response %s %s %s' and
-                                     record.args == (200, 'application/json', 50) and
-                                     record.message == 'Response 200 application/json 50',
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Response %s %s %s' and
+            record.args == (200, 'application/json', 50) and
+            record.message == 'Response 200 application/json 50'
+            for record in records)
+
         assert all(record.levelname == "INFO" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_response_with_log_level(self, log_capture: LogCapture):
         self.init_sdk_logger(logger=MockedApiLogger(), log_level=logging.WARN)
         self._api_logger.log_response(self._api_response)
+
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Response %s %s %s' and
-                                     record.args == (200, 'application/json', 50) and
-                                     record.message == 'Response 200 application/json 50',
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Response %s %s %s' and
+            record.args == (200, 'application/json', 50) and
+            record.message == 'Response 200 application/json 50'
+            for record in records)
+
         assert all(record.levelname == "WARNING" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_response_with_log_response_header(self, log_capture: LogCapture):
         self.init_sdk_logger(
             logger=MockedApiLogger(),
@@ -182,61 +202,67 @@ class TestApiLogger(Base):
         self._api_logger.log_response(self._api_response)
 
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Response %s %s %s' and
-                                     record.args == (200, 'application/json', 50) and
-                                     record.message == 'Response 200 application/json 50',
-            max_checks=1)
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Response Headers %s' and
-                                     record.args == {'Content-Type': 'application/json', 'Content-Length': 50} and
-                                     record.message == "Response Headers {'Content-Type': 'application/json', 'Content-Length': 50}",
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Response %s %s %s' and
+            record.args == (200, 'application/json', 50) and
+            record.message == 'Response 200 application/json 50'
+            for record in records)
+
+        assert any(
+            record.msg == 'Response Headers %s' and
+            record.args == {'Content-Type': 'application/json', 'Content-Length': 50} and
+            record.message == "Response Headers {'Content-Type': 'application/json', 'Content-Length': 50}"
+            for record in records)
+
         assert all(record.levelname == "INFO" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_response_with_log_response_body(self, log_capture: LogCapture):
         self.init_sdk_logger(logger=MockedApiLogger(),
                              response_logging_configuration=self.api_response_logging_configuration(log_body=True))
         self._api_logger.log_response(self._api_response)
 
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Response %s %s %s' and
-                                     record.args == (200, 'application/json', 50) and
-                                     record.message == 'Response 200 application/json 50',
-            max_checks=1)
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Response Body %s' and
-                                     record.args == ('{"Key": "Value"}',) and
-                                     record.message == 'Response Body {"Key": "Value"}',
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Response %s %s %s' and
+            record.args == (200, 'application/json', 50) and
+            record.message == 'Response 200 application/json 50'
+            for record in records)
+
+        assert any(
+            record.msg == 'Response Body %s' and
+            record.args == ('{"Key": "Value"}',) and
+            record.message == 'Response Body {"Key": "Value"}'
+            for record in records)
+
         assert all(record.levelname == "INFO" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def test_custom_logger_for_end_to_end_api_call_test(self, log_capture: LogCapture):
         self.execute_api_call_with_logging(logger=MockedApiLogger())
 
         # Assert the captured logs
-        records = log_capture.records
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Request %s %s %s' and
-                                     record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
-                                     record.message == 'Request POST http://localhost:3000/body/model application/json',
-            max_checks=1)
-        assert self.any_with_limit(
-            records,
-            condition=lambda record: record.msg == 'Response %s %s %s' and
-                                     record.args == (200, 'application/json', None) and
-                                     record.message == 'Response 200 application/json None',
-            max_checks=1)
+        records: List[LogRecord] = log_capture.records
+
+        assert any(
+            record.msg == 'Request %s %s %s' and
+            record.args == ('POST', 'http://localhost:3000/body/model', 'application/json') and
+            record.message == 'Request POST http://localhost:3000/body/model application/json'
+            for record in records)
+
+        assert any(
+            record.msg == 'Response %s %s %s' and
+            record.args == (200, 'application/json', None) and
+            record.message == 'Response 200 application/json None'
+            for record in records)
+
         assert all(record.levelname == "INFO" for record in records)
 
+    @validate_call(config=dict(arbitrary_types_allowed=True))
     def execute_api_call_with_logging(self, logger: Logger):
         _api_call_builder = self.new_api_call_builder(self.global_configuration_with_logging(logger))
         _api_call_builder.new_builder \
@@ -253,17 +279,3 @@ class TestApiLogger(Base):
                       .deserializer(ApiHelper.json_deserialize)
                       .deserialize_into(Employee.model_validate)) \
             .execute()
-
-    @staticmethod
-    def any_with_limit(iterable: Iterable, condition: Callable[[List[LogRecord]], bool], max_checks: int):
-        """Checks if any element in iterable meets the condition, with a limit on checks.
-
-        Args:
-            iterable: The iterable to check (list, string, etc.)
-            condition: A function that takes an element and returns True if it meets the criteria.
-            max_checks: The maximum number of elements to check before returning False (defaults to infinite).
-
-        Returns:
-            True if any element meets the condition within the check limit, False otherwise.
-        """
-        return sum(1 for element in iterable if condition(element)) == max_checks

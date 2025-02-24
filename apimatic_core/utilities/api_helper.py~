@@ -746,7 +746,7 @@ class ApiHelper(object):
 
     @staticmethod
     def check_conflicts_with_additional_properties(
-            model_cls: BaseModel, properties: Any, additional_props_field: str
+            model_cls: BaseModel, properties: Dict[str, Any], additional_props_field: str
     ) -> None:
         """Raise ValueError if properties contain names conflicting with model fields."""
         defined_fields = {

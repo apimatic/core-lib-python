@@ -10,8 +10,8 @@ class ComparisonHelper:
     @staticmethod
     @validate_call
     def match_headers(
-        expected_headers: Dict[str, Optional[str]],
-        received_headers: Dict[str, str],
+        expected_headers: Dict[str, Any],
+        received_headers: Dict[str, Any],
         allow_extra: bool = True
     ) -> bool:
         """Static method to compare the received headers with the expected headers.

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from typing import Dict, Any
+from typing import Dict
 
 from apimatic_core.utilities.api_helper import ApiHelper
 
@@ -35,7 +35,7 @@ class BaseUriCallable:
             String: The base URI.
 
         """
-        parameters: Dict[str, Dict[str, Any]] = {}
+        parameters: Optional[Dict[str, Dict[str, Any]]] = {}
 
         return ApiHelper.append_url_with_template_parameters(
             self.environments[Environment.TESTING][server], parameters

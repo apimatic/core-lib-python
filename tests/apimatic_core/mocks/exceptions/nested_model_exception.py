@@ -29,7 +29,7 @@ class NestedModelExceptionValidator(BaseModel):
 class NestedModelException(APIException):
     server_message: Optional[str] = None
     server_code: Optional[int] = None
-    model: Optional[str] = None
+    model: Optional[Validate] = None
 
     def __init__(self, reason: str, response: HttpResponse):
         """Constructor for the NestedModelException class

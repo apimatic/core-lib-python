@@ -276,7 +276,7 @@ class Base:
     @validate_call
     def request(http_method: HttpMethodEnum=HttpMethodEnum.GET,
                 query_url: str='http://localhost:3000/test',
-                headers: Optional[Dict[str, Any]]=None,
+                headers: Dict[str, Any]=None,
                 query_parameters: Optional[Dict[str, Any]]=None,
                 parameters: Any=None,
                 files: Any=None) -> HttpRequest:

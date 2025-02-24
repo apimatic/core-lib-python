@@ -36,7 +36,6 @@ class TestLogHelper:
         logging_config: ApiRequestLoggingConfiguration = self.create_sample_request_logging_configuration(
             headers_to_include=["Authorization"])
         result: Dict[str, Any] = logging_config.get_loggable_headers(headers, False)
-
         assert "Authorization" in result.keys()
         assert "Content-Type" not in result.keys()
         assert "User-Agent" not in result.keys()

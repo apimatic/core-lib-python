@@ -1,9 +1,13 @@
 import pytest
+from typing import Dict, Any, Union, List, TypeVar
+
+from pydantic import validate_call
 
 from apimatic_core.utilities.comparison_helper import ComparisonHelper
 
 
 class TestComparisonHelper:
+    T = TypeVar("T")
 
     @pytest.mark.parametrize('input_expected_headers, input_received_headers, '
                              'input_should_allow_extra, expected_output',
@@ -26,10 +30,14 @@ class TestComparisonHelper:
                                  ({'content-type': 'application/json'},
                                   {'content-type': 'application/json', 'accept': 'application/json'}, True, True)
                              ])
-    def test_match_headers(self, input_expected_headers, input_received_headers,
-                           input_should_allow_extra, expected_output):
-        actual_output = ComparisonHelper.match_headers(input_expected_headers, input_received_headers
-                                                       , input_should_allow_extra)
+    @validate_call
+    def test_match_headers(
+            self, input_expected_headers: Dict[str, Any], input_received_headers: Dict[str, Any],
+            input_should_allow_extra: bool, expected_output: bool
+    ):
+        actual_output = ComparisonHelper.match_headers(
+            input_expected_headers, input_received_headers, input_should_allow_extra)
+
         assert actual_output is expected_output
 
     @pytest.mark.parametrize('input_expected_body, input_received_body, input_check_values, '
@@ -2118,8 +2126,12 @@ class TestComparisonHelper:
                                       }
                                   }, False, False, False, True)  # 97
                              ])
-    def test_match_body(self, input_expected_body, input_received_body, input_check_values, input_check_order,
-                        input_check_count, expected_output):
-        actual_output = ComparisonHelper.match_body(input_expected_body, input_received_body, input_check_values,
-                                                    input_check_order, input_check_count)
+    @validate_call
+    def test_match_body(
+            self, input_expected_body: Union[Dict[str, Any], List[Any], T],
+            input_received_body: Union[Dict[str, Any], List[Any], T], input_check_values: bool,
+            input_check_order: bool, input_check_count: bool, expected_output: bool):
+        actual_output = ComparisonHelper.match_body(
+            input_expected_body, input_received_body, input_check_values, input_check_order, input_check_count)
+
         assert actual_output is expected_output
