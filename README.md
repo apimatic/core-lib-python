@@ -9,7 +9,7 @@ The APIMatic Core libraries provide a stable runtime that powers all the functio
 
 
 ## Installation
-You will need Python 3.7-3.11 to support this package.
+You will need Python version 3.8+ to support this package.
 
 Simply run the command below to install the core library in your SDK. The core library will be added as a dependency your SDK.
 
