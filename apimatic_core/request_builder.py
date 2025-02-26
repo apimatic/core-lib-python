@@ -1,3 +1,5 @@
+from requests.structures import CaseInsensitiveDict
+
 from apimatic_core.exceptions.auth_validation_exception import AuthValidationException
 from apimatic_core.http.request.http_request import HttpRequest
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -15,12 +17,11 @@ class RequestBuilder:
     def __init__(
             self
     ):
-
         self._server = None
         self._path = None
         self._http_method = None
         self._template_params = {}
-        self._header_params = {}
+        self._header_params = CaseInsensitiveDict()
         self._query_params = {}
         self._form_params = {}
         self._additional_form_params = {}
@@ -107,9 +108,9 @@ class RequestBuilder:
     def build(self, global_configuration):
         _url = self.process_url(global_configuration)
 
-        _request_headers = self.process_request_headers(global_configuration)
-
         _request_body = self.process_body_params()
+
+        _request_headers = self.process_request_headers(global_configuration)
 
         _multipart_params = self.process_multipart_params()
 
@@ -147,14 +148,19 @@ class RequestBuilder:
         additional_headers = global_configuration.get_additional_headers()
 
         if global_headers:
-            prepared_headers = {key: str(value) if value is not None else value
-                                for key, value in self._header_params.items()}
-            request_headers = {**global_headers, **prepared_headers}
+            request_headers = {**global_headers, **self._header_params}
 
         if additional_headers:
             request_headers.update(additional_headers)
 
-        return request_headers
+        serialized_headers = CaseInsensitiveDict(
+            {
+                key: ApiHelper.json_serialize(value)
+                if value is not None else value
+                for key, value in request_headers.items()
+            }
+        )
+        return serialized_headers
 
     def process_body_params(self):
         if self._xml_attributes:

@@ -177,16 +177,18 @@ class TestRequestBuilder(Base):
 
     @pytest.mark.parametrize('input_local_header_param_value, expected_local_header_param_value', [
         ('string', {'header_param': 'string'}),
-        (500, {'header_param': 500}),
-        (500.12, {'header_param': 500.12}),
+        (500, {'header_param': '500'}),
+        (500.12, {'header_param': '500.12'}),
         (str(date(1994, 2, 13)), {'header_param': '1994-02-13'}),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         {'header_param': 761117415}),
+         {'header_param': '761117415'}),
         (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': '{}'.format(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
         (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': '{}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
-        ([1, 2, 3, 4], {'header_param': [1, 2, 3, 4]})
+        ([1, 2, 3, 4], {'header_param': '[1, 2, 3, 4]'}),
+        ({'key1': 'val1', 'key2': 'val2'}, {'header_param': '{"key1": "val1", "key2": "val2"}'}),
+        (Base.employee_model(), {'header_param': ApiHelper.json_serialize(Base.employee_model())})
     ])
     def test_local_headers(self, input_local_header_param_value, expected_local_header_param_value):
         http_request = self.new_request_builder \
@@ -198,16 +200,18 @@ class TestRequestBuilder(Base):
 
     @pytest.mark.parametrize('input_global_header_param_value, expected_global_header_param_value', [
         ('my-string', {'header_param': 'my-string'}),
-        (5000, {'header_param': 5000}),
-        (5000.12, {'header_param': 5000.12}),
+        (5000, {'header_param': '5000'}),
+        (5000.12, {'header_param': '5000.12'}),
         (str(date(1998, 2, 13)), {'header_param': '1998-02-13'}),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         {'header_param': 761117415}),
+         {'header_param': '761117415'}),
         (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': '{}'.format(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
         (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': '{}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
-        ([100, 200, 300, 400], {'header_param': [100, 200, 300, 400]})
+        ([100, 200, 300, 400], {'header_param': '[100, 200, 300, 400]'}),
+        ({'key1': 'val1', 'key2': 'val2'}, {'header_param': '{"key1": "val1", "key2": "val2"}'}),
+        (Base.employee_model(), {'header_param': ApiHelper.json_serialize(Base.employee_model())})
     ])
     def test_global_headers(self, input_global_header_param_value, expected_global_header_param_value):
         http_request = self.new_request_builder \
@@ -217,16 +221,18 @@ class TestRequestBuilder(Base):
 
     @pytest.mark.parametrize('input_additional_header_param_value, expected_additional_header_param_value', [
         ('my-string', {'header_param': 'my-string'}),
-        (5000, {'header_param': 5000}),
-        (5000.12, {'header_param': 5000.12}),
+        (5000, {'header_param': '5000'}),
+        (5000.12, {'header_param': '5000.12'}),
         (str(date(1998, 2, 13)), {'header_param': '1998-02-13'}),
         (ApiHelper.UnixDateTime.from_datetime(datetime(1994, 2, 13, 5, 30, 15)),
-         {'header_param': 761117415}),
+         {'header_param': '761117415'}),
         (Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': '{}'.format(Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
         (Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)),
          {'header_param': '{}'.format(Base.get_rfc3339_datetime(datetime(1994, 2, 13, 5, 30, 15)))}),
-        ([100, 200, 300, 400], {'header_param': [100, 200, 300, 400]})
+        ([100, 200, 300, 400], {'header_param': '[100, 200, 300, 400]'}),
+        ({'key1': 'val1', 'key2': 'val2'}, {'header_param': '{"key1": "val1", "key2": "val2"}'}),
+        (Base.employee_model(), {'header_param': ApiHelper.json_serialize(Base.employee_model())})
     ])
     def test_additional_headers(self, input_additional_header_param_value, expected_additional_header_param_value):
         http_request = self.new_request_builder \
@@ -510,7 +516,7 @@ class TestRequestBuilder(Base):
             actual_body_param_value = http_request.parameters
 
             assert actual_body_param_value.read() == expected_body_param_value.read() \
-                   and http_request.headers['content-type'] == expected_content_type
+                   and http_request.headers['Content-Type'] == expected_content_type
         finally:
             actual_body_param_value.close()
             expected_body_param_value.close()
