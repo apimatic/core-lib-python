@@ -1,3 +1,5 @@
+from requests.structures import CaseInsensitiveDict
+
 from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
 from apimatic_core.utilities.api_helper import ApiHelper
 
@@ -27,8 +29,8 @@ class GlobalConfiguration:
     ):
         self._http_client_configuration = http_client_configuration
         self._global_errors = {}
-        self._global_headers = {}
-        self._additional_headers = {}
+        self._global_headers = CaseInsensitiveDict()
+        self._additional_headers = CaseInsensitiveDict()
         self._auth_managers = {}
         self._base_uri_executor = None
 
