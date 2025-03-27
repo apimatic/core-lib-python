@@ -1,5 +1,6 @@
 import re
 from apimatic_core.http.response.api_response import ApiResponse
+from apimatic_core.pagination.pagination import OffsetPaginated
 from apimatic_core.types.error_case import ErrorCase
 
 
@@ -15,6 +16,7 @@ class ResponseHandler:
         self._datetime_format = None
         self._is_xml_response = False
         self._xml_item_name = None
+        self._pagination_deserializer = None
 
     def deserializer(self, deserializer):
         self._deserializer = deserializer
@@ -60,7 +62,44 @@ class ResponseHandler:
         self._xml_item_name = xml_item_name
         return self
 
-    def handle(self, response, global_errors):
+    def pagination_deserializer(self, pagination_deserializer):
+        self._pagination_deserializer = pagination_deserializer
+        return self
+
+    def link_paginated_deserializer(self, deserializer, config):
+        """
+        Setter for the deserializer to be used in link-based pagination wrapper.
+
+        :param deserializer: Function to deserialize the server response.
+        :param config: Configuration for link-based pagination.
+        :return: ResponseHandlerBuilder instance.
+        """
+        self._pagination_deserializer = lambda res, ec: LinkPaginated.create(deserializer, config, ec, res)
+        return self
+
+    def cursor_paginated_deserializer(self, deserializer, config):
+        """
+        Setter for the deserializer to be used in cursor-based pagination wrapper.
+
+        :param deserializer: Function to deserialize the server response.
+        :param config: Configuration for cursor-based pagination.
+        :return: ResponseHandlerBuilder instance.
+        """
+        self._pagination_deserializer = lambda res, ec: CursorPaginated.create(deserializer, config, ec, res)
+        return self
+
+    def offset_paginated_deserializer(self, deserializer, config):
+        """
+        Setter for the deserializer to be used in offset-based pagination wrapper.
+
+        :param deserializer: Function to deserialize the server response.
+        :param config: Configuration for offset-based pagination.
+        :return: ResponseHandlerBuilder instance.
+        """
+        self._pagination_deserializer = lambda res, ec: OffsetPaginated.create(deserializer, config, ec, res)
+        return self
+
+    def handle(self, response, global_errors, config):
 
         # checking Nullify 404
         if response.status_code == 404 and self._is_nullify404:
@@ -77,6 +116,9 @@ class ResponseHandler:
 
         # applying convertor if configured
         deserialized_value = self.apply_convertor(deserialized_value)
+
+        # applying paginated deserializer if configured
+        deserialized_value = self.apply_paginated_deserializer(response, config, deserialized_value)
 
         return deserialized_value
 
@@ -115,6 +157,12 @@ class ResponseHandler:
     def apply_convertor(self, deserialized_value):
         if self._convertor:
             return self._convertor(deserialized_value)
+
+        return deserialized_value
+
+    def apply_paginated_deserializer(self, response, config, deserialized_value):
+        if self._pagination_deserializer:
+            return self._pagination_deserializer(response, config)
 
         return deserialized_value
 

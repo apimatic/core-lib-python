@@ -61,4 +61,4 @@ class ApiCall:
         if _http_callback is not None:
             _http_callback.on_after_response(_http_response)
 
-        return self._response_handler.handle(_http_response, self._global_configuration.get_global_errors())
+        return self._response_handler.handle(_http_response, self._global_configuration.get_global_errors(), self._endpoint_configuration)
