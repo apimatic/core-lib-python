@@ -1,4 +1,4 @@
-class CursorPaginatedConfiguration:
+class CursorPaginatorConfiguration:
     def __init__(self, next_cursor=None, cursor_query_param_name=None, result_pointer=None):
         self.next_cursor = next_cursor
         self.cursor_query_param_name = cursor_query_param_name

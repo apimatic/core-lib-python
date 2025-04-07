@@ -7,7 +7,7 @@ from apimatic_core.utilities.api_helper import ApiHelper
 class OffsetPaginatorConfiguration:
     """Configuration for OffsetPaginated."""
 
-    def __init__(self, page_param_name, offset_param_name, result_pointer):
+    def __init__(self, page_param_name=None, offset_param_name=None, result_pointer=None):
         self.page_param_name = page_param_name
         self.offset_param_name = offset_param_name
         self.result_pointer = result_pointer

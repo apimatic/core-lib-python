@@ -55,18 +55,18 @@ class PaginatedData:
         """Abstract method that should be implemented by child classes."""
         raise NotImplementedError("Subclasses must implement fetch_data()")
 
-
 class OffsetPaginated(PaginatedData):
     """Offset-based pagination, extends PaginatedData."""
 
-    def __init__(self, deserializer, configuration, endpoint_config, response):
-        super().__init__(deserializer(response.text), response, endpoint_config, configuration.result_pointer)
+    def __init__(self, deserializer, deserialize_into, configuration, endpoint_config, response):
+        super().__init__(deserializer(response.text, deserialize_into), response, endpoint_config, configuration.result_pointer)
         self.deserializer = deserializer
+        self.deserialize_into = deserialize_into
         self.configuration = configuration
 
     @staticmethod
-    def create(deserializer, configuration, endpoint_config, response):
-        return OffsetPaginated(deserializer, configuration, endpoint_config, response)
+    def create(deserializer, deserialize_into,  configuration, endpoint_config, response):
+        return OffsetPaginated(deserializer, deserialize_into, configuration, endpoint_config, response)
 
     def fetch_data(self):
         """Fetches the next page of data."""
@@ -79,7 +79,7 @@ class OffsetPaginated(PaginatedData):
                         self.get_last_response().text)
                       )
                       .response(lambda res: res.offset_paginated_deserializer(
-                        self.deserializer, self.configuration)
+                        self.deserializer, self.deserialize_into, self.configuration)
                       )
                       .endpoint_configuration(endpoint_config)
                     ).execute()
@@ -89,14 +89,15 @@ class OffsetPaginated(PaginatedData):
 class CursorPaginated(PaginatedData):
     """Cursor-based pagination, extends PaginatedData."""
 
-    def __init__(self, deserializer, configuration, endpoint_config, response):
-        super().__init__(deserializer(response.text), response, endpoint_config, configuration.result_pointer)
+    def __init__(self, deserializer, deserialize_into, configuration, endpoint_config, response):
+        super().__init__(deserializer(response.text, deserialize_into), response, endpoint_config, configuration.result_pointer)
         self.deserializer = deserializer
         self.configuration = configuration
+        self.deserialize_into = deserialize_into
 
     @staticmethod
-    def create(deserializer, configuration, endpoint_config, response):
-        return CursorPaginated(deserializer, configuration, endpoint_config, response)
+    def create(deserializer, deserialize_into, configuration, endpoint_config, response):
+        return CursorPaginated(deserializer, deserialize_into, configuration, endpoint_config, response)
 
     def fetch_data(self):
         """Fetches the next page of data using cursor-based pagination."""
@@ -113,24 +114,24 @@ class CursorPaginated(PaginatedData):
                         endpoint_config.get_global_configuration(),
                         self.get_last_response().text)
                     )
-                    .response(lambda res: res.cursor_paginated_deserializer(self.deserializer, self.configuration))
+                    .response(lambda res: res.cursor_paginated_deserializer(self.deserializer, self.deserialize_into, self.configuration))
                     .endpoint_configuration(endpoint_config)
                     ).execute()
         except Exception:
             return None
 
-
 class LinkPaginated(PaginatedData):
     """Link-based pagination, extends PaginatedData."""
 
-    def __init__(self, deserializer, configuration, endpoint_config, response):
-        super().__init__(deserializer(response.text), response, endpoint_config, configuration.result_pointer)
+    def __init__(self, deserializer, deserialize_into, configuration, endpoint_config, response):
+        super().__init__(deserializer(response.text, deserialize_into), response, endpoint_config, configuration.result_pointer)
         self.deserializer = deserializer
         self.configuration = configuration
+        self.deserialize_into = deserialize_into
 
     @staticmethod
-    def create(deserializer, configuration, endpoint_config, response):
-        return LinkPaginated(deserializer, configuration, endpoint_config, response)
+    def create(deserializer, deserialize_into, configuration, endpoint_config, response):
+        return LinkPaginated(deserializer, deserialize_into, configuration, endpoint_config, response)
 
     def fetch_data(self):
         """Fetches the next page of data using link-based pagination."""
@@ -147,7 +148,7 @@ class LinkPaginated(PaginatedData):
                         endpoint_config.get_global_configuration(),
                         link_value)
                     )
-                    .response(lambda res: res.link_paginated_deserializer(self.deserializer, self.configuration))
+                    .response(lambda res: res.link_paginated_deserializer(self.deserializer, self.deserialize_into, self.configuration))
                     .endpoint_configuration(endpoint_config)
                     ).execute()
         except Exception:

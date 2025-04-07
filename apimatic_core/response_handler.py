@@ -1,6 +1,6 @@
 import re
 from apimatic_core.http.response.api_response import ApiResponse
-from apimatic_core.pagination.pagination import OffsetPaginated
+from apimatic_core.pagination.pagination import OffsetPaginated, LinkPaginated, CursorPaginated
 from apimatic_core.types.error_case import ErrorCase
 
 
@@ -66,7 +66,7 @@ class ResponseHandler:
         self._pagination_deserializer = pagination_deserializer
         return self
 
-    def link_paginated_deserializer(self, deserializer, config):
+    def link_paginated_deserializer(self, deserializer, deserialize_into, config):
         """
         Setter for the deserializer to be used in link-based pagination wrapper.
 
@@ -74,10 +74,10 @@ class ResponseHandler:
         :param config: Configuration for link-based pagination.
         :return: ResponseHandlerBuilder instance.
         """
-        self._pagination_deserializer = lambda res, ec: LinkPaginated.create(deserializer, config, ec, res)
+        self._pagination_deserializer = lambda res, ec: LinkPaginated.create(deserializer, deserialize_into, config, ec, res)
         return self
 
-    def cursor_paginated_deserializer(self, deserializer, config):
+    def cursor_paginated_deserializer(self, deserializer, deserialize_into, config):
         """
         Setter for the deserializer to be used in cursor-based pagination wrapper.
 
@@ -85,10 +85,10 @@ class ResponseHandler:
         :param config: Configuration for cursor-based pagination.
         :return: ResponseHandlerBuilder instance.
         """
-        self._pagination_deserializer = lambda res, ec: CursorPaginated.create(deserializer, config, ec, res)
+        self._pagination_deserializer = lambda res, ec: CursorPaginated.create(deserializer, deserialize_into, config, ec, res)
         return self
 
-    def offset_paginated_deserializer(self, deserializer, config):
+    def offset_paginated_deserializer(self, deserializer, deserialize_into, config):
         """
         Setter for the deserializer to be used in offset-based pagination wrapper.
 
@@ -96,7 +96,7 @@ class ResponseHandler:
         :param config: Configuration for offset-based pagination.
         :return: ResponseHandlerBuilder instance.
         """
-        self._pagination_deserializer = lambda res, ec: OffsetPaginated.create(deserializer, config, ec, res)
+        self._pagination_deserializer = lambda res, ec: OffsetPaginated.create(deserializer, deserialize_into, config, ec, res)
         return self
 
     def handle(self, response, global_errors, config):
