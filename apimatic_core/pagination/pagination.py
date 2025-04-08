@@ -1,6 +1,4 @@
 from jsonpointer import resolve_pointer
-
-from apimatic_core.api_call import ApiCall
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
@@ -70,6 +68,7 @@ class OffsetPaginated(PaginatedData):
 
     def fetch_data(self):
         """Fetches the next page of data."""
+        from apimatic_core.api_call import ApiCall
         endpoint_config = self.get_last_endpoint_configuration()
         try:
             return (ApiCall(endpoint_config.get_global_configuration()).new_builder.
@@ -101,6 +100,8 @@ class CursorPaginated(PaginatedData):
 
     def fetch_data(self):
         """Fetches the next page of data using cursor-based pagination."""
+        from apimatic_core.api_call import ApiCall
+
         cursor_value = ApiHelper.json_deserialize(resolve_pointer(self.get_last_response().text, self.configuration.next_cursor))
         endpoint_config = self.get_last_endpoint_configuration()
 
@@ -135,6 +136,7 @@ class LinkPaginated(PaginatedData):
 
     def fetch_data(self):
         """Fetches the next page of data using link-based pagination."""
+        from apimatic_core.api_call import ApiCall
         link_value = ApiHelper.json_deserialize(resolve_pointer(self.get_last_response().text, self.configuration.next_pointer))
         endpoint_config = self.get_last_endpoint_configuration()
 
