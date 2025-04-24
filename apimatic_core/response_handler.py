@@ -1,6 +1,6 @@
 import re
 from apimatic_core.http.response.api_response import ApiResponse
-from apimatic_core.pagination.pagination import OffsetPaginated, LinkPaginated, CursorPaginated
+from apimatic_core.pagination.pagination import PaginatedData
 from apimatic_core.types.error_case import ErrorCase
 
 
@@ -62,63 +62,38 @@ class ResponseHandler:
         self._xml_item_name = xml_item_name
         return self
 
-    def pagination_deserializer(self, pagination_deserializer):
-        self._pagination_deserializer = pagination_deserializer
-        return self
-
-    def link_paginated_deserializer(self, deserializer, deserialize_into, config):
+    def paginated_deserializer(self, page_class, converter, return_type_getter, *data_managers):
         """
-        Setter for the deserializer to be used in link-based pagination wrapper.
+        Setter for the deserializer to be used in page-based pagination.
 
-        :param deserializer: Function to deserialize the server response.
-        :param config: Configuration for link-based pagination.
+        :param page_class: Class for the page structure.
+        :param converter: Function to convert a page to a list of items.
+        :param return_type_getter: Function to convert PaginatedData to the desired return type.
+        :param data_managers: Optional pagination data managers.
         :return: ResponseHandlerBuilder instance.
         """
-        self._pagination_deserializer = lambda res, ec: LinkPaginated.create(deserializer, deserialize_into, config, ec, res)
+        self._pagination_deserializer = lambda res, ec: PaginatedData(
+            page_class, converter, res, ec, data_managers
+        ).convert(return_type_getter)
         return self
 
-    def cursor_paginated_deserializer(self, deserializer, deserialize_into, config):
-        """
-        Setter for the deserializer to be used in cursor-based pagination wrapper.
-
-        :param deserializer: Function to deserialize the server response.
-        :param config: Configuration for cursor-based pagination.
-        :return: ResponseHandlerBuilder instance.
-        """
-        self._pagination_deserializer = lambda res, ec: CursorPaginated.create(deserializer, deserialize_into, config, ec, res)
-        return self
-
-    def offset_paginated_deserializer(self, deserializer, deserialize_into, config):
-        """
-        Setter for the deserializer to be used in offset-based pagination wrapper.
-
-        :param deserializer: Function to deserialize the server response.
-        :param config: Configuration for offset-based pagination.
-        :return: ResponseHandlerBuilder instance.
-        """
-        self._pagination_deserializer = lambda res, ec: OffsetPaginated.create(deserializer, deserialize_into, config, ec, res)
-        return self
-
-    def handle(self, response, global_errors, config):
+    def handle(self, response, global_config, config):
 
         # checking Nullify 404
         if response.status_code == 404 and self._is_nullify404:
             return None
 
         # validating response if configured
-        self.validate(response, global_errors)
+        self.validate(response, global_config.get_global_errors())
 
         # applying deserializer if configured
-        deserialized_value = self.apply_deserializer(response)
+        deserialized_value = self.apply_deserializer(response, global_config, config)
 
         # applying api_response if configured
         deserialized_value = self.apply_api_response(response, deserialized_value)
 
         # applying convertor if configured
         deserialized_value = self.apply_convertor(deserialized_value)
-
-        # applying paginated deserializer if configured
-        deserialized_value = self.apply_paginated_deserializer(response, config, deserialized_value)
 
         return deserialized_value
 
@@ -135,7 +110,7 @@ class ResponseHandler:
             return self._deserializer(response.text, self._xml_item_name, self._deserialize_into)
         return self._deserializer(response.text, self._deserialize_into)
 
-    def apply_deserializer(self, response):
+    def apply_deserializer(self, response, global_config, config):
         if self._is_xml_response:
             return self.apply_xml_deserializer(response)
         elif self._deserialize_into:
@@ -144,6 +119,8 @@ class ResponseHandler:
             return self._deserializer(response.text)
         elif self._deserializer and self._datetime_format:
             return self._deserializer(response.text, self._datetime_format)
+        elif self._pagination_deserializer:
+            return self._pagination_deserializer(response, global_config, config)
         else:
             return response.text
 
@@ -157,12 +134,6 @@ class ResponseHandler:
     def apply_convertor(self, deserialized_value):
         if self._convertor:
             return self._convertor(deserialized_value)
-
-        return deserialized_value
-
-    def apply_paginated_deserializer(self, response, config, deserialized_value):
-        if self._pagination_deserializer:
-            return self._pagination_deserializer(response, config)
 
         return deserialized_value
 

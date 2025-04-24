@@ -5,11 +5,11 @@ import datetime
 import calendar
 import email.utils as eut
 from time import mktime
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlparse, parse_qsl
 
 import jsonpickle
 import dateutil.parser
-from jsonpointer import JsonPointerException, resolve_pointer
+from jsonpointer import set_pointer, JsonPointerException, resolve_pointer
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -437,6 +437,20 @@ class ApiHelper(object):
         return protocol + query_url + parameters
 
     @staticmethod
+    def get_query_parameters(url):
+        """Extracts query parameters from the given URL.
+
+        Args:
+            url (str): The URL string to extract query parameters from.
+
+        Returns:
+            dict: A dictionary of query parameter key-value pairs.
+        """
+        parsed_url = urlparse(url)
+        query_pairs = parse_qsl(parsed_url.query)
+        return dict(query_pairs)
+
+    @staticmethod
     def form_encode_parameters(form_parameters, array_serialization="indexed"):
         """Form encodes a dictionary of form parameters
 
@@ -722,6 +736,19 @@ class ApiHelper(object):
 
         return additional_properties
 
+    @staticmethod
+    def update_value_by_pointer(value, pointer, updater):
+        if value is None or pointer is None:
+            return value
+
+        try:
+            current_value = resolve_pointer(value, pointer)
+            new_value = updater(current_value)
+            set_pointer(value, pointer, new_value, inplace=True)
+        except JsonPointerException:
+            pass
+
+        return value
 
     class CustomDate(object):
 

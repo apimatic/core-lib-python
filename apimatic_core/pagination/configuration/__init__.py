@@ -1,5 +1,6 @@
 __all__ = [
-    'offset_paginator_config',
-    'link_paginator_config',
-    'cursor_paginator_config'
+    'page_pagination',
+    'cursor_pagination',
+    'link_pagination',
+    'offset_pagination'
 ]
