@@ -1,6 +1,3 @@
-from jsonpointer import resolve_pointer
-
-from apimatic_core.api_call import ApiCall
 from apimatic_core.utilities.api_helper import ApiHelper
 from collections.abc import Iterator
 
@@ -92,6 +89,7 @@ class PaginatedData(Iterator):
         return return_type_getter(self)
 
     def fetch_more_data(self):
+        from apimatic_core.api_call import ApiCall
         for manager in self.data_managers:
             if not manager.is_valid(self):
                 continue
