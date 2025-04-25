@@ -72,8 +72,8 @@ class ResponseHandler:
         :param data_managers: Optional pagination data managers.
         :return: ResponseHandlerBuilder instance.
         """
-        self._pagination_deserializer = lambda res, ec: PaginatedData(
-            page_class, converter, res, ec, data_managers
+        self._pagination_deserializer = lambda res, gc, ec: PaginatedData(
+            page_class, converter, res, ec, gc, data_managers
         ).convert(return_type_getter)
         return self
 
