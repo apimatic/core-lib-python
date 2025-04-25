@@ -1,6 +1,6 @@
 import re
 from apimatic_core.http.response.api_response import ApiResponse
-from apimatic_core.pagination.pagination import PaginatedData
+from apimatic_core.pagination.paginated_data import PaginatedData
 from apimatic_core.types.error_case import ErrorCase
 
 
