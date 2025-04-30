@@ -15,7 +15,7 @@ class RequestBuilder:
         return param_value.name
     @staticmethod
     def _update_param_dict(param_dict, setter, point, value_key=None):
-        pointer = f"/{point}" + (f"/{value_key}" if value_key else "")
+        pointer = f"{point}" + (f"/{value_key}" if value_key else "")
         return ApiHelper.update_value_by_pointer(param_dict, pointer, setter)
 
     def __init__(

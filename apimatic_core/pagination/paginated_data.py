@@ -18,7 +18,7 @@ class PaginatedData(Iterator):
         self.update_using(response, endpoint_config, global_config)
 
     def update_using(self, response, endpoint_config, global_config):
-        page = ApiHelper.json_deserialize(response.body, self.page_class)
+        page = ApiHelper.json_deserialize(response.text, self.page_class.from_dictionary)
         new_data = self.converter(page)
 
         self.last_data_size = len(new_data)
@@ -36,7 +36,7 @@ class PaginatedData(Iterator):
         return self.last_global_config
 
     def get_last_response(self):
-        return self.last_response.body
+        return self.last_response.text
 
     def get_last_data_size(self):
         return self.last_data_size
@@ -90,6 +90,8 @@ class PaginatedData(Iterator):
 
     def fetch_more_data(self):
         from apimatic_core.api_call import ApiCall
+        from apimatic_core.response_handler import ResponseHandler
+
         for manager in self.data_managers:
             if not manager.is_valid(self):
                 continue
@@ -97,19 +99,22 @@ class PaginatedData(Iterator):
                 endpoint_config = self.get_last_endpoint_config()
                 global_config = self.get_last_global_config()
 
-                result = (
-                    ApiCall(global_config)
-                    .new_builder()
+                result = ApiCall(global_config).new_builder \
                     .request(
                         manager.get_next_request_builder(self)
-                     )
-                    .response(lambda res: res.paginated_deserializer(self.page_class, self.converter, lambda r :r, self.data_managers))
-                    .endpoint_configuration(endpoint_config)
+                     ) \
+                    .response(ResponseHandler()
+                              .paginated_deserializer(
+                                  self.page_class,
+                                  self.converter,
+                                  lambda r :r,
+                     self.data_managers)) \
+                    .endpoint_configuration(endpoint_config) \
                     .execute()
-                )
+
 
                 self.update_using(result.last_response, result.last_endpoint_config, result.last_global_config)
                 return
             except Exception:
-                continue
+                pass
 

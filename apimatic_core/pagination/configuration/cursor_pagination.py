@@ -1,6 +1,7 @@
 from apimatic_core_interfaces.pagination.paginated_data_manager import PaginationDataManager
 from jsonpointer import resolve_pointer
 from apimatic_core.types.parameter import Parameter
+from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class CursorPagination(PaginationDataManager):
@@ -31,8 +32,10 @@ class CursorPagination(PaginationDataManager):
         Returns:
             bool: True if a cursor value is present, False otherwise.
         """
-        response_body = paginated_data.get_last_response()
-        self.cursor_value = resolve_pointer(response_body, self.output)
+        response_payload = ApiHelper.json_deserialize(paginated_data.get_last_response(), as_dict=True)
+        if '#' in self.output:
+            node_pointer = self.output.rsplit('#')[1].rstrip('}')
+            self.cursor_value = resolve_pointer(response_payload, node_pointer)
         return self.cursor_value is not None
 
     def get_next_request_builder(self, paginated_data):
@@ -44,5 +47,6 @@ class CursorPagination(PaginationDataManager):
         Returns:
             HttpRequest.Builder: A builder instance for the next page request.
         """
-        last_request_builder = paginated_data.get_last_endpoint_config().get_request_builder()
-        return last_request_builder.query_param(Parameter().key(self.input).value(self.cursor_value))
+        last_request_builder = paginated_data.get_last_endpoint_config().request_builder
+        query_param_name = self.input.rsplit('#')[1].rstrip('}').lstrip('/')
+        return last_request_builder.query_param(Parameter().key(query_param_name).value(self.cursor_value))

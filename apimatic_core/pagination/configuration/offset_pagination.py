@@ -1,5 +1,6 @@
 from apimatic_core_interfaces.pagination.paginated_data_manager import PaginationDataManager
 from apimatic_core.types.parameter import Parameter
+from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class OffsetPagination(PaginationDataManager):
@@ -32,10 +33,10 @@ class OffsetPagination(PaginationDataManager):
             return False
 
         try:
-            last_request = paginated_data.get_last_endpoint_config().get_request_builder()
-            req_query = last_request.build(
-                paginated_data.get_last_global_config
-            ).query_parameters
+            last_request = paginated_data.get_last_endpoint_config().request_builder
+            req_query = ApiHelper.get_query_parameters(last_request.build(
+                paginated_data.get_last_global_config()
+            ).query_url)
 
             if self.input in req_query:
                 next_offset_value = int(str(req_query[self.input])) + paginated_data.get_last_data_size()

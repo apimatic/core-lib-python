@@ -1,5 +1,7 @@
 from apimatic_core_interfaces.pagination.paginated_data_manager import PaginationDataManager
 from jsonpointer import resolve_pointer
+
+from apimatic_core.types.parameter import Parameter
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
@@ -29,8 +31,10 @@ class LinkPagination(PaginationDataManager):
         Returns:
             bool: True if a link value is present, False otherwise.
         """
-        response_body = paginated_data.get_last_response()
-        self.link_value = resolve_pointer(response_body, self.next)
+        response_payload = ApiHelper.json_deserialize(paginated_data.get_last_response(), as_dict=True)
+        if '#' in self.next:
+            node_pointer = self.next.rsplit('#')[1].rstrip('}')
+            self.link_value = resolve_pointer(response_payload, node_pointer)
 
         return self.link_value is not None
 
@@ -43,5 +47,8 @@ class LinkPagination(PaginationDataManager):
         Returns:
             HttpRequest.Builder: A builder instance for the next page request.
         """
-        last_request_builder = paginated_data.get_last_endpoint_config().get_request_builder()
-        return last_request_builder.query_param(ApiHelper.get_query_parameters(self.link_value))
+        last_request_builder = paginated_data.get_last_endpoint_config().request_builder
+        query_params = ApiHelper.get_query_parameters(self.link_value)
+        for key, value in query_params.items():
+            last_request_builder.query_param(Parameter().key(key).value(value))
+        return last_request_builder
