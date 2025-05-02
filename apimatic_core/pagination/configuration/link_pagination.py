@@ -1,54 +1,40 @@
 from apimatic_core_interfaces.pagination.paginated_data_manager import PaginationDataManager
-from jsonpointer import resolve_pointer
 
 from apimatic_core.types.parameter import Parameter
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class LinkPagination(PaginationDataManager):
-    """Pagination manager implementation for link-based pagination.
-
-    This class extracts a link value (usually a URL or query string) from the response body
-    and adds its query parameters to the next request.
-    """
+    """Pagination manager implementation for link-based pagination."""
 
     def __init__(self, next_):
         """
         Initializes a new instance of the LinkPagination class.
 
         Args:
-            next_ (str): The JSON path or key in the response body where the link value is found.
+            next_ (str): JSON pointer of a field in the response, representing the next request query URL.
         """
         self.next = next_
-        self.link_value = None
+        self._next_req_builder = None
 
     def is_valid(self, paginated_data):
-        """Checks if the response contains a valid link value for the next page.
+        """Checks if the response contains a valid link value and prepares the next request builder."""
+        self._next_req_builder = paginated_data.get_last_request_builder()
 
-        Args:
-            paginated_data: The paginated response data.
+        link_value = ApiHelper.resolve_response_pointer(
+            self.next,
+            paginated_data.get_last_response(),
+            paginated_data.get_last_response_headers()
+        )
 
-        Returns:
-            bool: True if a link value is present, False otherwise.
-        """
-        response_payload = ApiHelper.json_deserialize(paginated_data.get_last_response(), as_dict=True)
-        if '#' in self.next:
-            node_pointer = self.next.rsplit('#')[1].rstrip('}')
-            self.link_value = resolve_pointer(response_payload, node_pointer)
+        if link_value is None:
+            return False
 
-        return self.link_value is not None
+        query_params = ApiHelper.get_query_parameters(link_value)
+        for key, value in query_params.items():
+            self._next_req_builder.query_param(Parameter().key(key).value(value))
+        return True
 
     def get_next_request_builder(self, paginated_data):
-        """Builds the next request by adding query parameters parsed from the link value.
-
-        Args:
-            paginated_data: The current paginated response data.
-
-        Returns:
-            HttpRequest.Builder: A builder instance for the next page request.
-        """
-        last_request_builder = paginated_data.get_last_endpoint_config().request_builder
-        query_params = ApiHelper.get_query_parameters(self.link_value)
-        for key, value in query_params.items():
-            last_request_builder.query_param(Parameter().key(key).value(value))
-        return last_request_builder
+        """Returns the prepared request builder with query parameters from the link."""
+        return self._next_req_builder

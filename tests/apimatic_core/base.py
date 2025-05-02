@@ -4,6 +4,7 @@ import platform
 from datetime import datetime, date
 
 from apimatic_core.api_call import ApiCall
+from apimatic_core.configurations.endpoint_configuration import EndpointConfiguration
 from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
 from apimatic_core.http.http_callback import HttpCallBack
 from apimatic_core.logger.configuration.api_logging_configuration import ApiLoggingConfiguration, \
@@ -324,3 +325,6 @@ class Base:
                                     one_of_req_nullable='abc',
                                     one_of_optional=200,
                                     any_of_opt_nullable=True)
+    @staticmethod
+    def endpoint_configuration():
+        return EndpointConfiguration

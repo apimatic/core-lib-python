@@ -6,7 +6,7 @@ class PagePagination(PaginationDataManager):
         self.next_request_builder = None
 
     def is_valid(self, paginated_data):
-        self.next_request_builder = paginated_data.get_last_endpoint_config().request_builder
+        self.next_request_builder = paginated_data.get_last_request_builder()
 
         if self.input_key is None:
             return False
@@ -14,9 +14,12 @@ class PagePagination(PaginationDataManager):
         is_updated = {'updated': False}
 
         def updater(old_value):
-            new_value = int(old_value) + 1
-            is_updated['updated'] = True
-            return new_value
+            try:
+                new_value = int(old_value) + 1
+                is_updated['updated'] = True
+                return new_value
+            except (ValueError, TypeError):
+                return old_value
 
         self.next_request_builder.update_by_reference(self.input_key, updater)
 

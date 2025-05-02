@@ -1,64 +1,38 @@
 from apimatic_core_interfaces.pagination.paginated_data_manager import PaginationDataManager
-from apimatic_core.types.parameter import Parameter
-from apimatic_core.utilities.api_helper import ApiHelper
-
 
 class OffsetPagination(PaginationDataManager):
-    """Pagination manager implementation for offset-based pagination.
-
-    This class increments an offset query parameter by the size of the last page's data
-    to build the request for the next page.
-    """
+    """Pagination manager implementation for offset-based pagination."""
 
     def __init__(self, input_):
         """
         Initializes a new instance of the OffsetPagination class.
 
         Args:
-            input_ (str): The name of the query parameter that holds the offset value.
+            input_ (str): JSON pointer to the request field representing the offset.
         """
         self.input = input_
-        self.next_req_builder = None
+        self._next_req_builder = None
 
     def is_valid(self, paginated_data):
-        """Checks if a next page can be requested based on the offset value.
+        """Checks if the input is valid and updates the offset in the request."""
+        self._next_req_builder = paginated_data.get_last_request_builder()
 
-        Args:
-            paginated_data: The paginated response data.
-
-        Returns:
-            bool: True if the offset parameter exists and a next page request can be built, False otherwise.
-        """
         if self.input is None:
             return False
 
-        try:
-            last_request = paginated_data.get_last_endpoint_config().request_builder
-            req_query = ApiHelper.get_query_parameters(last_request.build(
-                paginated_data.get_last_global_config()
-            ).query_url)
+        is_updated = {"value": False}
 
-            if self.input in req_query:
-                next_offset_value = int(str(req_query[self.input])) + paginated_data.get_last_data_size()
-                self.next_req_builder = last_request.query_param(
-                    Parameter()
-                    .key(self.input)
-                    .value(next_offset_value)
-                )
-                return True
+        def update_func(old):
+            try:
+                new_value = int(str(old)) + paginated_data.get_last_data_size()
+                is_updated["value"] = True
+                return new_value
+            except (ValueError, TypeError):
+                return old
 
-        except Exception:
-            pass
-
-        return False
+        self._next_req_builder.update_by_reference(self.input, update_func)
+        return is_updated["value"]
 
     def get_next_request_builder(self, paginated_data):
-        """Returns the next request builder with the updated offset value.
-
-        Args:
-            paginated_data: The paginated response data.
-
-        Returns:
-            HttpRequest.Builder: A builder instance for the next page request.
-        """
-        return self.next_req_builder
+        """Returns the updated request builder with the new offset value."""
+        return self._next_req_builder

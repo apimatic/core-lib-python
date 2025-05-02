@@ -29,14 +29,14 @@ class PaginatedData(Iterator):
         self.data.extend(new_data)
         self.pages.append(page)
 
-    def get_last_endpoint_config(self):
-        return self.last_endpoint_config
-
-    def get_last_global_config(self):
-        return self.last_global_config
+    def get_last_request_builder(self):
+        return self.last_endpoint_config.request_builder
 
     def get_last_response(self):
         return self.last_response.text
+
+    def get_last_response_headers(self):
+        return self.last_response.headers
 
     def get_last_data_size(self):
         return self.last_data_size
@@ -96,8 +96,8 @@ class PaginatedData(Iterator):
             if not manager.is_valid(self):
                 continue
             try:
-                endpoint_config = self.get_last_endpoint_config()
-                global_config = self.get_last_global_config()
+                endpoint_config = self.last_endpoint_config
+                global_config = self.last_global_config
 
                 result = ApiCall(global_config).new_builder \
                     .request(

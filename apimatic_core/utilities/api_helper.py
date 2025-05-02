@@ -750,6 +750,25 @@ class ApiHelper(object):
 
         return value
 
+    @staticmethod
+    def resolve_response_pointer(pointer, json_body, json_headers):
+        if pointer is None or pointer is '':
+            return None
+
+        prefix = pointer.split("#")[0]
+        path = pointer.rsplit('#')[1].rstrip('}')
+
+        try:
+            if prefix == "$response.body":
+                response = ApiHelper.json_deserialize(json_body, as_dict=True)
+                return resolve_pointer(response, path)
+            elif prefix == "$response.headers":
+                return resolve_pointer(json_headers, path)
+            else:
+                return None
+        except JsonPointerException:
+            pass
+
     class CustomDate(object):
 
         """ A base class for wrapper classes of datetime.

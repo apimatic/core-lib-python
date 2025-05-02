@@ -1,52 +1,35 @@
 from apimatic_core_interfaces.pagination.paginated_data_manager import PaginationDataManager
-from jsonpointer import resolve_pointer
-from apimatic_core.types.parameter import Parameter
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class CursorPagination(PaginationDataManager):
-    """Pagination manager implementation for cursor-based pagination.
-
-    This class extracts a cursor value from the response body and adds it as a query parameter
-    to the next request if available.
-    """
-
-    def __init__(self, output, input_):
-        """
-        Initializes a new instance of the CursorPagination class.
-
-        Args:
-            output (str): The JSON path or key in the response body where the cursor value is found.
-            input_ (str): The query parameter key to which the cursor value should be assigned in the next request.
-        """
+    def __init__(self, output=None, input_=None):
         self.output = output
         self.input = input_
-        self.cursor_value = None
+        self.next_req_builder = None
 
     def is_valid(self, paginated_data):
-        """Checks if the response contains a valid cursor value for the next page.
+        self.next_req_builder = paginated_data.get_last_request_builder()
 
-        Args:
-            paginated_data: The paginated response data.
+        cursor_value = ApiHelper.resolve_response_pointer(
+            self.output,
+            paginated_data.get_last_response(),
+            paginated_data.get_last_response_headers()
+        )
 
-        Returns:
-            bool: True if a cursor value is present, False otherwise.
-        """
-        response_payload = ApiHelper.json_deserialize(paginated_data.get_last_response(), as_dict=True)
-        if '#' in self.output:
-            node_pointer = self.output.rsplit('#')[1].rstrip('}')
-            self.cursor_value = resolve_pointer(response_payload, node_pointer)
-        return self.cursor_value is not None
+        if cursor_value is None:
+            return False
 
-    def get_next_request_builder(self, paginated_data):
-        """Builds the next request by adding the cursor value as a query parameter.
+        is_updated = {"value": False}
 
-        Args:
-            paginated_data: The current paginated response data.
+        def update_func(_):
+            is_updated["value"] = True
+            return cursor_value
 
-        Returns:
-            HttpRequest.Builder: A builder instance for the next page request.
-        """
-        last_request_builder = paginated_data.get_last_endpoint_config().request_builder
-        query_param_name = self.input.rsplit('#')[1].rstrip('}').lstrip('/')
-        return last_request_builder.query_param(Parameter().key(query_param_name).value(self.cursor_value))
+        if self.input:
+            self.next_req_builder.update_by_reference(self.input, update_func)
+
+        return is_updated["value"]
+
+    def get_next_request_builder(self, _paginated_data):
+        return self.next_req_builder
