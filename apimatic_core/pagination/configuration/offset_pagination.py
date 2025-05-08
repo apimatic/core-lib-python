@@ -1,4 +1,4 @@
-from apimatic_core_interfaces.pagination.paginated_data_manager import PaginationDataManager
+from apimatic_core.pagination.configuration.pagination_data_manager import PaginationDataManager
 
 class OffsetPagination(PaginationDataManager):
     """Pagination manager implementation for offset-based pagination."""
@@ -11,11 +11,9 @@ class OffsetPagination(PaginationDataManager):
             input_ (str): JSON pointer to the request field representing the offset.
         """
         self.input = input_
-        self._next_req_builder = None
 
-    def is_valid(self, paginated_data):
+    def is_valid(self, paginated_data, next_req_builder):
         """Checks if the input is valid and updates the offset in the request."""
-        self._next_req_builder = paginated_data.get_last_request_builder()
 
         if self.input is None:
             return False
@@ -30,9 +28,6 @@ class OffsetPagination(PaginationDataManager):
             except (ValueError, TypeError):
                 return old
 
-        self._next_req_builder.update_by_reference(self.input, update_func)
+        next_req_builder.update_by_reference(self.input, update_func)
         return is_updated["value"]
 
-    def get_next_request_builder(self, paginated_data):
-        """Returns the updated request builder with the new offset value."""
-        return self._next_req_builder

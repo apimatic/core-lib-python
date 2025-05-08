@@ -752,7 +752,7 @@ class ApiHelper(object):
 
     @staticmethod
     def resolve_response_pointer(pointer, json_body, json_headers):
-        if pointer is None or pointer is '':
+        if pointer is None or pointer == '':
             return None
 
         prefix = pointer.split("#")[0]

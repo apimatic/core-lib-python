@@ -50,9 +50,6 @@ class ApiCall:
         if _http_callback is not None:
             _http_callback.on_before_request(_http_request)
 
-        # Set request builder in endpoint configuration
-        self._endpoint_configuration.with_request_builder(self._request_builder)
-
         # Executing the HTTP call
         _http_response = _http_client_configuration.http_client.execute(
             _http_request, self._endpoint_configuration)
@@ -64,4 +61,24 @@ class ApiCall:
         if _http_callback is not None:
             _http_callback.on_after_response(_http_response)
 
-        return self._response_handler.handle(_http_response, self._global_configuration, self._endpoint_configuration)
+        return self._response_handler.handle(_http_response, self)
+
+    def clone_with(
+            self,
+            global_configuration=None,
+            request_builder=None,
+            response_handler=None,
+            endpoint_configuration=None
+    ):
+        global_configuration = global_configuration or self._global_configuration
+        request_builder = request_builder or self._request_builder
+        response_handler = response_handler or self._response_handler
+        endpoint_configuration = endpoint_configuration or self._endpoint_configuration
+
+        return (
+            ApiCall(global_configuration)
+            .request(request_builder)
+            .response(response_handler)
+            .endpoint_configuration(endpoint_configuration)
+        )
+

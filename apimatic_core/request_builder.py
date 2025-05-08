@@ -238,3 +238,60 @@ class RequestBuilder:
                 self._auth.apply(http_request)
             else:
                 raise AuthValidationException(self._auth.error_message)
+
+    def clone_with(self,
+                   server=None,
+                   path=None,
+                   http_method=None,
+                   template_params=None,
+                   header_params=None,
+                   query_params=None,
+                   form_params=None,
+                   additional_form_params=None,
+                   additional_query_params=None,
+                   multipart_params=None,
+                   body_param=None,
+                   body_serializer=None,
+                   auth=None,
+                   array_serialization_format=None,
+                   xml_attributes=None):
+
+        self.server(server or self._server)
+        self.path(path or self._path)
+        self.http_method(http_method or self._http_method)
+
+        # Update each parameter list with the provided or current values
+        for param in (template_params or self._template_params.values()):
+            self.template_param(param.clone())
+
+        for param in (header_params or self._header_params.values()):
+            self.header_param(param.clone())
+
+        for param in (query_params or self._query_params.values()):
+            self.query_param(param.clone())
+
+        for param in (form_params or self._form_params.values()):
+            self.form_param(param.clone())
+
+        self.additional_form_params(additional_form_params or self._additional_form_params)
+        self.additional_query_params(additional_query_params or self._additional_query_params)
+
+        if multipart_params is not None:
+            for param in multipart_params:
+                self.multipart_param(param.clone())
+        else:
+            for param in self._multipart_params:
+                self.multipart_param(param.clone())
+
+        if body_param is not None:
+            self.body_param(body_param.clone())  # if body_param has a clone
+        elif self._body_param is not None:
+            self.body_param(self._body_param.clone())
+
+        self.body_serializer(body_serializer or self._body_serializer)
+        self.auth(auth or self._auth)
+        self.array_serialization_format(array_serialization_format or self._array_serialization_format)
+        self.xml_attributes(xml_attributes or self._xml_attributes)
+
+        # Return self to maintain fluent interface
+        return self

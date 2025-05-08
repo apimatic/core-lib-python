@@ -16,7 +16,8 @@ class ResponseHandler:
         self._datetime_format = None
         self._is_xml_response = False
         self._xml_item_name = None
-        self._pagination_deserializer = None
+        self._pagination_data_managers = []
+        self._pagination_return_type_getter = None
 
     def deserializer(self, deserializer):
         self._deserializer = deserializer
@@ -62,32 +63,31 @@ class ResponseHandler:
         self._xml_item_name = xml_item_name
         return self
 
-    def paginated_deserializer(self, page_class, converter, return_type_getter, *data_managers):
-        """
-        Setter for the deserializer to be used in page-based pagination.
-
-        :param page_class: Class for the page structure.
-        :param converter: Function to convert a page to a list of items.
-        :param return_type_getter: Function to convert PaginatedData to the desired return type.
-        :param data_managers: Optional pagination data managers.
-        :return: ResponseHandlerBuilder instance.
-        """
-        self._pagination_deserializer = lambda res, gc, ec: PaginatedData(
-            page_class, converter, res, ec, gc, *data_managers
-        ).convert(return_type_getter)
+    def paginated_deserializer(self, return_type_getter, *data_managers):
+        self._pagination_data_managers = data_managers
+        self._pagination_return_type_getter = return_type_getter
         return self
 
-    def handle(self, response, global_config, config):
+    def handle(self, response, api_call):
 
         # checking Nullify 404
         if response.status_code == 404 and self._is_nullify404:
             return None
 
         # validating response if configured
-        self.validate(response, global_config.get_global_errors())
+        self.validate(response, api_call.global_config.get_global_errors())
 
         # applying deserializer if configured
-        deserialized_value = self.apply_deserializer(response, global_config, config)
+        deserialized_value = self.apply_deserializer(response)
+
+        if self._pagination_return_type_getter:
+            from apimatic_core.pagination.paginated_data import PaginatedData
+            paginated = PaginatedData(
+                api_call,
+                self.apply_convertor(deserialized_value),
+                *self._pagination_data_managers
+            )
+            return paginated.convert(self._pagination_return_type_getter)
 
         # applying api_response if configured
         deserialized_value = self.apply_api_response(response, deserialized_value)
@@ -110,7 +110,7 @@ class ResponseHandler:
             return self._deserializer(response.text, self._xml_item_name, self._deserialize_into)
         return self._deserializer(response.text, self._deserialize_into)
 
-    def apply_deserializer(self, response, global_config, config):
+    def apply_deserializer(self, response):
         if self._is_xml_response:
             return self.apply_xml_deserializer(response)
         elif self._deserialize_into:
@@ -119,8 +119,6 @@ class ResponseHandler:
             return self._deserializer(response.text)
         elif self._deserializer and self._datetime_format:
             return self._deserializer(response.text, self._datetime_format)
-        elif self._pagination_deserializer:
-            return self._pagination_deserializer(response, global_config, config)
         else:
             return response.text
 
@@ -156,3 +154,27 @@ class ResponseHandler:
         default_error_case = error_cases.get('default') if error_cases else None
         if default_error_case:
             default_error_case.raise_exception(response)
+
+    def clone_with(
+            self,
+            deserializer=None,
+            convertor=None,
+            deserialize_into=None,
+            is_api_response=None,
+            is_nullify404=None,
+            datetime_format=None,
+            is_xml_response=None,
+            xml_item_name=None,
+    ):
+        return (
+            ResponseHandler()
+            .deserializer(deserializer or self._deserializer)
+            .convertor(convertor or self._convertor)
+            .deserialize_into(deserialize_into or self._deserialize_into)
+            .is_api_response(self._is_api_response if is_api_response is None else is_api_response)
+            .is_nullify404(self._is_nullify404 if is_nullify404 is None else is_nullify404)
+            .datetime_format(datetime_format or self._datetime_format)
+            .is_xml_response(self._is_xml_response if is_xml_response is None else is_xml_response)
+            .xml_item_name(xml_item_name or self._xml_item_name)
+        )
+

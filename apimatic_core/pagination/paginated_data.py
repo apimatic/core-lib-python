@@ -1,36 +1,18 @@
-from apimatic_core.utilities.api_helper import ApiHelper
 from collections.abc import Iterator
 
 class PaginatedData(Iterator):
-    def __init__(self, page_class, converter, response, endpoint_config, global_config, *data_managers):
-        self.page_class = page_class
-        self.converter = converter
+    def __init__(self, api_call, initial_data, *data_managers):
+        self.api_call = api_call
         self.data_managers = data_managers
 
         self.current_index = 0
-        self.data = []
-        self.pages = []
-        self.last_data_size = 0
-        self.last_response = None
-        self.last_endpoint_config = None
-        self.last_global_config = None
-
-        self.update_using(response, endpoint_config, global_config)
-
-    def update_using(self, response, endpoint_config, global_config):
-        page = ApiHelper.json_deserialize(response.text, self.page_class.from_dictionary)
-        new_data = self.converter(page)
-
-        self.last_data_size = len(new_data)
-        self.last_response = response
-        self.last_endpoint_config = endpoint_config
-        self.last_global_config = global_config
-
-        self.data.extend(new_data)
-        self.pages.append(page)
+        self.data = initial_data if initial_data else []
+        self.pages = [initial_data] if initial_data else []
+        self.last_data_size = len(initial_data) if initial_data else 0
+        self.last_response = api_call.last_response
 
     def get_last_request_builder(self):
-        return self.last_endpoint_config.request_builder
+        return self.api_call.request_builder
 
     def get_last_response(self):
         return self.last_response.text
@@ -44,11 +26,8 @@ class PaginatedData(Iterator):
     def reset(self):
         if self.current_index == 0:
             return self
-        new_instance = PaginatedData(
-            self.page_class, self.converter, self.last_response, self.last_endpoint_config, self.last_global_config, *self.data_managers
-        )
-        new_instance.data = list(self.data)
-        new_instance.pages = list(self.pages)
+        new_instance = PaginatedData(self.api_call, self.data.copy(), *self.data_managers)
+        new_instance.pages = self.pages.copy()
         new_instance.last_data_size = self.last_data_size
         return new_instance
 
@@ -79,7 +58,7 @@ class PaginatedData(Iterator):
                     yield data.pages[current_index]
                     current_index += 1
                 elif data.has_next():
-                    data.__next__()
+                    next(data)
                 else:
                     break
 
@@ -91,30 +70,23 @@ class PaginatedData(Iterator):
     def fetch_more_data(self):
         from apimatic_core.api_call import ApiCall
         from apimatic_core.response_handler import ResponseHandler
+        from apimatic_core.request_builder import RequestBuilder
 
         for manager in self.data_managers:
-            if not manager.is_valid(self):
+            if not manager.is_valid(self, ):
                 continue
             try:
-                endpoint_config = self.last_endpoint_config
-                global_config = self.last_global_config
-
-                result = ApiCall(global_config).new_builder \
-                    .request(
-                        manager.get_next_request_builder(self)
-                     ) \
-                    .response(ResponseHandler()
-                              .paginated_deserializer(
-                                  self.page_class,
-                                  self.converter,
-                                  lambda r :r,
-                     self.data_managers)) \
-                    .endpoint_configuration(endpoint_config) \
+                result = ApiCall(self.api_call.global_config).new_builder \
+                    .request(RequestBuilder().clone_with(self.api_call.request_builder)) \
+                    .response(ResponseHandler().clone_with(self.api_call.response_handler)) \
+                    .endpoint_configuration(self.api_call.endpoint_config) \
                     .execute()
 
-
-                self.update_using(result.last_response, result.last_endpoint_config, result.last_global_config)
+                new_data = result
+                self.data.extend(new_data)
+                self.pages.append(new_data)
+                self.last_data_size = len(new_data)
+                self.last_response = result.last_response
                 return
             except Exception:
                 pass
-

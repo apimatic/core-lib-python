@@ -54,3 +54,20 @@ class Parameter:
         if self._validator is not None and self._validator(self._value):
             return
 
+    def clone_with(self,
+                   key=None,
+                   value=None,
+                   is_required=None,
+                   should_encode=None,
+                   default_content_type=None,
+                   validator=None):
+        # Update the current instance with either the provided values or the current values
+        self.key(key or self._key)
+        self.value(value or self._value)
+        self.is_required(is_required if is_required is not None else self._is_required)
+        self.should_encode(should_encode if should_encode is not None else self._should_encode)
+        self.default_content_type(default_content_type or self._default_content_type)
+        self.validator(validator or self._validator)
+
+        # Return self to maintain fluent interface
+        return self

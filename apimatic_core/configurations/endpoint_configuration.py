@@ -6,7 +6,6 @@ class EndpointConfiguration:
     def __init__(self):
         self._has_binary_response = None
         self._to_retry = None
-        self._request_builder = None
 
     @property
     def contains_binary_response(self):
@@ -17,11 +16,6 @@ class EndpointConfiguration:
     def should_retry(self):
         """Indicates whether the request should be retried on failure."""
         return self._to_retry
-
-    @property
-    def request_builder(self):
-        """Gets the request builder associated with this endpoint."""
-        return self._request_builder
 
     def has_binary_response(self, has_binary_response):
         """Sets whether the response should be treated as binary.
@@ -45,16 +39,4 @@ class EndpointConfiguration:
             EndpointConfiguration: The current instance for chaining.
         """
         self._to_retry = to_retry
-        return self
-
-    def with_request_builder(self, request_builder):
-        """Sets the request builder for this endpoint.
-
-        Args:
-            request_builder (HttpRequest.Builder): The request builder instance.
-
-        Returns:
-            EndpointConfiguration: The current instance for chaining.
-        """
-        self._request_builder = request_builder
         return self
