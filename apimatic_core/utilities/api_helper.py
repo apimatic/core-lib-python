@@ -769,6 +769,50 @@ class ApiHelper(object):
         except JsonPointerException:
             pass
 
+    @staticmethod
+    def split_into_parts(json_pointer):
+        if json_pointer is None:
+            return None
+
+        pointer_parts = json_pointer.split("#")
+        path_prefix = pointer_parts[0]
+        field_path = pointer_parts[1] if len(pointer_parts) > 1 else ""
+
+        return path_prefix, field_path
+
+    @staticmethod
+    def update_entry_by_json_pointer(dictionary, pointer, value, inplace=True):
+        """
+        Updates the value at the specified JSON pointer path within a dictionary.
+
+        Args:
+            dictionary (dict): The dictionary to update.
+            pointer (str): The JSON pointer path indicating where to update the value.
+            value: The new value to set at the specified path.
+            inplace (bool, optional): Whether to update the dictionary in place. Defaults to True.
+
+        Returns:
+            dict: The updated dictionary.
+        """
+        return set_pointer(dictionary, pointer, value, inplace=inplace)
+
+    @staticmethod
+    def get_value_by_json_pointer(dictionary, pointer):
+        """
+        Retrieves the value from a dictionary at the specified JSON pointer path.
+
+        Args:
+            dictionary (dict): The dictionary to search.
+            pointer (str): The JSON pointer path indicating the value to retrieve.
+
+        Returns:
+            The value found at the specified JSON pointer path.
+
+        Raises:
+            JsonPointerException: If the pointer does not resolve to a value.
+        """
+        return resolve_pointer(dictionary, pointer)
+
     class CustomDate(object):
 
         """ A base class for wrapper classes of datetime.

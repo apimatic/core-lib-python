@@ -1,33 +1,43 @@
-from apimatic_core.pagination.configuration.pagination_data_manager import PaginationDataManager
+from apimatic_core.pagination.pagination_strategy import PaginationStrategy
 from apimatic_core.types.parameter import Parameter
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
-class LinkPagination(PaginationDataManager):
+class LinkPagination(PaginationStrategy):
     """Pagination manager implementation for link-based pagination."""
 
-    def __init__(self, next_):
+    def __init__(self, next_link):
         """
         Initializes a new instance of the LinkPagination class.
 
         Args:
-            next_ (str): JSON pointer of a field in the response, representing the next request query URL.
+            next (str): JSON pointer of a field in the response, representing the next request query URL.
         """
-        self.next = next_
+        if next_link is None:
+            raise ValueError("Next link pointer for cursor based pagination cannot be None")
+        self._next_link = next_link
 
-    def is_valid(self, paginated_data, next_req_builder):
-        """Checks if the response contains a valid link value and prepares the next request builder."""
+    def apply(self, paginated_data):
+        last_response = paginated_data.last_response
+        request_builder = paginated_data.request_builder
+
+        if last_response is None:
+            return request_builder
 
         link_value = ApiHelper.resolve_response_pointer(
-            self.next,
-            paginated_data.get_last_response(),
-            paginated_data.get_last_response_headers()
+            self._next_link,
+            last_response.text,
+            last_response.headers
         )
 
         if link_value is None:
-            return False
+            return None
 
         query_params = ApiHelper.get_query_parameters(link_value)
-        for key, value in query_params.items():
-            next_req_builder.query_param(Parameter().key(key).value(value))
-        return True
+        updated_query_params = request_builder.query_params.copy()
+        updated_query_params.update(query_params)
+
+        return request_builder.clone_with(
+            query_params=updated_query_params
+        )
+

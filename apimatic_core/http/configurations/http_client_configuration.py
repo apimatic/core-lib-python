@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-from apimatic_core.factories.http_response_factory import HttpResponseFactory
 
+from apimatic_core.factories.http_response_factory import HttpResponseFactory
+import copy
 
 class HttpClientConfiguration(object):  # pragma: no cover
     """A class used for configuring the SDK by a user.
@@ -95,3 +95,14 @@ class HttpClientConfiguration(object):  # pragma: no cover
 
     def set_http_client(self, http_client):
         self._http_client = http_client
+
+    def clone(self, http_callback=None):
+        http_client_instance = HttpClientConfiguration(
+            http_client_instance=self.http_client_instance,
+            override_http_client_configuration=self.override_http_client_configuration,
+            http_call_back=http_callback or self.http_callback,
+            timeout=self.timeout, max_retries=self.max_retries, backoff_factor=self.backoff_factor,
+            retry_statuses=self.retry_statuses, retry_methods=self.retry_methods,
+            logging_configuration=self.logging_configuration)
+        http_client_instance.set_http_client(self.http_client)
+        return http_client_instance

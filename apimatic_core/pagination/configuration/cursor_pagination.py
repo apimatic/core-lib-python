@@ -1,30 +1,52 @@
-from apimatic_core.pagination.configuration.pagination_data_manager import PaginationDataManager
+from apimatic_core.pagination.pagination_strategy import PaginationStrategy
 from apimatic_core.utilities.api_helper import ApiHelper
 
 
-class CursorPagination(PaginationDataManager):
+class CursorPagination(PaginationStrategy):
     def __init__(self, output=None, input_=None):
-        self.output = output
-        self.input = input_
+        if input_ is None:
+            raise ValueError("Input pointer for cursor based pagination cannot be None")
+        if output is None:
+            raise ValueError("Output pointer for cursor based pagination cannot be None")
+        self._output = output
+        self._input = input_
 
-    def is_valid(self, paginated_data, next_req_builder):
+    def apply(self, paginated_data):
+        last_response = paginated_data.last_response
+        request_builder = paginated_data.request_builder
+
+        if last_response is None:
+            return request_builder
 
         cursor_value = ApiHelper.resolve_response_pointer(
-            self.output,
-            paginated_data.get_last_response(),
-            paginated_data.get_last_response_headers()
+            self._output,
+            last_response.text,
+            last_response.headers
         )
 
         if cursor_value is None:
-            return False
+            return None
 
-        is_updated = {"value": False}
+        return self._get_updated_request_builder(request_builder, cursor_value)
 
-        def update_func(_):
-            is_updated["value"] = True
-            return cursor_value
+    def _get_updated_request_builder(self, request_builder, cursor_value):
+        path_prefix, field_path = ApiHelper.split_into_parts(self._input)
+        template_params = request_builder.template_params
+        query_params = request_builder.query_params
+        header_params = request_builder.header_params
 
-        if self.input:
-            next_req_builder.update_by_reference(self.input, update_func)
+        if path_prefix == "$request.path":
+            template_params = ApiHelper.update_entry_by_json_pointer(
+                template_params.copy(), field_path, cursor_value, inplace=True)
+        elif path_prefix == "$request.query":
+            query_params = ApiHelper.update_entry_by_json_pointer(
+                query_params.copy(), field_path, cursor_value, inplace=True)
+        elif path_prefix == "$request.headers":
+            header_params = ApiHelper.update_entry_by_json_pointer(
+                header_params.copy(), field_path, cursor_value, inplace=True)
 
-        return is_updated["value"]
+        return request_builder.clone_with(
+            template_params=template_params,
+            query_params=query_params,
+            header_params=header_params
+        )

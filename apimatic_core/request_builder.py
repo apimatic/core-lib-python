@@ -1,5 +1,5 @@
 from requests.structures import CaseInsensitiveDict
-
+import copy
 from apimatic_core.exceptions.auth_validation_exception import AuthValidationException
 from apimatic_core.http.request.http_request import HttpRequest
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -17,6 +17,18 @@ class RequestBuilder:
     def _update_param_dict(param_dict, setter, point, value_key=None):
         pointer = f"{point}" + (f"/{value_key}" if value_key else "")
         return ApiHelper.update_value_by_pointer(param_dict, pointer, setter)
+
+    @property
+    def template_params(self):
+        return self._template_params
+
+    @property
+    def header_params(self):
+        return self._header_params
+
+    @property
+    def query_params(self):
+        return self._query_params
 
     def __init__(
             self
@@ -239,59 +251,80 @@ class RequestBuilder:
             else:
                 raise AuthValidationException(self._auth.error_message)
 
-    def clone_with(self,
-                   server=None,
-                   path=None,
-                   http_method=None,
-                   template_params=None,
-                   header_params=None,
-                   query_params=None,
-                   form_params=None,
-                   additional_form_params=None,
-                   additional_query_params=None,
-                   multipart_params=None,
-                   body_param=None,
-                   body_serializer=None,
-                   auth=None,
-                   array_serialization_format=None,
-                   xml_attributes=None):
+    def clone_with(
+            self,
+            server=None,
+            path=None,
+            http_method=None,
+            template_params=None,
+            header_params=None,
+            query_params=None,
+            form_params=None,
+            additional_form_params=None,
+            additional_query_params=None,
+            multipart_params=None,
+            body_param=None,
+            body_serializer=None,
+            auth=None,
+            array_serialization_format=None,
+            xml_attributes=None,
+    ):
+        """
+        Clone the current instance with the given parameters.
 
-        self.server(server or self._server)
-        self.path(path or self._path)
-        self.http_method(http_method or self._http_method)
+        Args:
+            server (str, optional): The server URL. Defaults to None.
+            path (str, optional): The path of the request. Defaults to None.
+            http_method (str, optional): The HTTP method of the request. Defaults to None.
+            template_params (dict, optional): The template parameters. Defaults to None.
+            header_params (dict, optional): The header parameters. Defaults to None.
+            query_params (dict, optional): The query parameters. Defaults to None.
+            form_params (dict, optional): The form parameters. Defaults to None.
+            additional_form_params (dict, optional): The additional form parameters. Defaults to None.
+            additional_query_params (dict, optional): The additional query parameters. Defaults to None.
+            multipart_params (list, optional): The multipart parameters. Defaults to None.
+            body_param (object, optional): The body parameter. Defaults to None.
+            body_serializer (object, optional): The body serializer. Defaults to None.
+            auth (object, optional): The authentication object. Defaults to None.
+            array_serialization_format (str, optional): The array serialization format. Defaults to None.
+            xml_attributes (dict, optional): The XML attributes. Defaults to None.
 
-        # Update each parameter list with the provided or current values
-        for param in (template_params or self._template_params.values()):
-            self.template_param(param.clone())
+        Returns:
+            RequestBuilder: A new instance of the RequestBuilder class with the given parameters.
+        """
+        new_instance = copy.deepcopy(self)
+        new_instance._server = server or self._server
+        new_instance._path = path or self._path
+        new_instance._http_method = http_method or self._http_method
+        new_instance._template_params = template_params or self._template_params
+        new_instance._header_params = header_params or self._header_params
+        new_instance._query_params = query_params or self._query_params
+        new_instance._form_params = form_params or self._form_params
+        new_instance._additional_form_params = additional_form_params or self._additional_form_params
+        new_instance._additional_query_params = additional_query_params or self._additional_query_params
+        new_instance._multipart_params = multipart_params or self._multipart_params
+        new_instance._body_param = body_param or self._body_param
+        new_instance._body_serializer = body_serializer or self._body_serializer
+        new_instance._auth = auth or self._auth
+        new_instance._array_serialization_format = array_serialization_format or self._array_serialization_format
+        new_instance._xml_attributes = xml_attributes or self._xml_attributes
+        return new_instance
 
-        for param in (header_params or self._header_params.values()):
-            self.header_param(param.clone())
-
-        for param in (query_params or self._query_params.values()):
-            self.query_param(param.clone())
-
-        for param in (form_params or self._form_params.values()):
-            self.form_param(param.clone())
-
-        self.additional_form_params(additional_form_params or self._additional_form_params)
-        self.additional_query_params(additional_query_params or self._additional_query_params)
-
-        if multipart_params is not None:
-            for param in multipart_params:
-                self.multipart_param(param.clone())
-        else:
-            for param in self._multipart_params:
-                self.multipart_param(param.clone())
-
-        if body_param is not None:
-            self.body_param(body_param.clone())  # if body_param has a clone
-        elif self._body_param is not None:
-            self.body_param(self._body_param.clone())
-
-        self.body_serializer(body_serializer or self._body_serializer)
-        self.auth(auth or self._auth)
-        self.array_serialization_format(array_serialization_format or self._array_serialization_format)
-        self.xml_attributes(xml_attributes or self._xml_attributes)
-
-        # Return self to maintain fluent interface
-        return self
+    def __deepcopy__(self, memodict={}):
+        copy_instance = RequestBuilder()
+        copy_instance._server = copy.deepcopy(self._server, memodict)
+        copy_instance._path = copy.deepcopy(self._path, memodict)
+        copy_instance._http_method = copy.deepcopy(self._http_method, memodict)
+        copy_instance._template_params = copy.deepcopy(self._template_params, memodict)
+        copy_instance._header_params = copy.deepcopy(self._header_params, memodict)
+        copy_instance._query_params = copy.deepcopy(self._query_params, memodict)
+        copy_instance._form_params = copy.deepcopy(self._form_params, memodict)
+        copy_instance._additional_form_params = copy.deepcopy(self._additional_form_params, memodict)
+        copy_instance._additional_query_params = copy.deepcopy(self._additional_query_params, memodict)
+        copy_instance._multipart_params = copy.deepcopy(self._multipart_params, memodict)
+        copy_instance._body_param = copy.deepcopy(self._body_param, memodict)
+        copy_instance._body_serializer = copy.deepcopy(self._body_serializer, memodict)
+        copy_instance._auth = copy.deepcopy(self._auth, memodict)
+        copy_instance._array_serialization_format = copy.deepcopy(self._array_serialization_format, memodict)
+        copy_instance._xml_attributes = copy.deepcopy(self._xml_attributes, memodict)
+        return copy_instance

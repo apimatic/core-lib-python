@@ -40,3 +40,21 @@ class EndpointConfiguration:
         """
         self._to_retry = to_retry
         return self
+
+    def __deepcopy__(self, memo={}):
+        if id(self) in memo:
+            return memo[id(self)]
+        copy_instance = EndpointConfiguration()
+        copy_instance._has_binary_response = self._has_binary_response
+        copy_instance._to_retry = self._to_retry
+        memo[id(self)] = copy_instance
+        return copy_instance
+
+    def clone_with(self, **kwargs):
+        clone_instance = self.__deepcopy__()
+        for key, value in kwargs.items():
+            if hasattr(clone_instance, key):
+                setattr(clone_instance, key, value)
+            else:
+                raise AttributeError(f"'EndpointConfiguration' object has no attribute '{key}'")
+        return clone_instance
