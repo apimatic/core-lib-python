@@ -95,8 +95,8 @@ class ApiCall:
         return self._response_handler.handle(_http_response, self._global_configuration.get_global_errors())
 
 
-    def paginate(self, paginated_data_wrap_using):
-        return paginated_data_wrap_using(PaginatedData(self))
+    def paginate(self, page_iterable_creator, page_creator):
+        return page_iterable_creator(PaginatedData(self, page_creator))
 
     def clone(self, global_configuration=None, request_builder=None, response_handler=None,
               endpoint_configuration=None, pagination_stategies=None, paginated_item_converter=None):

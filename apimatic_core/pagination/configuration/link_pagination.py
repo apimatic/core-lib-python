@@ -6,16 +6,18 @@ from apimatic_core.utilities.api_helper import ApiHelper
 class LinkPagination(PaginationStrategy):
     """Pagination manager implementation for link-based pagination."""
 
-    def __init__(self, next_link):
-        """
-        Initializes a new instance of the LinkPagination class.
+    @property
+    def metadata(self):
+        return self._metadata_creator(self._next_link)
 
-        Args:
-            next (str): JSON pointer of a field in the response, representing the next request query URL.
-        """
-        if next_link is None:
+    def __init__(self, next_link_pointer, metadata_creator):
+        super().__init__(metadata_creator)
+
+        if next_link_pointer is None:
             raise ValueError("Next link pointer for cursor based pagination cannot be None")
-        self._next_link = next_link
+
+        self._next_link_pointer = next_link_pointer
+        self._next_link = None
 
     def apply(self, paginated_data):
         last_response = paginated_data.last_response
@@ -24,20 +26,19 @@ class LinkPagination(PaginationStrategy):
         if last_response is None:
             return request_builder
 
-        link_value = ApiHelper.resolve_response_pointer(
-            self._next_link,
+        self._next_link = ApiHelper.resolve_response_pointer(
+            self._next_link_pointer,
             last_response.text,
             last_response.headers
         )
 
-        if link_value is None:
+        if self._next_link is None:
             return None
 
-        query_params = ApiHelper.get_query_parameters(link_value)
+        query_params = ApiHelper.get_query_parameters(self._next_link)
         updated_query_params = request_builder.query_params.copy()
         updated_query_params.update(query_params)
 
         return request_builder.clone_with(
             query_params=updated_query_params
         )
-

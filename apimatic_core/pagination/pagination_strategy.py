@@ -11,6 +11,12 @@ class PaginationStrategy(ABC):
     to provide specific pagination management logic for paginated API responses.
     """
 
+    def __init__(self, metadata_creator):
+        if metadata_creator is None:
+            raise ValueError("Metadata creator for offset based pagination cannot be None")
+
+        self._metadata_creator = metadata_creator
+
     @abstractmethod
     def apply(self, paginated_data):
         """
@@ -22,6 +28,11 @@ class PaginationStrategy(ABC):
         Returns:
             RequestBuilder: An updated request builder configured for the next page request.
         """
+        ...
+
+    @property
+    @abstractmethod
+    def metadata(self):
         ...
 
     @staticmethod

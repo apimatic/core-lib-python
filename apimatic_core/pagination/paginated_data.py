@@ -17,10 +17,11 @@ class PaginatedData(Iterator):
 
     @property
     def page_size(self):
-        return len(self._page)
+        return len(self._items)
 
-    def __init__(self, api_call):
+    def __init__(self, api_call, page_creator):
         self._api_call = copy.deepcopy(api_call)
+        self._page_creator = page_creator
         self._initial_request_builder = api_call.request_builder
         self._pagination_strategies = self._api_call.get_pagination_stategies
         self._http_call_context =\
@@ -29,7 +30,8 @@ class PaginatedData(Iterator):
             http_callback=self._http_call_context)
         self._global_configuration = self._api_call.global_configuration.clone_with(
             http_client_configuration=_http_client_configuration)
-        self._page = []
+        self._page = None
+        self._items = []
         self._current_index = 0
 
     def __iter__(self):
@@ -37,13 +39,13 @@ class PaginatedData(Iterator):
 
     def __next__(self):
         if self._current_index >= self.page_size:
-            self._page = self._fetch_next_page()
+            _, self._items = self._fetch_next_page()
             self._current_index = 0
 
-        if not self._page:
+        if not self._items:
             raise StopIteration
 
-        item = self._page[self._current_index]
+        item = self._items[self._current_index]
         self._current_index += 1
         return item
 
@@ -55,12 +57,15 @@ class PaginatedData(Iterator):
         paginated_data = self._get_new_self_instance()
 
         while True:
-            paginated_data._page = paginated_data._fetch_next_page(should_convert_items=False)
-            if not paginated_data._page:
+            metadata, paginated_data._page = paginated_data._fetch_next_page(is_page_iterator=True)
+            if not paginated_data._page or not metadata:
                 break
-            yield paginated_data._page
+            paginated_data._items = self._api_call.get_paginated_item_converter(paginated_data._page)
+            if not paginated_data._items:
+                break
+            yield self._page_creator(metadata, paginated_data._page)
 
-    def _fetch_next_page(self, should_convert_items=True):
+    def _fetch_next_page(self, is_page_iterator=False):
         for pagination_strategy in self._pagination_strategies:
             request_builder = pagination_strategy.apply(self)
             if request_builder is None:
@@ -69,10 +74,12 @@ class PaginatedData(Iterator):
                 response = self._api_call.clone(
                     global_configuration=self._global_configuration, request_builder=request_builder
                 ).execute()
-                return self._api_call.get_paginated_item_converter(response) if should_convert_items else response
+                response = response if is_page_iterator else self._api_call.get_paginated_item_converter(response)
+                metadata = pagination_strategy.metadata if is_page_iterator else None
+                return metadata, response
             except Exception as ex:
                 raise ex
         return []
 
     def _get_new_self_instance(self):
-        return PaginatedData(self._api_call.clone(request_builder=self._initial_request_builder))
+        return PaginatedData(self._api_call.clone(request_builder=self._initial_request_builder), self._page_creator)
