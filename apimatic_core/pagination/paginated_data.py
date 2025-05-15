@@ -37,7 +37,7 @@ class PaginatedData(Iterator):
 
     def __next__(self):
         if self._current_index >= self.page_size:
-            self._page = self._fetch_next_converted_page()
+            self._page = self._fetch_next_page()
             self._current_index = 0
 
         if not self._page:
@@ -55,26 +55,12 @@ class PaginatedData(Iterator):
         paginated_data = self._get_new_self_instance()
 
         while True:
-            paginated_data._page = paginated_data._fetch_next_page()
+            paginated_data._page = paginated_data._fetch_next_page(should_convert_items=False)
             if not paginated_data._page:
                 break
             yield paginated_data._page
 
-    def _fetch_next_page(self):
-        for pagination_strategy in self._pagination_strategies:
-            request_builder = pagination_strategy.apply(self)
-            if request_builder is None:
-                continue
-            try:
-                return self._api_call.clone(
-                    global_configuration=self._global_configuration, request_builder=request_builder
-                ).execute()
-            except Exception as ex:
-                raise ex
-        return []
-
-
-    def _fetch_next_converted_page(self):
+    def _fetch_next_page(self, should_convert_items=True):
         for pagination_strategy in self._pagination_strategies:
             request_builder = pagination_strategy.apply(self)
             if request_builder is None:
@@ -83,7 +69,7 @@ class PaginatedData(Iterator):
                 response = self._api_call.clone(
                     global_configuration=self._global_configuration, request_builder=request_builder
                 ).execute()
-                return self._api_call.get_paginated_item_converter(response)
+                return self._api_call.get_paginated_item_converter(response) if should_convert_items else response
             except Exception as ex:
                 raise ex
         return []
