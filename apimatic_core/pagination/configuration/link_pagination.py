@@ -6,10 +6,6 @@ from apimatic_core.utilities.api_helper import ApiHelper
 class LinkPagination(PaginationStrategy):
     """Pagination manager implementation for link-based pagination."""
 
-    @property
-    def metadata(self):
-        return self._metadata_creator(self._next_link)
-
     def __init__(self, next_link_pointer, metadata_creator):
         super().__init__(metadata_creator)
 
@@ -42,3 +38,6 @@ class LinkPagination(PaginationStrategy):
         return request_builder.clone_with(
             query_params=updated_query_params
         )
+
+    def apply_metadata(self, page):
+        return self._metadata_creator(self._next_link, page)

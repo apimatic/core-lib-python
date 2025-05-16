@@ -30,9 +30,8 @@ class PaginationStrategy(ABC):
         """
         ...
 
-    @property
     @abstractmethod
-    def metadata(self):
+    def apply_metadata(self, page):
         ...
 
     @staticmethod

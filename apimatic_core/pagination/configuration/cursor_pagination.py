@@ -4,10 +4,6 @@ from apimatic_core.utilities.api_helper import ApiHelper
 
 class CursorPagination(PaginationStrategy):
 
-    @property
-    def metadata(self):
-        return self._metadata_creator(self._cursor_value)
-
     def __init__(self, output, input_, metadata_creator):
         super().__init__(metadata_creator)
 
@@ -38,6 +34,9 @@ class CursorPagination(PaginationStrategy):
             return None
 
         return self.get_updated_request_builder(request_builder, self._input, self._cursor_value)
+
+    def apply_metadata(self, page):
+        return self._metadata_creator(self._cursor_value, page)
 
     @staticmethod
     def _get_initial_cursor_value(request_builder, input_pointer):

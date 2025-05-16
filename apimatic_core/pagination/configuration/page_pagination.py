@@ -3,10 +3,6 @@ from apimatic_core.utilities.api_helper import ApiHelper
 
 class PagePagination(PaginationStrategy):
 
-    @property
-    def metadata(self):
-        return self._metadata_creator(self._page_number)
-
     def __init__(self, input_, metadata_creator):
         super().__init__(metadata_creator)
 
@@ -28,6 +24,9 @@ class PagePagination(PaginationStrategy):
 
         return self.get_updated_request_builder(request_builder, self._input, self._page_number)
 
+    def apply_metadata(self, page):
+        return self._metadata_creator(self._page_number, page)
+
     def _get_initial_page_offset(self, request_builder):
         path_prefix, field_path = ApiHelper.split_into_parts(self._input)
 
@@ -38,6 +37,6 @@ class PagePagination(PaginationStrategy):
                 return int(ApiHelper.get_value_by_json_pointer(request_builder.query_params, field_path))
             elif path_prefix == "$request.headers":
                 return int(ApiHelper.get_value_by_json_pointer(request_builder.header_params, field_path))
-        except Exception:
+        except ValueError:
             pass
         return 1

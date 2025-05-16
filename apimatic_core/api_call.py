@@ -24,10 +24,6 @@ class ApiCall:
         return self._pagination_stategies
 
     @property
-    def get_paginated_item_converter(self):
-        return self._paginated_item_converter
-
-    @property
     def global_configuration(self):
         return self._global_configuration
 
@@ -42,7 +38,6 @@ class ApiCall:
         self._api_logger = LoggerFactory.get_api_logger(self._global_configuration.get_http_client_configuration()
                                                         .logging_configuration)
         self._pagination_strategy = None
-        self._paginated_item_converter = None
 
     def request(self, request_builder):
         self._request_builder = request_builder
@@ -54,10 +49,6 @@ class ApiCall:
 
     def pagination_stategies(self, *pagination_stategies):
         self._pagination_stategies = pagination_stategies
-        return self
-
-    def paginated_item_converter(self, paginated_item_converter):
-        self._paginated_item_converter = paginated_item_converter
         return self
 
     def endpoint_configuration(self, endpoint_configuration):
@@ -95,8 +86,8 @@ class ApiCall:
         return self._response_handler.handle(_http_response, self._global_configuration.get_global_errors())
 
 
-    def paginate(self, page_iterable_creator, page_creator):
-        return page_iterable_creator(PaginatedData(self, page_creator))
+    def paginate(self, page_iterable_creator, page_creator, paginated_items_converter):
+        return page_iterable_creator(PaginatedData(self, page_creator, paginated_items_converter))
 
     def clone(self, global_configuration=None, request_builder=None, response_handler=None,
               endpoint_configuration=None, pagination_stategies=None, paginated_item_converter=None):
@@ -106,7 +97,6 @@ class ApiCall:
         new_instance._response_handler = response_handler or self._response_handler
         new_instance._endpoint_configuration = endpoint_configuration or self._endpoint_configuration
         new_instance._pagination_stategies = pagination_stategies or self._pagination_stategies
-        new_instance._paginated_item_converter = paginated_item_converter or self._paginated_item_converter
         return new_instance
 
     def __deepcopy__(self, memodict={}):

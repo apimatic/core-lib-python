@@ -6,10 +6,6 @@ from apimatic_core.utilities.api_helper import ApiHelper
 class OffsetPagination(PaginationStrategy):
     """Pagination manager implementation for offset-based pagination."""
 
-    @property
-    def metadata(self):
-        return self._metadata_creator(self._offset)
-
     def __init__(self, input_, metadata_creator):
         """
         Initializes a new instance of the OffsetPagination class.
@@ -37,6 +33,9 @@ class OffsetPagination(PaginationStrategy):
         self._offset += last_page_size
 
         return self.get_updated_request_builder(request_builder, self._input, self._offset)
+
+    def apply_metadata(self, page):
+        return self._metadata_creator(self._offset, page)
 
     def _get_initial_offset(self, request_builder):
         path_prefix, field_path = ApiHelper.split_into_parts(self._input)
