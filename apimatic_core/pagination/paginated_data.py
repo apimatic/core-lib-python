@@ -45,10 +45,14 @@ class PaginatedData(Iterator):
             return item
 
         _, self._page = self._fetch_next_page()
-        self._items = self._api_call.get_paginated_item_converter(self._page)
+        self._items = self._api_call.get_paginated_item_converter(
+            self._page) if self._api_call.get_paginated_item_converter is not None else None
         if not self._items:
             raise StopIteration
         self._page_size, self._current_index = len(self._items), 0
+        item = self._items[self._current_index]
+        self._current_index += 1
+        return item
 
     def pages(self):
         """
