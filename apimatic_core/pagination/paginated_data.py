@@ -19,16 +19,12 @@ class PaginatedData(Iterator):
     def page_size(self):
         return self._page_size
 
-    def __init__(self, api_call, page_creator, paginated_items_converter):
-
-        if page_creator is None:
-            raise ValueError('page_creator cannot be None')
+    def __init__(self, api_call, paginated_items_converter):
 
         if paginated_items_converter is None:
             raise ValueError('paginated_items_converter cannot be None')
 
         self._api_call = copy.deepcopy(api_call)
-        self._page_creator = page_creator
         self._paginated_items_converter = paginated_items_converter
         self._initial_request_builder = api_call.request_builder
         self._pagination_strategies = self._api_call.get_pagination_stategies
@@ -38,7 +34,7 @@ class PaginatedData(Iterator):
             http_callback=self._http_call_context)
         self._global_configuration = self._api_call.global_configuration.clone_with(
             http_client_configuration=_http_client_configuration)
-        self._page = None
+        self._paged_response = None
         self._items = []
         self._page_size = 0
         self._current_index = 0
@@ -52,8 +48,8 @@ class PaginatedData(Iterator):
             self._current_index += 1
             return item
 
-        _, self._page = self._fetch_next_page()
-        self._items = self._paginated_items_converter(self._page)
+        self._paged_response = self._fetch_next_page()
+        self._items = self._paginated_items_converter(self._paged_response.data)
         if not self._items:
             raise StopIteration
         self._page_size, self._current_index = len(self._items), 0
@@ -69,14 +65,14 @@ class PaginatedData(Iterator):
         paginated_data = self._get_new_self_instance()
 
         while True:
-            metadata, paginated_data._page = paginated_data._fetch_next_page()
-            if not paginated_data._page or not metadata:
+            paginated_data._paged_response = paginated_data._fetch_next_page()
+            if not paginated_data._paged_response:
                 break
-            paginated_data._items = self._paginated_items_converter(paginated_data._page)
+            paginated_data._items = self._paginated_items_converter(paginated_data._paged_response)
             if not paginated_data._items:
                 break
             paginated_data._page_size = len(paginated_data._items)
-            yield self._page_creator(metadata, paginated_data._page)
+            yield paginated_data._paged_response
 
     def _fetch_next_page(self):
         for pagination_strategy in self._pagination_strategies:
@@ -87,13 +83,13 @@ class PaginatedData(Iterator):
                 response = self._api_call.clone(
                     global_configuration=self._global_configuration, request_builder=request_builder
                 ).execute()
-                return pagination_strategy.apply_metadata(response), response
+                return pagination_strategy.apply_metadata(response)
             except Exception as ex:
                 raise ex
         return []
 
     def _get_new_self_instance(self):
         return PaginatedData(
-            self._api_call.clone(request_builder=self._initial_request_builder), self._page_creator,
+            self._api_call.clone(request_builder=self._initial_request_builder),
             self._paginated_items_converter
         )
