@@ -3,8 +3,8 @@ from apimatic_core.utilities.api_helper import ApiHelper
 
 class PagePagination(PaginationStrategy):
 
-    def __init__(self, input_, metadata_creator):
-        super().__init__(metadata_creator)
+    def __init__(self, input_, metadata_wrapper):
+        super().__init__(metadata_wrapper)
 
         if input_ is None:
             raise ValueError("Input pointer for page based pagination cannot be None")
@@ -24,8 +24,8 @@ class PagePagination(PaginationStrategy):
 
         return self.get_updated_request_builder(request_builder, self._input, self._page_number)
 
-    def apply_metadata(self, page):
-        return self._metadata_creator(self._page_number, page)
+    def apply_metadata_wrapper(self, paged_response):
+        return self._metadata_wrapper(self._page_number, paged_response)
 
     def _get_initial_page_offset(self, request_builder):
         path_prefix, field_path = ApiHelper.split_into_parts(self._input)

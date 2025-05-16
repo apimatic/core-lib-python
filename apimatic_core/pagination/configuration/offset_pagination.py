@@ -6,14 +6,14 @@ from apimatic_core.utilities.api_helper import ApiHelper
 class OffsetPagination(PaginationStrategy):
     """Pagination manager implementation for offset-based pagination."""
 
-    def __init__(self, input_, metadata_creator):
+    def __init__(self, input_, metadata_wrapper):
         """
         Initializes a new instance of the OffsetPagination class.
 
         Args:
             input_ (str): JSON pointer to the request field representing the offset.
         """
-        super().__init__(metadata_creator)
+        super().__init__(metadata_wrapper)
 
         if input_ is None:
             raise ValueError("Input pointer for offset based pagination cannot be None")
@@ -34,8 +34,8 @@ class OffsetPagination(PaginationStrategy):
 
         return self.get_updated_request_builder(request_builder, self._input, self._offset)
 
-    def apply_metadata(self, page):
-        return self._metadata_creator(self._offset, page)
+    def apply_metadata_wrapper(self, page_response):
+        return self._metadata_wrapper(self._offset, page_response)
 
     def _get_initial_offset(self, request_builder):
         path_prefix, field_path = ApiHelper.split_into_parts(self._input)

@@ -49,7 +49,7 @@ class PaginatedData(Iterator):
             return item
 
         self._paged_response = self._fetch_next_page()
-        self._items = self._paginated_items_converter(self._paged_response.data)
+        self._items = self._paginated_items_converter(self._paged_response.body)
         if not self._items:
             raise StopIteration
         self._page_size, self._current_index = len(self._items), 0
@@ -66,9 +66,7 @@ class PaginatedData(Iterator):
 
         while True:
             paginated_data._paged_response = paginated_data._fetch_next_page()
-            if not paginated_data._paged_response:
-                break
-            paginated_data._items = self._paginated_items_converter(paginated_data._paged_response)
+            paginated_data._items = self._paginated_items_converter(paginated_data._paged_response.body)
             if not paginated_data._items:
                 break
             paginated_data._page_size = len(paginated_data._items)
@@ -83,7 +81,7 @@ class PaginatedData(Iterator):
                 response = self._api_call.clone(
                     global_configuration=self._global_configuration, request_builder=request_builder
                 ).execute()
-                return pagination_strategy.apply_metadata(response)
+                return pagination_strategy.apply_metadata_wrapper(response)
             except Exception as ex:
                 raise ex
         return []

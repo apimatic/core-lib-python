@@ -6,8 +6,8 @@ from apimatic_core.utilities.api_helper import ApiHelper
 class LinkPagination(PaginationStrategy):
     """Pagination manager implementation for link-based pagination."""
 
-    def __init__(self, next_link_pointer, metadata_creator):
-        super().__init__(metadata_creator)
+    def __init__(self, next_link_pointer, metadata_wrapper):
+        super().__init__(metadata_wrapper)
 
         if next_link_pointer is None:
             raise ValueError("Next link pointer for cursor based pagination cannot be None")
@@ -39,5 +39,5 @@ class LinkPagination(PaginationStrategy):
             query_params=updated_query_params
         )
 
-    def apply_metadata(self, page):
-        return self._metadata_creator(self._next_link, page)
+    def apply_metadata_wrapper(self, paged_response):
+        return self._metadata_wrapper(self._next_link, paged_response)

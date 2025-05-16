@@ -4,8 +4,8 @@ from apimatic_core.utilities.api_helper import ApiHelper
 
 class CursorPagination(PaginationStrategy):
 
-    def __init__(self, output, input_, metadata_creator):
-        super().__init__(metadata_creator)
+    def __init__(self, output, input_, metadata_wrapper):
+        super().__init__(metadata_wrapper)
 
         if input_ is None:
             raise ValueError("Input pointer for cursor based pagination cannot be None")
@@ -35,8 +35,8 @@ class CursorPagination(PaginationStrategy):
 
         return self.get_updated_request_builder(request_builder, self._input, self._cursor_value)
 
-    def apply_metadata(self, page):
-        return self._metadata_creator(self._cursor_value, page)
+    def apply_metadata_wrapper(self, paged_response):
+        return self._metadata_wrapper(self._cursor_value, paged_response)
 
     @staticmethod
     def _get_initial_cursor_value(request_builder, input_pointer):
