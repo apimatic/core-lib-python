@@ -16,12 +16,8 @@ class ApiCall:
         return self._request_builder
 
     @property
-    def response_handler(self):
-        return self._request_builder
-
-    @property
-    def get_pagination_stategies(self):
-        return self._pagination_stategies
+    def get_pagination_strategies(self):
+        return self._pagination_strategies
 
     @property
     def global_configuration(self):
@@ -37,7 +33,7 @@ class ApiCall:
         self._endpoint_configuration = EndpointConfiguration()
         self._api_logger = LoggerFactory.get_api_logger(self._global_configuration.get_http_client_configuration()
                                                         .logging_configuration)
-        self._pagination_strategy = None
+        self._pagination_strategies = None
 
     def request(self, request_builder):
         self._request_builder = request_builder
@@ -47,8 +43,8 @@ class ApiCall:
         self._response_handler = response_handler
         return self
 
-    def pagination_stategies(self, *pagination_stategies):
-        self._pagination_stategies = pagination_stategies
+    def pagination_strategies(self, *pagination_strategies):
+        self._pagination_strategies = pagination_strategies
         return self
 
     def endpoint_configuration(self, endpoint_configuration):
@@ -90,13 +86,13 @@ class ApiCall:
         return page_iterable_creator(PaginatedData(self, paginated_items_converter))
 
     def clone(self, global_configuration=None, request_builder=None, response_handler=None,
-              endpoint_configuration=None, pagination_stategies=None, paginated_item_converter=None):
+              endpoint_configuration=None, pagination_strategies=None, paginated_item_converter=None):
         new_instance = copy.deepcopy(self)
         new_instance._global_configuration = global_configuration or self._global_configuration
         new_instance._request_builder = request_builder or self._request_builder
         new_instance._response_handler = response_handler or self._response_handler
         new_instance._endpoint_configuration = endpoint_configuration or self._endpoint_configuration
-        new_instance._pagination_stategies = pagination_stategies or self._pagination_stategies
+        new_instance._pagination_strategies = pagination_strategies or self._pagination_strategies
         return new_instance
 
     def __deepcopy__(self, memodict={}):
@@ -104,6 +100,5 @@ class ApiCall:
         copy_instance._request_builder = copy.deepcopy(self._request_builder, memo=memodict)
         copy_instance._response_handler = copy.deepcopy(self._response_handler, memo=memodict)
         copy_instance._endpoint_configuration = copy.deepcopy(self._endpoint_configuration, memo=memodict)
-        copy_instance._pagination_stategies = copy.deepcopy(self._pagination_stategies, memo=memodict)
-        copy_instance._paginated_item_converter = copy.deepcopy(self._paginated_item_converter, memo=memodict)
+        copy_instance._pagination_strategies = copy.deepcopy(self._pagination_strategies, memo=memodict)
         return copy_instance

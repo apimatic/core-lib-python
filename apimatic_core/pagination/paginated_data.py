@@ -27,7 +27,7 @@ class PaginatedData(Iterator):
         self._api_call = copy.deepcopy(api_call)
         self._paginated_items_converter = paginated_items_converter
         self._initial_request_builder = api_call.request_builder
-        self._pagination_strategies = self._api_call.get_pagination_stategies
+        self._pagination_strategies = self._api_call.get_pagination_strategies
         self._http_call_context =\
             self._api_call.global_configuration.get_http_client_configuration().http_callback or HttpCallContext()
         _http_client_configuration = self._api_call.global_configuration.get_http_client_configuration().clone(
