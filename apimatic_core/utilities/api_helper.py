@@ -737,21 +737,19 @@ class ApiHelper(object):
         return additional_properties
 
     @staticmethod
-    def update_value_by_pointer(value, pointer, updater):
-        if value is None or pointer is None:
-            return value
-
-        try:
-            current_value = resolve_pointer(value, pointer)
-            new_value = updater(current_value)
-            set_pointer(value, pointer, new_value, inplace=True)
-        except JsonPointerException:
-            pass
-
-        return value
-
-    @staticmethod
     def resolve_response_pointer(pointer, json_body, json_headers):
+        """
+        Resolves a JSON pointer within the response body or headers.
+
+        Args:
+            pointer (str): The JSON pointer string indicating the location in the response.
+            json_body (str): The JSON-serialized response body.
+            json_headers (dict): The response headers as a dictionary.
+
+        Returns:
+            The value found at the specified pointer location, or None if not found or pointer is invalid.
+
+        """
         if pointer is None or pointer == '':
             return None
 
@@ -767,10 +765,19 @@ class ApiHelper(object):
             else:
                 return None
         except JsonPointerException:
-            pass
+            return None
 
     @staticmethod
     def split_into_parts(json_pointer):
+        """
+        Splits a JSON pointer string into its prefix and field path components.
+
+        Args:
+            json_pointer (str): The JSON pointer string to split.
+
+        Returns:
+            tuple: A tuple containing the path prefix and the field path. Returns None if input is None.
+        """
         if json_pointer is None:
             return None
 
@@ -783,13 +790,13 @@ class ApiHelper(object):
     @staticmethod
     def update_entry_by_json_pointer(dictionary, pointer, value, inplace=True):
         """
-        Updates the value at the specified JSON pointer path within a dictionary.
+        Update the value at a specified JSON pointer path within a dictionary.
 
         Args:
-            dictionary (dict): The dictionary to update.
+            dictionary (dict): The dictionary to modify.
             pointer (str): The JSON pointer path indicating where to update the value.
             value: The new value to set at the specified path.
-            inplace (bool, optional): Whether to update the dictionary in place. Defaults to True.
+            inplace (bool, optional): If True, update the dictionary in place. Defaults to True.
 
         Returns:
             dict: The updated dictionary.
@@ -799,14 +806,14 @@ class ApiHelper(object):
     @staticmethod
     def get_value_by_json_pointer(dictionary, pointer):
         """
-        Retrieves the value from a dictionary at the specified JSON pointer path.
+        Retrieve a value from a dictionary using a JSON pointer path.
 
         Args:
             dictionary (dict): The dictionary to search.
-            pointer (str): The JSON pointer path indicating the value to retrieve.
+            pointer (str): The JSON pointer path to the desired value.
 
         Returns:
-            The value found at the specified JSON pointer path.
+            The value at the specified JSON pointer path.
 
         Raises:
             JsonPointerException: If the pointer does not resolve to a value.

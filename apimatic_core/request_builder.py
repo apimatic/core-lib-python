@@ -13,10 +13,6 @@ class RequestBuilder:
         if isinstance(param_value, str):
             return None
         return param_value.name
-    @staticmethod
-    def _update_param_dict(param_dict, setter, point, value_key=None):
-        pointer = f"{point}" + (f"/{value_key}" if value_key else "")
-        return ApiHelper.update_value_by_pointer(param_dict, pointer, setter)
 
     @property
     def template_params(self):
@@ -119,24 +115,6 @@ class RequestBuilder:
 
     def xml_attributes(self, xml_attributes):
         self._xml_attributes = xml_attributes
-        return self
-
-    # New updater methods for param mutation via pointers
-    def update_by_reference(self, pointer, setter):
-        if pointer is None:
-            return self
-
-        pointer_parts = pointer.split("#")
-        prefix = pointer_parts[0]
-        point = pointer_parts[1] if len(pointer_parts) > 1 else ""
-
-        if prefix == "$request.path":
-            self._update_param_dict(self._template_params, setter, point, "value")
-        elif prefix == "$request.query":
-            self._update_param_dict(self._query_params, setter, point)
-        elif prefix == "$request.headers":
-            self._update_param_dict(self._header_params, setter, point)
-
         return self
 
     def build(self, global_configuration):

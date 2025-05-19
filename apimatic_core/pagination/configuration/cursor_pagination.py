@@ -3,8 +3,29 @@ from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class CursorPagination(PaginationStrategy):
+    """
+    Implements a cursor-based pagination strategy for API responses.
+
+    This class manages the extraction and injection of cursor values between API requests and responses,
+    enabling seamless traversal of paginated data. It validates required pointers, updates the request builder
+    with the appropriate cursor, and applies a metadata wrapper to paged responses.
+    """
 
     def __init__(self, output, input_, metadata_wrapper):
+        """
+        Initializes a CursorPagination instance with the specified output and input pointers and a metadata wrapper.
+
+        Validates that both input and output pointers are provided,
+         and sets up internal state for cursor-based pagination.
+
+        Args:
+            output: JSON pointer to extract the cursor from the API response.
+            input_: JSON pointer indicating where to set the cursor in the request.
+            metadata_wrapper: Function to wrap paged responses with additional metadata.
+
+        Raises:
+            ValueError: If either input_ or output is None.
+        """
         super().__init__(metadata_wrapper)
 
         if input_ is None:
@@ -17,6 +38,19 @@ class CursorPagination(PaginationStrategy):
         self._cursor_value = None
 
     def apply(self, paginated_data):
+        """
+        Advances the pagination by updating the request builder with the next cursor value.
+
+        If there is no previous response, initializes the cursor from the request builder.
+        Otherwise, extracts the cursor from the last response using the configured output pointer,
+        and updates the request builder for the next page. Returns None if no further pages are available.
+
+        Args:
+            paginated_data: An object containing the last response and the current request builder.
+
+        Returns:
+            A new request builder for the next page, or None if pagination is complete.
+        """
         last_response = paginated_data.last_response
         request_builder = paginated_data.request_builder
 
@@ -36,10 +70,29 @@ class CursorPagination(PaginationStrategy):
         return self.get_updated_request_builder(request_builder, self._input, self._cursor_value)
 
     def apply_metadata_wrapper(self, paged_response):
+        """
+        Applies the configured metadata wrapper to the paged response, including the current cursor value.
+
+        Args:
+            paged_response: The response object from the current page.
+
+        Returns:
+            The result of the metadata wrapper applied to the paged response and cursor value.
+        """
         return self._metadata_wrapper(paged_response, self._cursor_value)
 
     @staticmethod
     def _get_initial_cursor_value(request_builder, input_pointer):
+        """
+        Retrieves the initial cursor value from the request builder using the specified input pointer.
+
+        Args:
+            request_builder: The request builder containing request parameters.
+            input_pointer (str): The JSON pointer indicating the location of the cursor value.
+
+        Returns:
+            The initial cursor value if found, otherwise None.
+        """
         path_prefix, field_path = ApiHelper.split_into_parts(input_pointer)
 
         if path_prefix == "$request.path":

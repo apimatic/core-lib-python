@@ -4,9 +4,24 @@ from apimatic_core.utilities.api_helper import ApiHelper
 
 
 class LinkPagination(PaginationStrategy):
-    """Pagination manager implementation for link-based pagination."""
+    """
+    Implements a pagination strategy that extracts the next page link from API responses using a JSON pointer.
+
+    This class updates the request builder with query parameters from the next page link and applies a metadata
+     wrapper to the paged response.
+    """
 
     def __init__(self, next_link_pointer, metadata_wrapper):
+        """
+        Initializes a LinkPagination instance with the given next link pointer and metadata wrapper.
+
+        Args:
+            next_link_pointer: JSON pointer to extract the next page link from the API response.
+            metadata_wrapper: Callable to wrap the paged response metadata.
+
+        Raises:
+            ValueError: If next_link_pointer is None.
+        """
         super().__init__(metadata_wrapper)
 
         if next_link_pointer is None:
@@ -16,6 +31,17 @@ class LinkPagination(PaginationStrategy):
         self._next_link = None
 
     def apply(self, paginated_data):
+        """
+        Updates the request builder with query parameters from the next page
+         link extracted from the last API response.
+
+        Args:
+            paginated_data: An object containing the last API response and the current request builder.
+
+        Returns:
+            A new request builder instance with updated query parameters for the next page,
+             or None if no next link is found.
+        """
         last_response = paginated_data.last_response
         request_builder = paginated_data.request_builder
 
@@ -40,4 +66,13 @@ class LinkPagination(PaginationStrategy):
         )
 
     def apply_metadata_wrapper(self, paged_response):
+        """
+        Applies the metadata wrapper to the paged response, including the next page link.
+
+        Args:
+            paged_response: The API response object for the current page.
+
+        Returns:
+            The result of the metadata wrapper, typically containing the response and next link information.
+        """
         return self._metadata_wrapper(paged_response, self._next_link)
