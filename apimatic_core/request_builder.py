@@ -230,62 +230,36 @@ class RequestBuilder:
                 raise AuthValidationException(self._auth.error_message)
 
     def clone_with(
-            self,
-            server=None,
-            path=None,
-            http_method=None,
-            template_params=None,
-            header_params=None,
-            query_params=None,
-            form_params=None,
-            additional_form_params=None,
-            additional_query_params=None,
-            multipart_params=None,
-            body_param=None,
-            body_serializer=None,
-            auth=None,
-            array_serialization_format=None,
-            xml_attributes=None,
+            self, template_params=None, header_params=None, query_params=None, form_params=None
     ):
         """
         Clone the current instance with the given parameters.
 
         Args:
-            server (str, optional): The server URL. Defaults to None.
-            path (str, optional): The path of the request. Defaults to None.
-            http_method (str, optional): The HTTP method of the request. Defaults to None.
             template_params (dict, optional): The template parameters. Defaults to None.
             header_params (dict, optional): The header parameters. Defaults to None.
             query_params (dict, optional): The query parameters. Defaults to None.
             form_params (dict, optional): The form parameters. Defaults to None.
-            additional_form_params (dict, optional): The additional form parameters. Defaults to None.
-            additional_query_params (dict, optional): The additional query parameters. Defaults to None.
-            multipart_params (list, optional): The multipart parameters. Defaults to None.
-            body_param (object, optional): The body parameter. Defaults to None.
-            body_serializer (object, optional): The body serializer. Defaults to None.
-            auth (object, optional): The authentication object. Defaults to None.
-            array_serialization_format (str, optional): The array serialization format. Defaults to None.
-            xml_attributes (dict, optional): The XML attributes. Defaults to None.
 
         Returns:
             RequestBuilder: A new instance of the RequestBuilder class with the given parameters.
         """
         new_instance = copy.deepcopy(self)
-        new_instance._server = server or self._server
-        new_instance._path = path or self._path
-        new_instance._http_method = http_method or self._http_method
+        new_instance._server = self._server
+        new_instance._path = self._path
+        new_instance._http_method = self._http_method
         new_instance._template_params = template_params or self._template_params
         new_instance._header_params = header_params or self._header_params
         new_instance._query_params = query_params or self._query_params
         new_instance._form_params = form_params or self._form_params
-        new_instance._additional_form_params = additional_form_params or self._additional_form_params
-        new_instance._additional_query_params = additional_query_params or self._additional_query_params
-        new_instance._multipart_params = multipart_params or self._multipart_params
-        new_instance._body_param = body_param or self._body_param
-        new_instance._body_serializer = body_serializer or self._body_serializer
-        new_instance._auth = auth or self._auth
-        new_instance._array_serialization_format = array_serialization_format or self._array_serialization_format
-        new_instance._xml_attributes = xml_attributes or self._xml_attributes
+        new_instance._additional_form_params = self._additional_form_params
+        new_instance._additional_query_params = self._additional_query_params
+        new_instance._multipart_params = self._multipart_params
+        new_instance._body_param = self._body_param
+        new_instance._body_serializer = self._body_serializer
+        new_instance._auth = self._auth
+        new_instance._array_serialization_format = self._array_serialization_format
+        new_instance._xml_attributes = self._xml_attributes
         return new_instance
 
     def __deepcopy__(self, memodict={}):
