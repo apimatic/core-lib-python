@@ -35,7 +35,7 @@ class OffsetPagination(PaginationStrategy):
         return self.get_updated_request_builder(request_builder, self._input, self._offset)
 
     def apply_metadata_wrapper(self, page_response):
-        return self._metadata_wrapper(self._offset, page_response)
+        return self._metadata_wrapper(page_response, self._offset)
 
     def _get_initial_offset(self, request_builder):
         path_prefix, field_path = ApiHelper.split_into_parts(self._input)

@@ -40,4 +40,4 @@ class LinkPagination(PaginationStrategy):
         )
 
     def apply_metadata_wrapper(self, paged_response):
-        return self._metadata_wrapper(self._next_link, paged_response)
+        return self._metadata_wrapper(paged_response, self._next_link)

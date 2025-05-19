@@ -36,7 +36,7 @@ class CursorPagination(PaginationStrategy):
         return self.get_updated_request_builder(request_builder, self._input, self._cursor_value)
 
     def apply_metadata_wrapper(self, paged_response):
-        return self._metadata_wrapper(self._cursor_value, paged_response)
+        return self._metadata_wrapper(paged_response, self._cursor_value)
 
     @staticmethod
     def _get_initial_cursor_value(request_builder, input_pointer):
