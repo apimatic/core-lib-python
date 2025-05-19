@@ -86,7 +86,7 @@ class ApiCall:
         return page_iterable_creator(PaginatedData(self, paginated_items_converter))
 
     def clone(self, global_configuration=None, request_builder=None, response_handler=None,
-              endpoint_configuration=None, pagination_strategies=None, paginated_item_converter=None):
+              endpoint_configuration=None, pagination_strategies=None):
         new_instance = copy.deepcopy(self)
         new_instance._global_configuration = global_configuration or self._global_configuration
         new_instance._request_builder = request_builder or self._request_builder

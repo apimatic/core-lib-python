@@ -126,13 +126,12 @@ class PaginatedData(Iterator):
             request_builder = pagination_strategy.apply(self)
             if request_builder is None:
                 continue
-            try:
-                response = self._api_call.clone(
-                    global_configuration=self._global_configuration, request_builder=request_builder
-                ).execute()
-                return pagination_strategy.apply_metadata_wrapper(response)
-            except Exception as ex:
-                raise ex
+
+            response = self._api_call.clone(
+                global_configuration=self._global_configuration, request_builder=request_builder
+            ).execute()
+            return pagination_strategy.apply_metadata_wrapper(response)
+
         return []
 
     def _get_new_self_instance(self):
