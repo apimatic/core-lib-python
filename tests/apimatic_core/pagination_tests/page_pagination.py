@@ -1,5 +1,5 @@
 import pytest
-from apimatic_core.pagination.configuration.page_pagination import PagePagination
+from apimatic_core.pagination.strategies.page_pagination import PagePagination
 from tests.apimatic_core.mocks.pagination.paginated_data import PaginatedData
 from apimatic_core.request_builder import RequestBuilder
 from apimatic_core.types.parameter import Parameter

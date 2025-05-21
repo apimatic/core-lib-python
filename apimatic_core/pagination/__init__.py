@@ -1,5 +1,5 @@
 __all__ = [
     'paginated_data',
-    'configuration',
+    'strategies',
     'pagination_strategy',
 ]

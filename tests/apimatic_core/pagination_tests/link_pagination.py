@@ -2,7 +2,7 @@ from apimatic_core.types.parameter import Parameter
 from tests.apimatic_core.mocks.pagination.paginated_data import PaginatedData
 from apimatic_core.request_builder import RequestBuilder
 from tests.apimatic_core.base import Base
-from apimatic_core.pagination.configuration.link_pagination import LinkPagination
+from apimatic_core.pagination.strategies.link_pagination import LinkPagination
 
 
 class TestLinkPagination(Base):
