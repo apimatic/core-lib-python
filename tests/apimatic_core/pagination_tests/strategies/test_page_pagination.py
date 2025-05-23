@@ -5,16 +5,15 @@ from apimatic_core.pagination.strategies.page_pagination import PagePagination
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.request_builder import RequestBuilder
 
+
 class TestPagePagination:
 
     @pytest.fixture
     def mock_metadata_wrapper(self, mocker):
-        # Reusing the mock_metadata_wrapper from previous context
         return mocker.Mock(name="metadata_wrapper_mock")
 
     @pytest.fixture
     def mock_request_builder(self, mocker):
-        # Reusing the mock_request_builder from previous context
         class MockRequestBuilder(RequestBuilder):
             @property
             def template_params(self):
@@ -36,12 +35,10 @@ class TestPagePagination:
 
             def clone_with(self, **kwargs):
                 new_rb = MockRequestBuilder()
-                # Copy existing attributes
                 new_rb._template_params = self.template_params.copy()
                 new_rb._query_params = self.query_params.copy()
                 new_rb._header_params = self.header_params.copy()
 
-                # Apply updates from kwargs
                 if 'template_params' in kwargs:
                     new_rb.template_params.update(kwargs['template_params'])
                 if 'query_params' in kwargs:
@@ -67,9 +64,9 @@ class TestPagePagination:
     @pytest.fixture
     def mock_paginated_data_initial_call(self, mocker, mock_request_builder):
         paginated_data = mocker.Mock(spec=PaginatedData)
-        paginated_data.last_response = None  # Indicates initial call
+        paginated_data.last_response = None
         paginated_data.request_builder = mock_request_builder
-        paginated_data.page_size = 0  # Not relevant for initial call
+        paginated_data.page_size = 0
         return paginated_data
 
     @pytest.fixture
@@ -77,7 +74,7 @@ class TestPagePagination:
         paginated_data = mocker.Mock(spec=PaginatedData)
         paginated_data.last_response = mock_last_response
         paginated_data.request_builder = mock_request_builder
-        paginated_data.page_size = 5  # Assume previous page had 5 items
+        paginated_data.page_size = 5
         return paginated_data
 
     @pytest.fixture
@@ -85,45 +82,43 @@ class TestPagePagination:
         paginated_data = mocker.Mock(spec=PaginatedData)
         paginated_data.last_response = mock_last_response
         paginated_data.request_builder = mock_request_builder
-        paginated_data.page_size = 0  # Assume previous page had 0 items (end of pagination)
+        paginated_data.page_size = 0
         return paginated_data
 
-    # Test __init__
+    def _create_page_pagination_instance(self, input_value, metadata_wrapper):
+        return PagePagination(input_=input_value, metadata_wrapper=metadata_wrapper)
+
     def test_init_success(self, mock_metadata_wrapper):
-        pp = PagePagination(input_="$request.query#/page", metadata_wrapper=mock_metadata_wrapper)
+        pp = self._create_page_pagination_instance("$request.query#/page", mock_metadata_wrapper)
         assert pp._input == "$request.query#/page"
         assert pp._metadata_wrapper == mock_metadata_wrapper
         assert pp._page_number == 1
 
     def test_init_input_none_raises_error(self, mock_metadata_wrapper):
         with pytest.raises(ValueError, match="Input pointer for page based pagination cannot be None"):
-            PagePagination(input_=None, metadata_wrapper=mock_metadata_wrapper)
+            self._create_page_pagination_instance(None, mock_metadata_wrapper)
 
-    def test_init_metadata_wrapper_none_raises_error(self, mock_metadata_wrapper):
+    def test_init_metadata_wrapper_none_raises_error(self):
         with pytest.raises(ValueError, match="Metadata wrapper for the pagination cannot be None"):
-            PagePagination(input_=None, metadata_wrapper=None)
+            self._create_page_pagination_instance("$request.query#/page", None)
 
-    # Test apply
     def test_apply_initial_call_with_page_from_query(self, mocker, mock_paginated_data_initial_call,
                                                      mock_request_builder, mock_metadata_wrapper):
-        # Mock _get_initial_page_offset to return a specific value
         mock_get_initial_request_param_value = mocker.patch.object(PagePagination, '_get_initial_request_param_value', return_value=5)
 
-        pp = PagePagination(input_="$request.query#/page", metadata_wrapper=mock_metadata_wrapper)
+        pp = self._create_page_pagination_instance("$request.query#/page", mock_metadata_wrapper)
         result_rb = pp.apply(mock_paginated_data_initial_call)
 
-        # Assert that _get_initial_page_offset was called
         mock_get_initial_request_param_value.assert_called_once_with(mock_request_builder, "$request.query#/page", 1)
         assert pp._page_number == 5
-        assert result_rb == mock_request_builder  # Should return the original request_builder
+        assert result_rb == mock_request_builder
 
     def test_apply_subsequent_call_increments_page_with_results(self, mocker,
                                                                 mock_paginated_data_subsequent_call_with_results,
                                                                 mock_request_builder):
-        pp = PagePagination(input_="$request.query#/page", metadata_wrapper=mocker.Mock())
-        pp._page_number = 2  # Simulate current page is 2
+        pp = self._create_page_pagination_instance("$request.query#/page", mocker.Mock())
+        pp._page_number = 2
 
-        # Patch get_updated_request_builder
         mock_get_updated_request_builder = mocker.patch.object(
             PagePagination, 'get_updated_request_builder',
             return_value=mock_request_builder.clone_with(query_params={"page": 3, "limit": 10})
@@ -131,7 +126,6 @@ class TestPagePagination:
 
         result_rb = pp.apply(mock_paginated_data_subsequent_call_with_results)
 
-        # Expected page number: current (2) + 1 = 3
         assert pp._page_number == 3
         mock_get_updated_request_builder.assert_called_once_with(
             mock_request_builder, "$request.query#/page", 3
@@ -141,33 +135,28 @@ class TestPagePagination:
     def test_apply_subsequent_call_does_not_increment_page_with_no_results(self, mocker,
                                                                            mock_paginated_data_subsequent_call_no_results,
                                                                            mock_request_builder):
-        pp = PagePagination(input_="$request.query#/page", metadata_wrapper=mocker.Mock())
-        pp._page_number = 3  # Simulate current page is 3
+        pp = self._create_page_pagination_instance("$request.query#/page", mocker.Mock())
+        pp._page_number = 3
 
-        # Patch get_updated_request_builder
         mock_get_updated_request_builder = mocker.patch.object(
             PagePagination, 'get_updated_request_builder'
         )
 
         result_rb = pp.apply(mock_paginated_data_subsequent_call_no_results)
 
-        # Expected page number: current (3) + 0 = 3 (no increment)
         assert pp._page_number == 3
         mock_get_updated_request_builder.assert_called_once_with(
             mock_request_builder, "$request.query#/page", 3
         )
-        # Assuming the mock_request_builder update would be reflected if called
-        # The key is that _page_number is not incremented past 3.
 
-    # Test apply_metadata_wrapper
     def test_apply_metadata_wrapper(self, mock_metadata_wrapper, mocker):
         mock_metadata_wrapper.return_value = "wrapped_response_with_page"
 
-        pp = PagePagination(
-            input_="$request.query#/page",
+        pp = self._create_page_pagination_instance(
+            input_value="$request.query#/page",
             metadata_wrapper=mock_metadata_wrapper
         )
-        pp._page_number = 5  # Set a page number for the test
+        pp._page_number = 5
         mock_page_response = mocker.Mock()
 
         result = pp.apply_metadata_wrapper(mock_page_response)
@@ -175,70 +164,46 @@ class TestPagePagination:
         mock_metadata_wrapper.assert_called_once_with(mock_page_response, 5)
         assert result == "wrapped_response_with_page"
 
-    # Test _get_initial_page_offset
-    def test_get_initial_page_offset_from_path(self, mocker, mock_request_builder):
-        mock_request_builder._template_params = {"page": 2}  # Ensure value is present
+    @pytest.mark.parametrize(
+        "input_pointer, initial_params, expected_value, json_pointer_return_value",
+        [
+            ("$request.path#/page", {"page": 2}, 2, "2"),
+            ("$request.query#/page", {"page": 3, "limit": 10}, 3, "3"),
+            ("$request.headers#/page", {"page": 4}, 4, "4"),
+            ("$request.query#/page", {"limit": 10}, 1, None),
+            ("invalid_prefix#/page", {"page": 10}, 1, "10"),
+        ]
+    )
+    def test_get_initial_page_offset_various_scenarios(self, mocker, mock_request_builder, mock_metadata_wrapper,
+                                                   input_pointer, initial_params, expected_value, json_pointer_return_value):
+        if "$request.path" in input_pointer:
+            mock_request_builder._template_params = initial_params
+        elif "$request.query" in input_pointer:
+            mock_request_builder._query_params = initial_params
+        elif "$request.headers" in input_pointer:
+            mock_request_builder._header_params = initial_params
+
         mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts',
-                                                    return_value=("$request.path", "/page"))
-        mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer', return_value="2")
-
-        pp = PagePagination(input_="$request.path#/page", metadata_wrapper=mocker.Mock())
-        result = pp._get_initial_request_param_value(mock_request_builder, "$request.path#/page")
-
-        mock_split_into_parts.assert_called_once_with("$request.path#/page")
-        mock_get_value_by_json_pointer.assert_called_once_with(mock_request_builder.template_params, "/page")
-        assert result == 2
-
-    def test_get_initial_page_offset_from_query(self, mocker, mock_request_builder):
-        mock_request_builder._query_params = {"page": 3, "limit": 10}  # Ensure value is present
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts',
-                                                    return_value=("$request.query", "/page"))
-        mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer', return_value="3")
-
-        pp = PagePagination(input_="$request.query#/page", metadata_wrapper=mocker.Mock())
-        result = pp._get_initial_request_param_value(mock_request_builder, "$request.query#/page")
-
-        mock_split_into_parts.assert_called_once_with("$request.query#/page")
-        mock_get_value_by_json_pointer.assert_called_once_with(mock_request_builder.query_params, "/page")
-        assert result == 3
-
-    def test_get_initial_page_offset_from_headers(self, mocker, mock_request_builder):
-        mock_request_builder._header_params = {"page": 4}  # Ensure value is present
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts',
-                                                    return_value=("$request.headers", "/page"))
-        mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer', return_value="4")
-
-        pp = PagePagination(input_="$request.headers#/page", metadata_wrapper=mocker.Mock())
-        result = pp._get_initial_request_param_value(mock_request_builder, "$request.headers#/page")
-
-        mock_split_into_parts.assert_called_once_with("$request.headers#/page")
-        mock_get_value_by_json_pointer.assert_called_once_with(mock_request_builder.header_params, "/page")
-        assert result == 4
-
-    def test_get_initial_page_offset_no_value_found_returns_one(
-            self, mocker, mock_request_builder, mock_metadata_wrapper):
-        mock_request_builder._query_params = {"limit": 10}  # No 'page' in params
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts',
-                                                    return_value=("$request.query", "/page"))
+                                                    return_value=(input_pointer.split('#')[0], input_pointer.split('#')[1]))
         mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer',
-                                                             return_value=None)  # Simulate not found
+                                                             return_value=json_pointer_return_value)
 
-        pp = PagePagination(input_="$request.query#/page", metadata_wrapper=mock_metadata_wrapper)
-        result = pp._get_initial_request_param_value(mock_request_builder, "$request.query#/page", 1)
-        mock_split_into_parts.assert_called_once_with("$request.query#/page")
-        mock_get_value_by_json_pointer.assert_called_once_with(mock_request_builder.query_params, "/page")
-        assert result == 1  # Should default to 1 if not found
+        pp = self._create_page_pagination_instance(input_pointer, mock_metadata_wrapper)
+        result = pp._get_initial_request_param_value(mock_request_builder, input_pointer, 1)
 
-    def test_get_initial_page_offset_invalid_prefix_returns_one(
-            self, mocker, mock_request_builder, mock_metadata_wrapper):
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts',
-                                                    return_value=("invalid_prefix", "/page"))
-        # Ensure get_value_by_json_pointer is not called for invalid prefixes
-        mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer')
+        mock_split_into_parts.assert_called_once_with(input_pointer)
 
-        pp = PagePagination(input_="invalid_prefix#/page", metadata_wrapper=mock_metadata_wrapper)
-        result = pp._get_initial_request_param_value(mock_request_builder, "invalid_prefix#/page", 1)
+        if input_pointer.startswith(("$request.path", "$request.query", "$request.headers")):
+            accessed_params = None
+            if "$request.path" in input_pointer:
+                accessed_params = mock_request_builder.template_params
+            elif "$request.query" in input_pointer:
+                accessed_params = mock_request_builder.query_params
+            elif "$request.headers" in input_pointer:
+                accessed_params = mock_request_builder.header_params
 
-        mock_split_into_parts.assert_called_once_with("invalid_prefix#/page")
-        mock_get_value_by_json_pointer.assert_not_called()
-        assert result == 1
+            mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
+        else:
+            mock_get_value_by_json_pointer.assert_not_called()
+
+        assert result == expected_value
