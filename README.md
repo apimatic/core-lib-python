@@ -96,6 +96,16 @@ pip install apimatic-core
 | [`AnyOf`](apimatic_core/types/union_types/any_of.py )                         | A class to represent information about AnyOf union types                     |
 | [`LeafType`](apimatic_core/types/union_types/leaf_type.py )                   | A class to represent the case information in an OneOf or AnyOf union type    |
 
+## Pagination
+| Name                                                                           | Description                                                                                                                                                                                                                                                                                     |
+|--------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`CursorPagination`](apimatic_core/pagination/strategies/cursor_pagination.py) | This class manages the extraction and injection of cursor values between API requests and responses, enabling seamless traversal of paginated data. It validates required pointers, updates the request builder with the appropriate cursor, and applies a metadata wrapper to paged responses. |
+| [`LinkPagination`](apimatic_core/pagination/strategies/link_pagination.py)     | This class updates the request builder with query parameters from the next page link and applies a metadata wrapper to the paged response.                                                                                                                                                      |
+| [`OffsetPagination`](apimatic_core/pagination/strategies/offset_pagination.py) | This class manages pagination by updating an offset parameter in the request builder, allowing sequential retrieval of paginated data. It extracts and updates the offset based on a configurable JSON pointer and applies a metadata wrapper to each page response.                            |
+| [`PagePagination`](apimatic_core/pagination/strategies/page_pagination.py)     | This class manages pagination by updating the request builder with the appropriate page number, using a JSON pointer to identify the pagination parameter. It also applies a metadata wrapper to each paged response, including the current page number.                                        |
+| [`PaginatedData`](apimatic_core/pagination/paginated_data.py)                  | Provides methods to iterate over items and pages, fetch next pages using defined pagination strategies, and access the latest HTTP response and request builder. Supports independent iterators for concurrent traversals.                                                                      |
+
+
 ## Utilities
 | Name                                                               | Description                                                                                              |
 |--------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
