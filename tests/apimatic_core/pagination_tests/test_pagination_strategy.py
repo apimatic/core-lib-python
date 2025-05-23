@@ -19,18 +19,18 @@ class MockRequestBuilder(RequestBuilder):
     def header_params(self):
         return self._header_params
 
-    def __init__(self, template_params=None, query_params=None, header_params=None):
+    def __init__(self, template_params=None, header_params=None, query_params=None):
         super().__init__()
         self._template_params = template_params if template_params is not None else {}
         self._query_params = query_params if query_params is not None else {}
         self._header_params = header_params if header_params is not None else {}
 
-    def clone_with(self, template_params=None, query_params=None, header_params=None):
+    def clone_with(self, template_params=None, header_params=None, query_params=None):
         # This mock clone_with will create a new instance with updated params
         new_rb = MockRequestBuilder(
             template_params=template_params if template_params is not None else self.template_params.copy(),
-            query_params=query_params if query_params is not None else self.query_params.copy(),
-            header_params=header_params if header_params is not None else self.header_params.copy()
+            header_params=header_params if header_params is not None else self.header_params.copy(),
+            query_params=query_params if query_params is not None else self.query_params.copy()
         )
         return new_rb
 

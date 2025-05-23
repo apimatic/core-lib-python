@@ -136,7 +136,7 @@ class MockPaginatedHttpClient(HttpClient):
 
         if '/transactions/cursor' in request.query_url:
             return self.response_factory.create(
-                status_code=200, reason=None, headers={'Content-Type': 'application/json'},
+                status_code=200, reason=None, headers=request.headers,
                 body=ApiHelper.json_serialize({
                     "data": transaction_batch,
                     "nextCursor": transaction_batch[-1]['id'] if self._current_index < len(self.transactions) else None
@@ -145,7 +145,7 @@ class MockPaginatedHttpClient(HttpClient):
 
         if '/transactions/offset' in request.query_url:
             return self.response_factory.create(
-                status_code=200, reason=None, headers={'Content-Type': 'application/json'},
+                status_code=200, reason=None, headers=request.headers,
                 body=ApiHelper.json_serialize({
                     "data": transaction_batch
                 }),
@@ -153,7 +153,7 @@ class MockPaginatedHttpClient(HttpClient):
 
         if '/transactions/links' in request.query_url:
             return self.response_factory.create(
-                status_code=200, reason=None, headers={'Content-Type': 'application/json'},
+                status_code=200, reason=None, headers=request.headers,
                 body=ApiHelper.json_serialize({
                     "data": transaction_batch,
                     "links": {
@@ -164,7 +164,7 @@ class MockPaginatedHttpClient(HttpClient):
 
         if '/transactions/page' in request.query_url:
             return self.response_factory.create(
-                status_code=200, reason=None, headers={'Content-Type': 'application/json'},
+                status_code=200, reason=None, headers=request.headers,
                 body=ApiHelper.json_serialize({
                     "data": transaction_batch,
                 }),

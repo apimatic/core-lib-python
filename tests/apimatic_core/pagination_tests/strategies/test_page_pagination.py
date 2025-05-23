@@ -142,7 +142,7 @@ class TestPagePagination:
             PagePagination, 'get_updated_request_builder'
         )
 
-        result_rb = pp.apply(mock_paginated_data_subsequent_call_no_results)
+        pp.apply(mock_paginated_data_subsequent_call_no_results)
 
         assert pp._page_number == 3
         mock_get_updated_request_builder.assert_called_once_with(
