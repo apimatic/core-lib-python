@@ -82,8 +82,32 @@ class PaginationStrategy(ABC):
             header_params = ApiHelper.update_entry_by_json_pointer(
                 header_params.copy(), field_path, offset, inplace=True)
 
-        return request_builder.clone_with(
-            template_params=template_params,
-            query_params=query_params,
-            header_params=header_params
-        )
+        return request_builder.clone_with(template_params=template_params, query_params=query_params,
+                                          header_params=header_params)
+
+    @staticmethod
+    def _get_initial_request_param_value(request_builder, input_pointer, default=0):
+        """
+        Extracts the initial pagination offset value from the request builder using the specified JSON pointer.
+
+        Args:
+            request_builder: The request builder containing path, query, and header parameters.
+            input_pointer (str): JSON pointer indicating which parameter to extract.
+            default (int, optional): The value to return if the parameter is not found. Defaults to 0.
+
+        Returns:
+            int: The initial offset value from the specified parameter, or default if not found.
+        """
+        path_prefix, field_path = ApiHelper.split_into_parts(input_pointer)
+
+        if path_prefix == "$request.path":
+            value = ApiHelper.get_value_by_json_pointer(request_builder.template_params, field_path)
+            return int(value) if value is not None else default
+        elif path_prefix == "$request.query":
+            value = ApiHelper.get_value_by_json_pointer(request_builder.query_params, field_path)
+            return int(value) if value is not None else default
+        elif path_prefix == "$request.headers":
+            value = ApiHelper.get_value_by_json_pointer(request_builder.header_params, field_path)
+            return int(value) if value is not None else default
+
+        return default

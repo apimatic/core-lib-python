@@ -230,7 +230,7 @@ class RequestBuilder:
                 raise AuthValidationException(self._auth.error_message)
 
     def clone_with(
-            self, template_params=None, header_params=None, query_params=None, form_params=None
+            self, template_params=None, header_params=None, query_params=None
     ):
         """
         Clone the current instance with the given parameters.
@@ -251,7 +251,7 @@ class RequestBuilder:
         new_instance._template_params = template_params or self._template_params
         new_instance._header_params = header_params or self._header_params
         new_instance._query_params = query_params or self._query_params
-        new_instance._form_params = form_params or self._form_params
+        new_instance._form_params = self._form_params
         new_instance._additional_form_params = self._additional_form_params
         new_instance._additional_query_params = self._additional_query_params
         new_instance._multipart_params = self._multipart_params

@@ -49,7 +49,7 @@ class OffsetPagination(PaginationStrategy):
         last_page_size = paginated_data.page_size
         # The last response is none which means this is going to be the 1st page
         if last_response is None:
-            self._offset = self._get_initial_offset(request_builder)
+            self._offset = self._get_initial_request_param_value(request_builder, self._input)
             return request_builder
 
         self._offset += last_page_size
@@ -67,25 +67,3 @@ class OffsetPagination(PaginationStrategy):
             The result of the metadata wrapper callable with the page response and offset.
         """
         return self._metadata_wrapper(page_response, self._offset)
-
-    def _get_initial_offset(self, request_builder):
-        """
-        Determines the initial offset value for pagination by extracting it from the request builder
-        based on the configured JSON pointer input.
-
-        Args:
-            request_builder: The request builder containing path, query, and header parameters.
-
-        Returns:
-            int: The initial offset value extracted from the appropriate request parameter, or 0 if not found.
-        """
-        path_prefix, field_path = ApiHelper.split_into_parts(self._input)
-
-        if path_prefix == "$request.path":
-            return int(ApiHelper.get_value_by_json_pointer(request_builder.template_params, field_path))
-        elif path_prefix == "$request.query":
-            return int(ApiHelper.get_value_by_json_pointer(request_builder.query_params, field_path))
-        elif path_prefix == "$request.headers":
-            return int(ApiHelper.get_value_by_json_pointer(request_builder.header_params, field_path))
-
-        return 0

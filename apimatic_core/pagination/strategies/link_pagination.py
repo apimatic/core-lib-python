@@ -61,9 +61,7 @@ class LinkPagination(PaginationStrategy):
         updated_query_params = request_builder.query_params.copy()
         updated_query_params.update(query_params)
 
-        return request_builder.clone_with(
-            query_params=updated_query_params
-        )
+        return request_builder.clone_with(query_params=updated_query_params)
 
     def apply_metadata_wrapper(self, paged_response):
         """

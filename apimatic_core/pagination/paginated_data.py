@@ -57,8 +57,7 @@ class PaginatedData(Iterator):
             self._api_call.global_configuration.get_http_client_configuration().http_callback or HttpCallContext()
         _http_client_configuration = self._api_call.global_configuration.get_http_client_configuration().clone(
             http_callback=self._http_call_context)
-        self._global_configuration = self._api_call.global_configuration.clone_with(
-            http_client_configuration=_http_client_configuration)
+        self._global_configuration = self._api_call.global_configuration.clone_with()
         self._paged_response = None
         self._items = []
         self._page_size = 0
@@ -82,7 +81,8 @@ class PaginatedData(Iterator):
             return item
 
         self._paged_response = self._fetch_next_page()
-        self._items = self._paginated_items_converter(self._paged_response.body)
+        self._items = self._paginated_items_converter(
+            self._paged_response.body) if self._paged_response else []
         if not self._items:
             raise StopIteration
         self._page_size, self._current_index = len(self._items), 0
@@ -102,7 +102,8 @@ class PaginatedData(Iterator):
 
         while True:
             paginated_data._paged_response = paginated_data._fetch_next_page()
-            paginated_data._items = self._paginated_items_converter(paginated_data._paged_response.body)
+            paginated_data._items = self._paginated_items_converter(
+                paginated_data._paged_response.body) if paginated_data._paged_response else []
             if not paginated_data._items:
                 break
             paginated_data._page_size = len(paginated_data._items)
@@ -132,7 +133,7 @@ class PaginatedData(Iterator):
             ).execute()
             return pagination_strategy.apply_metadata_wrapper(response)
 
-        return []
+        return None
 
     def _get_new_self_instance(self):
         """

@@ -818,7 +818,10 @@ class ApiHelper(object):
         Raises:
             JsonPointerException: If the pointer does not resolve to a value.
         """
-        return resolve_pointer(dictionary, pointer)
+        try:
+            return resolve_pointer(dictionary, pointer)
+        except JsonPointerException as jpe:
+            return None
 
     class CustomDate(object):
 

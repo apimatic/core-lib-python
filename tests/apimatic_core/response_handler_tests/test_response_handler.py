@@ -5,7 +5,6 @@ from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.utilities.xml_helper import XmlHelper
 from tests.apimatic_core.base import Base
-from tests.apimatic_core.mocks.configuration.global_configuration import GlobalConfiguration
 from tests.apimatic_core.mocks.exceptions.api_exception import APIException
 from tests.apimatic_core.mocks.exceptions.global_test_exception import GlobalTestException
 from tests.apimatic_core.mocks.exceptions.local_test_exception import LocalTestException
@@ -19,7 +18,7 @@ class TestResponseHandler(Base):
 
     def test_nullify_404(self):
         http_response = self.new_response_handler.is_nullify404(True).handle(self.response(status_code=404),
-                                                                             GlobalConfiguration(), self.endpoint_configuration())
+                                                                             self.global_errors())
         assert http_response is None
 
     @pytest.mark.parametrize('http_response, expected_exception_type, expected_error_message', [
@@ -30,20 +29,20 @@ class TestResponseHandler(Base):
     ])
     def test_global_error(self, http_response, expected_exception_type, expected_error_message):
         with pytest.raises(expected_exception_type) as error:
-            self.new_response_handler.handle(http_response, GlobalConfiguration(), self.endpoint_configuration())
+            self.new_response_handler.handle(http_response, self.global_errors())
         assert error.value.reason == expected_error_message
 
     def test_local_error(self):
         with pytest.raises(LocalTestException) as error:
             self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
-                .handle(self.response(status_code=404), GlobalConfiguration(), self.endpoint_configuration())
+                .handle(self.response(status_code=404), self.global_errors())
         assert error.value.reason == 'Not Found'
 
     def test_default_local_error(self):
         with pytest.raises(LocalTestException) as error:
             self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
                 .local_error('default', 'Response Not OK', LocalTestException) \
-                .handle(self.response(status_code=412), GlobalConfiguration(), self.endpoint_configuration())
+                .handle(self.response(status_code=412), self.global_errors())
         assert error.value.reason == 'Response Not OK'
 
     @pytest.mark.parametrize('http_response, expected_exception_type, expected_error_message', [
@@ -56,7 +55,7 @@ class TestResponseHandler(Base):
             self.new_response_handler.local_error(522, '522 local', LocalTestException) \
                 .local_error('5XX', '5XX local', APIException) \
                 .local_error('4XX', '4XX local', LocalTestException) \
-                .handle(http_response, GlobalConfiguration(), self.endpoint_configuration())
+                .handle(http_response, self.global_errors())
         assert error.value.reason == expected_error_message
 
     def test_local_error_with_body(self):
@@ -66,7 +65,7 @@ class TestResponseHandler(Base):
                                       text='{"ServerCode": 5001, '
                                            '"ServerMessage": "Test message from server", '
                                            '"SecretMessageForEndpoint": "This is test error message"}'),
-                        GlobalConfiguration(), self.endpoint_configuration())
+                        self.global_errors())
         assert error.value.server_code == 5001 \
                and error.value.server_message == 'Test message from server' \
                and error.value.secret_message_for_endpoint == 'This is test error message'
@@ -83,7 +82,7 @@ class TestResponseHandler(Base):
                                                             '"Test message from server", "SecretMessageForEndpoint": '
                                                             '"This is test error message"}',
                                       headers={'accept': 'application/json'}),
-                        GlobalConfiguration(with_template_message=True), self.endpoint_configuration())
+                        self.global_errors_with_template_message())
         assert error.value.reason == 'error_code => 404, ' \
                                      'header => application/json, ' \
                                      'body => 5001 - Test message from server - This is test error message'
@@ -100,7 +99,7 @@ class TestResponseHandler(Base):
                                            '"address": "Test address"'
                                            '}'
                                            '}'),
-                        GlobalConfiguration(), self.endpoint_configuration())
+                        self.global_errors())
         assert error.value.server_code == 5001 \
                and error.value.server_message == 'Test message from server' \
                and error.value.model.field == 'Test field' \
@@ -113,7 +112,7 @@ class TestResponseHandler(Base):
                 .handle(self.response(status_code=412,
                                       text='{"ServerCode": 5001, "ServerMessage": "Test message from server", "model": '
                                            '{ "field": "Test field", "name": "Test name", "address": "Test address"}}'),
-                        GlobalConfiguration(with_template_message=True), self.endpoint_configuration())
+                        self.global_errors_with_template_message())
 
         assert error.value.reason == 'global error message -> error_code => 412, header => ,' \
                                      ' body => 5001 - Test message from server - Test name'
@@ -121,13 +120,13 @@ class TestResponseHandler(Base):
     def test_local_error_precedence(self):
         with pytest.raises(LocalTestException) as error:
             self.new_response_handler.local_error(400, '400 Local', LocalTestException) \
-                .handle(self.response(status_code=400), GlobalConfiguration(), self.endpoint_configuration())
+                .handle(self.response(status_code=400), self.global_errors())
         assert error.value.reason == '400 Local'
 
     def test_global_error_precedence(self):
         with pytest.raises(GlobalTestException) as error:
             self.new_response_handler.local_error(404, 'Not Found', LocalTestException) \
-                .handle(self.response(status_code=400), GlobalConfiguration(), self.endpoint_configuration())
+                .handle(self.response(status_code=400), self.global_errors())
         assert error.value.reason == '400 Global'
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
@@ -136,7 +135,7 @@ class TestResponseHandler(Base):
         (Base.response(text=500.124), 500.124)
     ])
     def test_simple_response_body(self, input_http_response, expected_response_body):
-        http_response = self.new_response_handler.handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+        http_response = self.new_response_handler.handle(input_http_response, self.global_errors())
         assert http_response == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, input_response_convertor, expected_response_body_type, '
@@ -147,7 +146,7 @@ class TestResponseHandler(Base):
     def test_simple_response_body_with_convertor(self, input_http_response, input_response_convertor,
                                                  expected_response_body_type, expected_response_body):
         http_response = self.new_response_handler.convertor(input_response_convertor).handle(input_http_response,
-                                                                                             GlobalConfiguration(), self.endpoint_configuration())
+                                                                                             self.global_errors())
         assert type(http_response) == expected_response_body_type and http_response == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
@@ -161,7 +160,7 @@ class TestResponseHandler(Base):
         http_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
             .deserialize_into(Employee.from_dictionary) \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert ApiHelper.json_serialize(http_response) == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
@@ -176,7 +175,7 @@ class TestResponseHandler(Base):
     def test_json_response_body(self, input_http_response, expected_response_body):
         http_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert ApiHelper.json_serialize(http_response) == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
@@ -214,7 +213,7 @@ class TestResponseHandler(Base):
             .deserializer(XmlHelper.deserialize_xml_to_list) \
             .deserialize_into(XMLModel) \
             .xml_item_name('item') \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert XmlHelper.serialize_list_to_xml(http_response, 'arrayOfModels', 'item') == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
@@ -238,7 +237,7 @@ class TestResponseHandler(Base):
             .is_xml_response(True) \
             .deserializer(XmlHelper.deserialize_xml) \
             .deserialize_into(XMLModel) \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert XmlHelper.serialize_to_xml(http_response, 'AttributesAndElements') == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
@@ -251,7 +250,7 @@ class TestResponseHandler(Base):
         api_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
             .is_api_response(True) \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert ApiHelper.json_serialize(api_response.body) == expected_response_body
         assert api_response.is_success() is True
         assert api_response.is_error() is False
@@ -266,11 +265,10 @@ class TestResponseHandler(Base):
             .deserializer(ApiHelper.json_deserialize) \
             .is_api_response(True) \
             .convertor(ApiResponse.create) \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert isinstance(api_response, ApiResponse) and \
                ApiHelper.json_serialize(api_response.body) == expected_response_body \
-               and api_response.errors == expected_error_list \
-               and api_response.cursor == "Test cursor"
+               and api_response.errors == expected_error_list
 
     @pytest.mark.parametrize('input_http_response, expected_response_body, expected_error_list', [
         (Base.response(text='{"key1": "value1", "key2": "value2", "errors": ["e1", "e2"]}'),
@@ -282,7 +280,7 @@ class TestResponseHandler(Base):
         api_response = self.new_response_handler \
             .deserializer(ApiHelper.json_deserialize) \
             .is_api_response(True) \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert ApiHelper.json_serialize(api_response.body) == expected_response_body \
                and api_response.errors == expected_error_list
 
@@ -314,7 +312,7 @@ class TestResponseHandler(Base):
         http_response = self.new_response_handler \
             .deserializer(ApiHelper.datetime_deserialize) \
             .datetime_format(input_date_time_format) \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert http_response == expected_response_body
 
     @pytest.mark.parametrize('input_http_response, expected_response_body', [
@@ -325,5 +323,5 @@ class TestResponseHandler(Base):
     def test_date_response_body(self, input_http_response, expected_response_body):
         http_response = self.new_response_handler \
             .deserializer(ApiHelper.date_deserialize) \
-            .handle(input_http_response, GlobalConfiguration(), self.endpoint_configuration())
+            .handle(input_http_response, self.global_errors())
         assert http_response == expected_response_body
