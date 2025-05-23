@@ -753,8 +753,8 @@ class ApiHelper(object):
         if pointer is None or pointer == '':
             return None
 
-        prefix = pointer.split("#")[0]
-        path = pointer.rsplit('#')[1].rstrip('}')
+        prefix, path = ApiHelper.split_into_parts(pointer)
+        path = path.rstrip('}')
 
         try:
             if prefix == "$response.body":
@@ -778,7 +778,7 @@ class ApiHelper(object):
         Returns:
             tuple: A tuple containing the path prefix and the field path. Returns None if input is None.
         """
-        if json_pointer is None:
+        if json_pointer is None or json_pointer == '':
             return None
 
         pointer_parts = json_pointer.split("#")
@@ -801,7 +801,18 @@ class ApiHelper(object):
         Returns:
             dict: The updated dictionary.
         """
-        return set_pointer(dictionary, pointer, value, inplace=inplace)
+        if not inplace:
+            import copy
+            dictionary = copy.deepcopy(dictionary)
+
+        parts = pointer.strip("/").split("/")
+        current = dictionary
+        for part in parts[:-1]:
+            if part not in current or not isinstance(current[part], dict):
+                current[part] = {}
+            current = current[part]
+        current[parts[-1]] = value
+        return dictionary
 
     @staticmethod
     def get_value_by_json_pointer(dictionary, pointer):
@@ -820,7 +831,7 @@ class ApiHelper(object):
         """
         try:
             return resolve_pointer(dictionary, pointer)
-        except JsonPointerException as jpe:
+        except JsonPointerException:
             return None
 
     class CustomDate(object):
