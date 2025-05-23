@@ -40,7 +40,7 @@ class TestLinkPagination:
     @pytest.fixture
     def mock_last_response_with_link(self, mocker):
         response = mocker.Mock()
-        response.text = '{"data": [{"id": 1}], "links": {"next": "http://api.example.com/data?page=2&limit=10"}}'
+        response.text = '{"data": [{"id": 1}], "links": {"next": "https://api.example.com/data?page=2&limit=10"}}'
         response.headers = {'Content-Type': 'application/json'}
         return response
 
@@ -99,7 +99,7 @@ class TestLinkPagination:
         # Patch ApiHelper.resolve_response_pointer and ApiHelper.get_query_parameters
         mock_resolve_response_pointer = mocker.patch.object(
             ApiHelper, 'resolve_response_pointer',
-            return_value="http://api.example.com/data?page=2&limit=10"
+            return_value="https://api.example.com/data?page=2&limit=10"
         )
         mock_get_query_parameters = mocker.patch.object(
             ApiHelper, 'get_query_parameters',
@@ -114,9 +114,9 @@ class TestLinkPagination:
             mock_paginated_data_with_link.last_response.text,
             mock_paginated_data_with_link.last_response.headers
         )
-        mock_get_query_parameters.assert_called_once_with("http://api.example.com/data?page=2&limit=10")
+        mock_get_query_parameters.assert_called_once_with("https://api.example.com/data?page=2&limit=10")
 
-        assert lp._next_link == "http://api.example.com/data?page=2&limit=10"
+        assert lp._next_link == "https://api.example.com/data?page=2&limit=10"
         assert result_rb is not mock_request_builder  # Should be a cloned instance
         assert result_rb.query_params == {"initial_param": "initial_value", "page": "2", "limit": "10"}
 
@@ -146,10 +146,10 @@ class TestLinkPagination:
             next_link_pointer="$response.body#/links/next",
             metadata_wrapper=mock_metadata_wrapper
         )
-        lp._next_link = "http://api.example.com/data?page=2"  # Set a next link for the test
+        lp._next_link = "https://api.example.com/data?page=2"  # Set a next link for the test
         mock_paged_response = mocker.Mock()
 
         result = lp.apply_metadata_wrapper(mock_paged_response)
 
-        mock_metadata_wrapper.assert_called_once_with(mock_paged_response, "http://api.example.com/data?page=2")
+        mock_metadata_wrapper.assert_called_once_with(mock_paged_response, "https://api.example.com/data?page=2")
         assert result == "wrapped_response_with_link"
