@@ -53,9 +53,10 @@ class CursorPagination(PaginationStrategy):
         """
         last_response = paginated_data.last_response
         request_builder = paginated_data.request_builder
+        self._cursor_value = self._get_initial_cursor_value(request_builder, self._input)
 
+        # The last response is none which means this is going to be the 1st page
         if last_response is None:
-            self._cursor_value = self._get_initial_cursor_value(request_builder, self._input)
             return request_builder
 
         self._cursor_value = ApiHelper.resolve_response_pointer(

@@ -46,13 +46,13 @@ class OffsetPagination(PaginationStrategy):
         """
         last_response = paginated_data.last_response
         request_builder = paginated_data.request_builder
-        last_page_size = paginated_data.page_size
+        self._offset = self._get_initial_request_param_value(request_builder, self._input)
+
         # The last response is none which means this is going to be the 1st page
         if last_response is None:
-            self._offset = self._get_initial_request_param_value(request_builder, self._input)
             return request_builder
 
-        self._offset += last_page_size
+        self._offset += paginated_data.page_size
 
         return self.get_updated_request_builder(request_builder, self._input, self._offset)
 

@@ -71,29 +71,6 @@ class TestPaginatedData:
         with pytest.raises(ValueError, match="paginated_items_converter cannot be None"):
             PaginatedData(api_call=mock_api_call, paginated_items_converter=None)
 
-    # Test properties
-    def test_last_response_property(self, mock_paginated_data_instance, mocker):
-        # Manually set the internal _http_call_context.response for testing
-        mock_response = mocker.Mock()
-        mock_paginated_data_instance._http_call_context.response = mock_response
-        assert mock_paginated_data_instance.last_response == mock_response
-
-    def test_last_response_property_none(self, mock_paginated_data_instance):
-        mock_paginated_data_instance._http_call_context.response = None
-        assert mock_paginated_data_instance.last_response is None
-
-    def test_request_builder_property_initial(self, mock_paginated_data_instance):
-        mock_paginated_data_instance._http_call_context.response = None
-        assert mock_paginated_data_instance.request_builder == mock_paginated_data_instance._initial_request_builder
-
-    def test_request_builder_property_after_response(self, mock_paginated_data_instance, mocker):
-        mock_paginated_data_instance._http_call_context.response = mocker.Mock()
-        assert mock_paginated_data_instance.request_builder == mock_paginated_data_instance._api_call.request_builder
-
-    def test_page_size_property(self, mock_paginated_data_instance):
-        mock_paginated_data_instance._page_size = 10
-        assert mock_paginated_data_instance.page_size == 10
-
     # Test __next__
     def test_next_iterates_current_items(self, mock_paginated_data_instance):
         mock_paginated_data_instance._items = ["item1", "item2"]

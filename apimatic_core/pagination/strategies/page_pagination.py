@@ -41,12 +41,13 @@ class PagePagination(PaginationStrategy):
         """
         last_response = paginated_data.last_response
         request_builder = paginated_data.request_builder
-        last_page_size = paginated_data.page_size
+        self._page_number = self._get_initial_request_param_value(request_builder, self._input, 1)
+
         # The last response is none which means this is going to be the 1st page
         if last_response is None:
-            self._page_number = self._get_initial_request_param_value(request_builder, self._input, 1)
             return request_builder
-        self._page_number += 1 if last_page_size > 0 else 0
+
+        self._page_number += 1 if paginated_data.page_size > 0 else 0
 
         return self.get_updated_request_builder(request_builder, self._input, self._page_number)
 

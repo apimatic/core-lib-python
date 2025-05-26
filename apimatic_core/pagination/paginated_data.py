@@ -15,17 +15,15 @@ class PaginatedData(Iterator):
         """
         Returns the most recent HTTP response received during pagination.
         """
-        return self._http_call_context.response
+        return self._http_call_context.response if self._last_request_builder is not None else None
 
     @property
     def request_builder(self):
         """
         Returns the appropriate request builder for the current pagination state.
         """
-        if self.last_response is None:
-            return self._initial_request_builder
+        return self._initial_request_builder if self._last_request_builder is None else self._last_request_builder
 
-        return self._api_call.request_builder
 
     @property
     def page_size(self):
@@ -52,12 +50,14 @@ class PaginatedData(Iterator):
         self._api_call = copy.deepcopy(api_call)
         self._paginated_items_converter = paginated_items_converter
         self._initial_request_builder = api_call.request_builder
+        self._last_request_builder = None
         self._pagination_strategies = self._api_call.get_pagination_strategies
         self._http_call_context =\
             self._api_call.global_configuration.get_http_client_configuration().http_callback or HttpCallContext()
         _http_client_configuration = self._api_call.global_configuration.get_http_client_configuration().clone(
             http_callback=self._http_call_context)
-        self._global_configuration = self._api_call.global_configuration.clone_with()
+        self._global_configuration = self._api_call.global_configuration.clone_with(
+            http_client_configuration=_http_client_configuration)
         self._paged_response = None
         self._items = []
         self._page_size = 0
@@ -127,6 +127,8 @@ class PaginatedData(Iterator):
             request_builder = pagination_strategy.apply(self)
             if request_builder is None:
                 continue
+
+            self._last_request_builder = request_builder
 
             response = self._api_call.clone(
                 global_configuration=self._global_configuration, request_builder=request_builder

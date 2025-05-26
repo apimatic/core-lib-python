@@ -45,6 +45,7 @@ class LinkPagination(PaginationStrategy):
         last_response = paginated_data.last_response
         request_builder = paginated_data.request_builder
 
+        # The last response is none which means this is going to be the 1st page
         if last_response is None:
             return request_builder
 
