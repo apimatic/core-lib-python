@@ -96,11 +96,13 @@ class CursorPagination(PaginationStrategy):
         """
         path_prefix, field_path = ApiHelper.split_into_parts(input_pointer)
 
-        if path_prefix == "$request.path":
-            return ApiHelper.get_value_by_json_pointer(request_builder.template_params, field_path)
-        elif path_prefix == "$request.query":
+        if path_prefix == PaginationStrategy.PATH_PARAMS_IDENTIFIER:
+            value = ApiHelper.get_value_by_json_pointer(
+                request_builder.template_params, f"{field_path}/value")
+            return value if value is not None else None
+        elif path_prefix == PaginationStrategy.QUERY_PARAMS_IDENTIFIER:
             return ApiHelper.get_value_by_json_pointer(request_builder.query_params, field_path)
-        elif path_prefix == "$request.headers":
+        elif path_prefix == PaginationStrategy.HEADER_PARAMS_IDENTIFIER:
             return ApiHelper.get_value_by_json_pointer(request_builder.header_params, field_path)
 
         return None

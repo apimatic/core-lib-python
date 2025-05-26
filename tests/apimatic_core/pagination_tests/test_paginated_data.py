@@ -128,7 +128,7 @@ class TestPaginatedData:
         # Mock _get_new_self_instance (private method)
         # Create a new mock instance for the independent iterator used by pages()
         pages_internal_paginated_data = mocker.Mock(spec=PaginatedData)
-        mocker.patch.object(PaginatedData, '_get_new_self_instance', return_value=pages_internal_paginated_data)
+        mocker.patch.object(PaginatedData, 'clone', return_value=pages_internal_paginated_data)
 
         # Configure the *internal* mock instance's _fetch_next_page
         pages_internal_paginated_data._fetch_next_page = mocker.Mock(
@@ -170,7 +170,7 @@ class TestPaginatedData:
                                                                mock_http_response_empty_items):
         # Mock _get_new_self_instance (private method)
         pages_internal_paginated_data = mocker.Mock(spec=PaginatedData)
-        mocker.patch.object(PaginatedData, '_get_new_self_instance', return_value=pages_internal_paginated_data)
+        mocker.patch.object(PaginatedData, 'clone', return_value=pages_internal_paginated_data)
 
         # Configure the *internal* mock instance's _fetch_next_page to return an empty items response immediately
         pages_internal_paginated_data._fetch_next_page = mocker.Mock(return_value=mock_http_response_empty_items)

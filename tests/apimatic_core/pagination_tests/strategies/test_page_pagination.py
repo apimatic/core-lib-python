@@ -1,6 +1,7 @@
 import pytest
 
 from apimatic_core.pagination.paginated_data import PaginatedData
+from apimatic_core.pagination.pagination_strategy import PaginationStrategy
 from apimatic_core.pagination.strategies.page_pagination import PagePagination
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.request_builder import RequestBuilder
@@ -167,7 +168,7 @@ class TestPagePagination:
     @pytest.mark.parametrize(
         "input_pointer, initial_params, expected_value, json_pointer_return_value",
         [
-            ("$request.path#/page", {"page": 2}, 2, "2"),
+            ("$request.path#/page", {"page": {"value": 2, "encoded": True}}, 2, "2"),
             ("$request.query#/page", {"page": 3, "limit": 10}, 3, "3"),
             ("$request.headers#/page", {"page": 4}, 4, "4"),
             ("$request.query#/page", {"limit": 10}, 1, None),
@@ -176,11 +177,11 @@ class TestPagePagination:
     )
     def test_get_initial_page_offset_various_scenarios(self, mocker, mock_request_builder, mock_metadata_wrapper,
                                                    input_pointer, initial_params, expected_value, json_pointer_return_value):
-        if "$request.path" in input_pointer:
+        if PaginationStrategy.PATH_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._template_params = initial_params
-        elif "$request.query" in input_pointer:
+        elif PaginationStrategy.QUERY_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._query_params = initial_params
-        elif "$request.headers" in input_pointer:
+        elif PaginationStrategy.HEADER_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._header_params = initial_params
 
         mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts',
@@ -193,16 +194,17 @@ class TestPagePagination:
 
         mock_split_into_parts.assert_called_once_with(input_pointer)
 
-        if input_pointer.startswith(("$request.path", "$request.query", "$request.headers")):
-            accessed_params = None
-            if "$request.path" in input_pointer:
+        if input_pointer.startswith((PaginationStrategy.PATH_PARAMS_IDENTIFIER, PaginationStrategy.QUERY_PARAMS_IDENTIFIER, PaginationStrategy.HEADER_PARAMS_IDENTIFIER)):
+            if PaginationStrategy.PATH_PARAMS_IDENTIFIER in input_pointer:
                 accessed_params = mock_request_builder.template_params
-            elif "$request.query" in input_pointer:
+                mock_get_value_by_json_pointer.assert_called_once_with(
+                    accessed_params, f"{input_pointer.split('#')[1]}/value")
+            elif PaginationStrategy.QUERY_PARAMS_IDENTIFIER in input_pointer:
                 accessed_params = mock_request_builder.query_params
-            elif "$request.headers" in input_pointer:
+                mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
+            elif PaginationStrategy.HEADER_PARAMS_IDENTIFIER in input_pointer:
                 accessed_params = mock_request_builder.header_params
-
-            mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
+                mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
         else:
             mock_get_value_by_json_pointer.assert_not_called()
 

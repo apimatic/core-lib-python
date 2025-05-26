@@ -47,7 +47,7 @@ class PaginatedData(Iterator):
         if paginated_items_converter is None:
             raise ValueError('paginated_items_converter cannot be None')
 
-        self._api_call = copy.deepcopy(api_call)
+        self._api_call = api_call
         self._paginated_items_converter = paginated_items_converter
         self._initial_request_builder = api_call.request_builder
         self._last_request_builder = None
@@ -67,7 +67,7 @@ class PaginatedData(Iterator):
         """
         Returns a new independent iterator instance for paginated data traversal.
         """
-        return self._get_new_self_instance()
+        return self.clone()
 
     def __next__(self):
         """
@@ -98,7 +98,7 @@ class PaginatedData(Iterator):
             Generator yielding HTTP response objects for each page.
         """
         # Create a new instance so the page iteration is independent
-        paginated_data = self._get_new_self_instance()
+        paginated_data = self.clone()
 
         while True:
             paginated_data._paged_response = paginated_data._fetch_next_page()
@@ -118,7 +118,7 @@ class PaginatedData(Iterator):
         Returns an empty list if no further pages are available.
 
         Returns:
-            The processed response object for the next page, or an empty list if pagination is complete.
+            The processed response object for the next page, or None if no pagination strategy is applicable.
 
         Raises:
             Exception: Propagates any exceptions encountered during the API call execution.
@@ -137,15 +137,10 @@ class PaginatedData(Iterator):
 
         return None
 
-    def _get_new_self_instance(self):
+    def clone(self):
         """
-        Creates and returns a new independent PaginatedData instance with the initial
-         request builder and item converter.
-
-        Returns:
-            PaginatedData: A fresh iterator instance for independent pagination traversal.
+        Creates and returns a new independent PaginatedData instance
+        with a cloned API call that resets to the initial request builder.
         """
-        return PaginatedData(
-            self._api_call.clone(request_builder=self._initial_request_builder),
-            self._paginated_items_converter
-        )
+        cloned_api_call = self._api_call.clone(request_builder=self._initial_request_builder)
+        return PaginatedData(cloned_api_call, self._paginated_items_converter)

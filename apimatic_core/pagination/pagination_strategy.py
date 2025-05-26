@@ -12,6 +12,10 @@ class PaginationStrategy(ABC):
     and update request builders with new pagination parameters based on JSON pointers.
     """
 
+    PATH_PARAMS_IDENTIFIER = "$request.path"
+    QUERY_PARAMS_IDENTIFIER = "$request.query"
+    HEADER_PARAMS_IDENTIFIER = "$request.headers"
+
     def __init__(self, metadata_wrapper):
         """
         Initializes the PaginationStrategy with the provided metadata wrapper.
@@ -72,13 +76,13 @@ class PaginationStrategy(ABC):
         query_params = request_builder.query_params
         header_params = request_builder.header_params
 
-        if path_prefix == "$request.path":
+        if path_prefix == PaginationStrategy.PATH_PARAMS_IDENTIFIER:
             template_params = ApiHelper.update_entry_by_json_pointer(
-                template_params.copy(), field_path, offset, inplace=True)
-        elif path_prefix == "$request.query":
+                template_params.copy(), f"{field_path}/value", offset, inplace=True)
+        elif path_prefix == PaginationStrategy.QUERY_PARAMS_IDENTIFIER:
             query_params = ApiHelper.update_entry_by_json_pointer(
                 query_params.copy(), field_path, offset, inplace=True)
-        elif path_prefix == "$request.headers":
+        elif path_prefix == PaginationStrategy.HEADER_PARAMS_IDENTIFIER:
             header_params = ApiHelper.update_entry_by_json_pointer(
                 header_params.copy(), field_path, offset, inplace=True)
 
@@ -100,13 +104,14 @@ class PaginationStrategy(ABC):
         """
         path_prefix, field_path = ApiHelper.split_into_parts(input_pointer)
 
-        if path_prefix == "$request.path":
-            value = ApiHelper.get_value_by_json_pointer(request_builder.template_params, field_path)
+        if path_prefix == PaginationStrategy.PATH_PARAMS_IDENTIFIER:
+            value = ApiHelper.get_value_by_json_pointer(
+                request_builder.template_params, f"{field_path}/value")
             return int(value) if value is not None else default
-        elif path_prefix == "$request.query":
+        elif path_prefix == PaginationStrategy.QUERY_PARAMS_IDENTIFIER:
             value = ApiHelper.get_value_by_json_pointer(request_builder.query_params, field_path)
             return int(value) if value is not None else default
-        elif path_prefix == "$request.headers":
+        elif path_prefix == PaginationStrategy.HEADER_PARAMS_IDENTIFIER:
             value = ApiHelper.get_value_by_json_pointer(request_builder.header_params, field_path)
             return int(value) if value is not None else default
 

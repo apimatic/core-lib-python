@@ -15,7 +15,9 @@ class TestCursorPagination:
     @pytest.fixture
     def mock_request_builder(self, mocker):
         rb = mocker.Mock(spec=RequestBuilder)
-        rb.template_params = {"cursor": "initial_path_cursor"}
+        rb.template_params = {
+            "cursor": { "value": "initial_path_cursor", "encode": True}
+        }
         rb.query_params = {"cursor": "initial_query_cursor"}
         rb.header_params = {"cursor": "initial_header_cursor"}
         return rb
@@ -154,16 +156,20 @@ class TestCursorPagination:
 
     # Test _get_initial_cursor_value
     def test_get_initial_cursor_value_path(self, mocker, mock_request_builder):
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts', return_value=("$request.path", "/path_cursor"))
-        mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer', return_value="initial_path_cursor")
+        mock_split_into_parts = mocker.patch.object(
+            ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.PATH_PARAMS_IDENTIFIER, "/path_cursor"))
+        mock_get_value_by_json_pointer = mocker.patch.object(
+            ApiHelper, 'get_value_by_json_pointer', return_value="initial_path_cursor")
 
-        result = CursorPagination._get_initial_cursor_value(mock_request_builder, "$request.path#/cursor")
+        result = CursorPagination._get_initial_cursor_value(
+            mock_request_builder, "$request.path#/cursor")
         mock_split_into_parts.assert_called_once_with("$request.path#/cursor")
-        mock_get_value_by_json_pointer.assert_called_once_with(mock_request_builder.template_params, "/path_cursor")
+        mock_get_value_by_json_pointer.assert_called_once_with(
+            mock_request_builder.template_params, "/path_cursor/value")
         assert result == "initial_path_cursor"
 
     def test_get_initial_cursor_value_query(self, mocker, mock_request_builder):
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts', return_value=("$request.query", "/cursor"))
+        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.QUERY_PARAMS_IDENTIFIER, "/cursor"))
         mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer', return_value="initial_query_cursor")
 
         result = CursorPagination._get_initial_cursor_value(mock_request_builder, "$request.query#/cursor")
@@ -172,7 +178,7 @@ class TestCursorPagination:
         assert result == "initial_query_cursor"
 
     def test_get_initial_cursor_value_headers(self, mocker, mock_request_builder):
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts', return_value=("$request.headers", "/cursor"))
+        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.HEADER_PARAMS_IDENTIFIER, "/cursor"))
         mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer', return_value="initial_header_cursor")
 
         result = CursorPagination._get_initial_cursor_value(mock_request_builder, "$request.headers#/cursor")

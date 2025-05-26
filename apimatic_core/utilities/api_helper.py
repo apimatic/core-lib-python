@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections import abc
 import re
+import copy
 import datetime
 import calendar
 import email.utils as eut
@@ -779,7 +780,7 @@ class ApiHelper(object):
             tuple: A tuple containing the path prefix and the field path. Returns None if input is None.
         """
         if json_pointer is None or json_pointer == '':
-            return None
+            return None, None
 
         pointer_parts = json_pointer.split("#")
         path_prefix = pointer_parts[0]
@@ -802,7 +803,6 @@ class ApiHelper(object):
             dict: The updated dictionary.
         """
         if not inplace:
-            import copy
             dictionary = copy.deepcopy(dictionary)
 
         parts = pointer.strip("/").split("/")

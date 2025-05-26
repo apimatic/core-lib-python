@@ -1,6 +1,7 @@
 import pytest
 
 from apimatic_core.pagination.paginated_data import PaginatedData
+from apimatic_core.pagination.pagination_strategy import PaginationStrategy
 from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.request_builder import RequestBuilder
 from apimatic_core.pagination.strategies.offset_pagination import OffsetPagination
@@ -47,7 +48,7 @@ class TestOffsetPagination:
                 return new_rb
 
         rb = MockRequestBuilder(
-            template_params={"offset": 5},
+            template_params={"offset": {"value" : 5, "encode": True}},
             query_params={"offset": 10, "limit": 20},
             header_params={"offset": 15}
         )
@@ -143,7 +144,7 @@ class TestOffsetPagination:
     @pytest.mark.parametrize(
         "input_pointer, initial_params, expected_value, json_pointer_return_value",
         [
-            ("$request.path#/offset", {"offset": 50}, 50, "50"),
+            ("$request.path#/offset", {"offset": {"value" : 5, "encode": True}}, 50, "50"),
             ("$request.query#/offset", {"offset": 100, "limit": 20}, 100, "100"),
             ("$request.headers#/offset", {"offset": 200}, 200, "200"),
             ("$request.query#/offset", {"limit": 20}, 0, None),  # No value found
@@ -153,11 +154,11 @@ class TestOffsetPagination:
     def test_get_initial_offset_various_scenarios(self, mocker, mock_request_builder, mock_metadata_wrapper,
                                                    input_pointer, initial_params, expected_value, json_pointer_return_value):
         # Dynamically set params based on the test case
-        if "$request.path" in input_pointer:
+        if PaginationStrategy.PATH_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._template_params = initial_params
-        elif "$request.query" in input_pointer:
+        elif PaginationStrategy.QUERY_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._query_params = initial_params
-        elif "$request.headers" in input_pointer:
+        elif PaginationStrategy.HEADER_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._header_params = initial_params
 
         # Mocks
@@ -172,17 +173,18 @@ class TestOffsetPagination:
         mock_split_into_parts.assert_called_once_with(input_pointer)
 
         # Assertions for mock calls based on prefix validity
-        if input_pointer.startswith(("$request.path", "$request.query", "$request.headers")):
+        if input_pointer.startswith((PaginationStrategy.PATH_PARAMS_IDENTIFIER, PaginationStrategy.QUERY_PARAMS_IDENTIFIER, PaginationStrategy.HEADER_PARAMS_IDENTIFIER)):
             # Determine which params dict was accessed
-            accessed_params = None
-            if "$request.path" in input_pointer:
+            if PaginationStrategy.PATH_PARAMS_IDENTIFIER in input_pointer:
                 accessed_params = mock_request_builder.template_params
-            elif "$request.query" in input_pointer:
+                mock_get_value_by_json_pointer.assert_called_once_with(
+                    accessed_params, f"{input_pointer.split('#')[1]}/value")
+            elif PaginationStrategy.QUERY_PARAMS_IDENTIFIER in input_pointer:
                 accessed_params = mock_request_builder.query_params
-            elif "$request.headers" in input_pointer:
+                mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
+            elif PaginationStrategy.HEADER_PARAMS_IDENTIFIER in input_pointer:
                 accessed_params = mock_request_builder.header_params
-
-            mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
+                mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
         else:
             mock_get_value_by_json_pointer.assert_not_called()
 

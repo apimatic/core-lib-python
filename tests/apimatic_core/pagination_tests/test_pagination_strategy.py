@@ -52,7 +52,7 @@ class TestPaginationStrategy:
 
         # Mock ApiHelper.split_into_parts
         mock_split_into_parts = mocker.patch.object(
-            ApiHelper, 'split_into_parts', return_value=("$request.path", "/id"))
+            ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.PATH_PARAMS_IDENTIFIER, "/id"))
         # Mock ApiHelper.update_entry_by_json_pointer
         mock_update_entry_by_json_pointer = mocker.patch.object(
             ApiHelper, 'update_entry_by_json_pointer',
@@ -62,7 +62,7 @@ class TestPaginationStrategy:
 
         mock_split_into_parts.assert_called_once_with(input_pointer)
         mock_update_entry_by_json_pointer.assert_called_once_with(
-            mock_request_builder.template_params.copy(), "/id", offset, inplace=True
+            mock_request_builder.template_params.copy(), "/id/value", offset, inplace=True
         )
 
         assert updated_rb is not mock_request_builder  # Should return a cloned instance
@@ -76,7 +76,7 @@ class TestPaginationStrategy:
         offset = 5
 
         mock_split_into_parts = mocker.patch.object(
-            ApiHelper, 'split_into_parts', return_value=("$request.query", "/page"))
+            ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.QUERY_PARAMS_IDENTIFIER, "/page"))
         mock_update_entry_by_json_pointer = mocker.patch.object(
             ApiHelper, 'update_entry_by_json_pointer',
             side_effect=lambda data, path, value, inplace: {**data, 'page': value})
@@ -100,7 +100,7 @@ class TestPaginationStrategy:
         offset = "xyz"
 
         mock_split_into_parts = mocker.patch.object(
-            ApiHelper, 'split_into_parts', return_value=("$request.headers", "/X-Api-Key"))
+            ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.HEADER_PARAMS_IDENTIFIER, "/X-Api-Key"))
         mock_update_entry_by_json_pointer = mocker.patch.object(
             ApiHelper, 'update_entry_by_json_pointer',
             side_effect=lambda data, path, value, inplace: {**data, 'X-Api-Key': value})
@@ -156,7 +156,7 @@ class TestPaginationStrategy:
         input_pointer = "$request.query#/offset"
         offset = 0
 
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts', return_value=("$request.query", "/offset"))
+        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.QUERY_PARAMS_IDENTIFIER, "/offset"))
         mock_update_entry_by_json_pointer = mocker.patch.object(ApiHelper, 'update_entry_by_json_pointer',
                             side_effect=lambda data, path, value, inplace: {**data, 'offset': value})
 

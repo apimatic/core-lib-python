@@ -1146,8 +1146,8 @@ class TestApiHelper(Base):
             ("$response.headers#/X-Header", ("$response.headers", "/X-Header")),
             ("$response.body#", ("$response.body", "")),
             ("$response.body", ("$response.body", "")),
-            ("", None),
-            (None, None),
+            ("", (None, None)),
+            (None, (None, None)),
         ]
     )
     def test_split_into_parts(self, json_pointer, expected):
