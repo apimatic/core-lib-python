@@ -39,13 +39,13 @@ class MockRequestBuilder(RequestBuilder):
             self, template_params=None, header_params=None, query_params=None, body_param=None,
             form_params=None
     ):
+        body_param = body_param if body_param is not None else self.body_params
         # This mock clone_with will create a new instance with updated params
         new_rb = MockRequestBuilder(
             template_params=template_params if template_params is not None else self.template_params.copy(),
             header_params=header_params if header_params is not None else self.header_params.copy(),
             query_params=query_params if query_params is not None else self.query_params.copy(),
-            body_param=body_param if body_param is not None\
-                else self.body_params.copy() if self.body_params is not None else None,
+            body_param=body_param.copy() if body_param is not None else None,
             form_params=form_params if form_params is not None else self.form_params.copy(),
         )
         return new_rb
