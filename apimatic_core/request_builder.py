@@ -26,6 +26,14 @@ class RequestBuilder:
     def query_params(self):
         return self._query_params
 
+    @property
+    def body_params(self):
+        return self._body_param
+
+    @property
+    def form_params(self):
+        return self._form_params
+
     def __init__(
             self
     ):
@@ -230,7 +238,8 @@ class RequestBuilder:
                 raise AuthValidationException(self._auth.error_message)
 
     def clone_with(
-            self, template_params=None, header_params=None, query_params=None
+            self, template_params=None, header_params=None, query_params=None,
+            body_param=None, form_params=None
     ):
         """
         Clone the current instance with the given parameters.
@@ -239,6 +248,7 @@ class RequestBuilder:
             template_params (dict, optional): The template parameters. Defaults to None.
             header_params (dict, optional): The header parameters. Defaults to None.
             query_params (dict, optional): The query parameters. Defaults to None.
+            body_param (dict, optional): The body parameters. Defaults to None.
             form_params (dict, optional): The form parameters. Defaults to None.
 
         Returns:
@@ -251,11 +261,11 @@ class RequestBuilder:
         new_instance._template_params = template_params or self._template_params
         new_instance._header_params = header_params or self._header_params
         new_instance._query_params = query_params or self._query_params
-        new_instance._form_params = self._form_params
+        new_instance._form_params = form_params or self._form_params
         new_instance._additional_form_params = self._additional_form_params
         new_instance._additional_query_params = self._additional_query_params
         new_instance._multipart_params = self._multipart_params
-        new_instance._body_param = self._body_param
+        new_instance._body_param = body_param or self._body_param
         new_instance._body_serializer = self._body_serializer
         new_instance._auth = self._auth
         new_instance._array_serialization_format = self._array_serialization_format

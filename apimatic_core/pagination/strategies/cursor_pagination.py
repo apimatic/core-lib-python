@@ -104,5 +104,8 @@ class CursorPagination(PaginationStrategy):
             return ApiHelper.get_value_by_json_pointer(request_builder.query_params, field_path)
         elif path_prefix == PaginationStrategy.HEADER_PARAMS_IDENTIFIER:
             return ApiHelper.get_value_by_json_pointer(request_builder.header_params, field_path)
+        elif path_prefix == PaginationStrategy.BODY_PARAM_IDENTIFIER:
+            return ApiHelper.get_value_by_json_pointer(
+                request_builder.body_params or request_builder.form_params, field_path)
 
         return None

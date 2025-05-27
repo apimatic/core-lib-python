@@ -17,12 +17,14 @@ class StrategyBase:
         pagination_instance_creator
     ):
         # Set request builder params
-        if "$request.path" in input_pointer:
+        if PaginationStrategy.PATH_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._template_params = initial_params
-        elif "$request.query" in input_pointer:
+        elif PaginationStrategy.QUERY_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._query_params = initial_params
-        elif "$request.headers" in input_pointer:
+        elif PaginationStrategy.HEADER_PARAMS_IDENTIFIER in input_pointer:
             mock_request_builder._header_params = initial_params
+        elif PaginationStrategy.BODY_PARAM_IDENTIFIER in input_pointer:
+            mock_request_builder._body_param = initial_params
 
         # Mock helper methods
         mock_split = mocker.patch.object(ApiHelper, 'split_into_parts',
@@ -43,7 +45,8 @@ class StrategyBase:
         if input_pointer.startswith((
             PaginationStrategy.PATH_PARAMS_IDENTIFIER,
             PaginationStrategy.QUERY_PARAMS_IDENTIFIER,
-            PaginationStrategy.HEADER_PARAMS_IDENTIFIER
+            PaginationStrategy.HEADER_PARAMS_IDENTIFIER,
+            PaginationStrategy.BODY_PARAM_IDENTIFIER
         )):
             if PaginationStrategy.PATH_PARAMS_IDENTIFIER in input_pointer:
                 accessed = mock_request_builder.template_params
@@ -53,6 +56,9 @@ class StrategyBase:
                 mock_json_pointer.assert_called_once_with(accessed, input_pointer.split('#')[1])
             elif PaginationStrategy.HEADER_PARAMS_IDENTIFIER in input_pointer:
                 accessed = mock_request_builder.header_params
+                mock_json_pointer.assert_called_once_with(accessed, input_pointer.split('#')[1])
+            elif PaginationStrategy.BODY_PARAM_IDENTIFIER in input_pointer:
+                accessed = mock_request_builder.body_params
                 mock_json_pointer.assert_called_once_with(accessed, input_pointer.split('#')[1])
         else:
             mock_json_pointer.assert_not_called()

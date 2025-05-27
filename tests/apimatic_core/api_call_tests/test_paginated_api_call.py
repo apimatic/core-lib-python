@@ -27,10 +27,20 @@ class TestPaginatedApiCall(Base):
         self.http_client = self.global_config.get_http_client_configuration().http_client
         self.api_call_builder = self.new_api_call_builder(self.global_config)
 
-    def _make_paginated_call(self, path, query_params, pagination_strategy, deserialize_into_model, is_api_response_enabled):
+    def _make_paginated_call(
+            self, path, query_params, pagination_strategy, deserialize_into_model, is_api_response_enabled,
+            body_params=None, form_params=None
+    ):
         """
         Helper method to build and execute a paginated API call.
         """
+
+        if body_params is None:
+            body_params = {}
+
+        if form_params is None:
+            form_params = {}
+
         response_handler = ResponseHandler() \
             .deserializer(ApiHelper.json_deserialize) \
             .deserialize_into(deserialize_into_model)
@@ -46,6 +56,12 @@ class TestPaginatedApiCall(Base):
 
         for key, value in query_params.items():
             request_builder.query_param(Parameter().key(key).value(value))
+
+        for key, value in body_params.items():
+            request_builder.body_param(Parameter().key(key).value(value))
+
+        for key, value in form_params.items():
+            request_builder.form_param(Parameter().key(key).value(value))
 
         return self.api_call_builder.new_builder.request(request_builder) \
             .response(response_handler) \
@@ -197,6 +213,42 @@ class TestPaginatedApiCall(Base):
                 '$request.query#/page',
                 lambda _response, _page_no: NumberPagedResponse(
                     _response, lambda _obj: _obj.data, _page_no)
+            ),
+            deserialize_into_model=TransactionsLinked.from_dictionary,
+            is_api_response_enabled=False
+        )
+        self._assert_paginated_results(result)
+
+    def test_page_paginated_json_body_call(self):
+        self.setup_test(self.paginated_global_configuration)
+        limit = 5
+        result = self._make_paginated_call(
+            path='/transactions/cursor',
+            query_params={},
+            body_params={'cursor': 'initial cursor', 'limit': limit},
+            pagination_strategy=CursorPagination(
+                '$response.body#/nextCursor',
+                '$request.body#/cursor',
+                lambda _response, _cursor: CursorPagedResponse(
+                    _response, lambda _obj: _obj.data, _cursor)
+            ),
+            deserialize_into_model=TransactionsLinked.from_dictionary,
+            is_api_response_enabled=False
+        )
+        self._assert_paginated_results(result)
+
+    def test_page_paginated_form_body_call(self):
+        self.setup_test(self.paginated_global_configuration)
+        limit = 5
+        result = self._make_paginated_call(
+            path='/transactions/cursor',
+            query_params={},
+            form_params={'cursor': 'initial cursor', 'limit': limit},
+            pagination_strategy=CursorPagination(
+                '$response.body#/nextCursor',
+                '$request.body#/cursor',
+                lambda _response, _cursor: CursorPagedResponse(
+                    _response, lambda _obj: _obj.data, _cursor)
             ),
             deserialize_into_model=TransactionsLinked.from_dictionary,
             is_api_response_enabled=False

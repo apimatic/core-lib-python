@@ -19,28 +19,64 @@ class MockRequestBuilder(RequestBuilder):
     def header_params(self):
         return self._header_params
 
-    def __init__(self, template_params=None, header_params=None, query_params=None):
+    @property
+    def body_params(self):
+        return self._body_param
+
+    @property
+    def form_params(self):
+        return self._form_params
+
+    def __init__(self, template_params=None, header_params=None, query_params=None, body_param=None, form_params=None):
         super().__init__()
         self._template_params = template_params if template_params is not None else {}
         self._query_params = query_params if query_params is not None else {}
         self._header_params = header_params if header_params is not None else {}
+        self._body_param = body_param if body_param is not None else None
+        self._form_params = form_params if form_params is not None else {}
 
-    def clone_with(self, template_params=None, header_params=None, query_params=None):
+    def clone_with(
+            self, template_params=None, header_params=None, query_params=None, body_param=None,
+            form_params=None
+    ):
         # This mock clone_with will create a new instance with updated params
         new_rb = MockRequestBuilder(
             template_params=template_params if template_params is not None else self.template_params.copy(),
             header_params=header_params if header_params is not None else self.header_params.copy(),
-            query_params=query_params if query_params is not None else self.query_params.copy()
+            query_params=query_params if query_params is not None else self.query_params.copy(),
+            body_param=body_param if body_param is not None\
+                else self.body_params.copy() if self.body_params is not None else None,
+            form_params=form_params if form_params is not None else self.form_params.copy(),
         )
         return new_rb
 
 class TestPaginationStrategy:
     @pytest.fixture
-    def mock_request_builder(self, mocker):
+    def mock_request_builder(self):
         rb = MockRequestBuilder(
             template_params={"id": "user123"},
             query_params={"page": 1, "limit": 10},
-            header_params={"X-Api-Key": "abc"}
+            header_params={"X-Api-Key": "abc"},
+        )
+        return rb
+
+    @pytest.fixture
+    def mock_request_builder_with_json_body(self):
+        rb = MockRequestBuilder(
+            template_params={"id": "user123"},
+            query_params={"page": 1, "limit": 10},
+            header_params={"X-Api-Key": "abc"},
+            body_param={"data": "value"}
+        )
+        return rb
+
+    @pytest.fixture
+    def mock_request_builder_with_form_body(self):
+        rb = MockRequestBuilder(
+            template_params={"id": "user123"},
+            query_params={"page": 1, "limit": 10},
+            header_params={"X-Api-Key": "abc"},
+            form_params={"data": "value"}
         )
         return rb
 
@@ -117,6 +153,53 @@ class TestPaginationStrategy:
         assert updated_rb.query_params == {"page": 1, "limit": 10}
         assert updated_rb.header_params == {"X-Api-Key": "xyz"}
 
+    def test_update_request_builder_json_body_param(self, mocker, mock_request_builder_with_json_body):
+        input_pointer = "$request.body#/data"
+        updated_value = "changed_value"
+
+        mock_split_into_parts = mocker.patch.object(
+            ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.BODY_PARAM_IDENTIFIER, "/data"))
+        mock_update_entry_by_json_pointer = mocker.patch.object(
+            ApiHelper, 'update_entry_by_json_pointer',
+            side_effect=lambda data, path, value, inplace: {**data, 'data': value})
+
+        updated_rb = PaginationStrategy.get_updated_request_builder(mock_request_builder_with_json_body, input_pointer, updated_value)
+
+        mock_split_into_parts.assert_called_once_with(input_pointer)
+        mock_update_entry_by_json_pointer.assert_called_once_with(
+            mock_request_builder_with_json_body.body_params.copy(), "/data", updated_value, inplace=True
+        )
+
+        assert updated_rb is not mock_request_builder_with_json_body
+        assert updated_rb.template_params == {"id": "user123"}
+        assert updated_rb.query_params == {"page": 1, "limit": 10}
+        assert updated_rb.header_params == {"X-Api-Key": "abc"}
+        assert updated_rb.body_params == {"data": "changed_value"}
+
+    def test_update_request_builder_form_body_param(self, mocker, mock_request_builder_with_form_body):
+        input_pointer = "$request.body#/data"
+        updated_value = "changed_value"
+
+        mock_split_into_parts = mocker.patch.object(
+            ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.BODY_PARAM_IDENTIFIER, "/data"))
+        mock_update_entry_by_json_pointer = mocker.patch.object(
+            ApiHelper, 'update_entry_by_json_pointer',
+            side_effect=lambda data, path, value, inplace: {**data, 'data': value})
+
+        updated_rb = PaginationStrategy.get_updated_request_builder(
+            mock_request_builder_with_form_body, input_pointer, updated_value)
+
+        mock_split_into_parts.assert_called_once_with(input_pointer)
+        mock_update_entry_by_json_pointer.assert_called_once_with(
+            mock_request_builder_with_form_body.form_params.copy(), "/data", updated_value, inplace=True
+        )
+
+        assert updated_rb is not mock_request_builder_with_form_body
+        assert updated_rb.template_params == {"id": "user123"}
+        assert updated_rb.query_params == {"page": 1, "limit": 10}
+        assert updated_rb.header_params == {"X-Api-Key": "abc"}
+        assert updated_rb.form_params == {"data": "changed_value"}
+
 
     # Test with an invalid input pointer prefix
     def test_update_request_builder_invalid_prefix(self, mocker, mock_request_builder):
@@ -137,6 +220,8 @@ class TestPaginationStrategy:
         assert updated_rb.template_params == mock_request_builder.template_params
         assert updated_rb.query_params == mock_request_builder.query_params
         assert updated_rb.header_params == mock_request_builder.header_params
+        assert updated_rb.body_params == mock_request_builder.body_params
+        assert updated_rb.form_params == mock_request_builder.form_params
 
 
     # Test when the original parameter dict is empty
@@ -145,18 +230,24 @@ class TestPaginationStrategy:
         mock_rb_empty.template_params = {}
         mock_rb_empty.query_params = {}
         mock_rb_empty.header_params = {}
+        mock_rb_empty.body_params = {}
+        mock_rb_empty.form_params = {}
         # Make mock_rb_empty's clone_with method behave like our custom mock
         mock_rb_empty.clone_with.side_effect = \
-            lambda template_params=None, query_params=None, header_params=None: MockRequestBuilder(
-                template_params=template_params if template_params is not None else {},
-                query_params=query_params if query_params is not None else {},
-                header_params=header_params if header_params is not None else {}
-            )
+            lambda template_params=None, query_params=None, header_params=None, body_param=None, form_params=None:\
+                MockRequestBuilder(
+                    template_params=template_params if template_params is not None else {},
+                    query_params=query_params if query_params is not None else {},
+                    header_params=header_params if header_params is not None else {},
+                    body_param=body_param if body_param is not None else None,
+                    form_params=form_params if form_params is not None else {}
+                )
 
         input_pointer = "$request.query#/offset"
         offset = 0
 
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.QUERY_PARAMS_IDENTIFIER, "/offset"))
+        mock_split_into_parts = mocker.patch.object(
+            ApiHelper, 'split_into_parts', return_value=(PaginationStrategy.QUERY_PARAMS_IDENTIFIER, "/offset"))
         mock_update_entry_by_json_pointer = mocker.patch.object(ApiHelper, 'update_entry_by_json_pointer',
                             side_effect=lambda data, path, value, inplace: {**data, 'offset': value})
 
@@ -170,3 +261,5 @@ class TestPaginationStrategy:
         assert updated_rb.query_params == {"offset": 0}
         assert updated_rb.template_params == {}
         assert updated_rb.header_params == {}
+        assert updated_rb.body_params == {}
+        assert updated_rb.form_params == {}

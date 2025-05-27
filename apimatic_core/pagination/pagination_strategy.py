@@ -15,6 +15,7 @@ class PaginationStrategy(ABC):
     PATH_PARAMS_IDENTIFIER = "$request.path"
     QUERY_PARAMS_IDENTIFIER = "$request.query"
     HEADER_PARAMS_IDENTIFIER = "$request.headers"
+    BODY_PARAM_IDENTIFIER = "$request.body"
 
     def __init__(self, metadata_wrapper):
         """
@@ -75,6 +76,8 @@ class PaginationStrategy(ABC):
         template_params = request_builder.template_params
         query_params = request_builder.query_params
         header_params = request_builder.header_params
+        body_params = request_builder.body_params
+        form_params = request_builder.form_params
 
         if path_prefix == PaginationStrategy.PATH_PARAMS_IDENTIFIER:
             template_params = ApiHelper.update_entry_by_json_pointer(
@@ -85,9 +88,18 @@ class PaginationStrategy(ABC):
         elif path_prefix == PaginationStrategy.HEADER_PARAMS_IDENTIFIER:
             header_params = ApiHelper.update_entry_by_json_pointer(
                 header_params.copy(), field_path, offset, inplace=True)
+        elif path_prefix == PaginationStrategy.BODY_PARAM_IDENTIFIER:
+            if body_params is not None:
+                body_params = ApiHelper.update_entry_by_json_pointer(
+                    body_params.copy(), field_path, offset, inplace=True)
+            else:
+                form_params = ApiHelper.update_entry_by_json_pointer(
+                    form_params.copy(), field_path, offset, inplace=True)
 
-        return request_builder.clone_with(template_params=template_params, query_params=query_params,
-                                          header_params=header_params)
+        return request_builder.clone_with(
+            template_params=template_params, query_params=query_params, header_params=header_params,
+            body_param=body_params, form_params=form_params
+        )
 
     @staticmethod
     def _get_initial_request_param_value(request_builder, input_pointer, default=0):
@@ -113,6 +125,10 @@ class PaginationStrategy(ABC):
             return int(value) if value is not None else default
         elif path_prefix == PaginationStrategy.HEADER_PARAMS_IDENTIFIER:
             value = ApiHelper.get_value_by_json_pointer(request_builder.header_params, field_path)
+            return int(value) if value is not None else default
+        elif path_prefix == PaginationStrategy.BODY_PARAM_IDENTIFIER:
+            value = ApiHelper.get_value_by_json_pointer(
+                request_builder.body_params or request_builder.form_params, field_path)
             return int(value) if value is not None else default
 
         return default
