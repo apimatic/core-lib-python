@@ -1,13 +1,12 @@
 import pytest
 
 from apimatic_core.pagination.paginated_data import PaginatedData
-from apimatic_core.pagination.pagination_strategy import PaginationStrategy
 from apimatic_core.pagination.strategies.page_pagination import PagePagination
-from apimatic_core.utilities.api_helper import ApiHelper
 from apimatic_core.request_builder import RequestBuilder
+from tests.apimatic_core.pagination_tests.strategies.strategy_base import StrategyBase
 
 
-class TestPagePagination:
+class TestPagePagination(StrategyBase):
 
     @pytest.fixture
     def mock_metadata_wrapper(self, mocker):
@@ -171,41 +170,20 @@ class TestPagePagination:
             ("$request.path#/page", {"page": {"value": 2, "encoded": True}}, 2, "2"),
             ("$request.query#/page", {"page": 3, "limit": 10}, 3, "3"),
             ("$request.headers#/page", {"page": 4}, 4, "4"),
-            ("$request.query#/page", {"limit": 10}, 1, None),
-            ("invalid_prefix#/page", {"page": 10}, 1, "10"),
+            ("$request.query#/page", {"limit": 10}, 0, None),
+            ("invalid_prefix#/page", {"page": 10}, 0, "10"),
         ]
     )
     def test_get_initial_page_offset_various_scenarios(self, mocker, mock_request_builder, mock_metadata_wrapper,
                                                    input_pointer, initial_params, expected_value, json_pointer_return_value):
-        if PaginationStrategy.PATH_PARAMS_IDENTIFIER in input_pointer:
-            mock_request_builder._template_params = initial_params
-        elif PaginationStrategy.QUERY_PARAMS_IDENTIFIER in input_pointer:
-            mock_request_builder._query_params = initial_params
-        elif PaginationStrategy.HEADER_PARAMS_IDENTIFIER in input_pointer:
-            mock_request_builder._header_params = initial_params
-
-        mock_split_into_parts = mocker.patch.object(ApiHelper, 'split_into_parts',
-                                                    return_value=(input_pointer.split('#')[0], input_pointer.split('#')[1]))
-        mock_get_value_by_json_pointer = mocker.patch.object(ApiHelper, 'get_value_by_json_pointer',
-                                                             return_value=json_pointer_return_value)
-
-        pp = self._create_page_pagination_instance(input_pointer, mock_metadata_wrapper)
-        result = pp._get_initial_request_param_value(mock_request_builder, input_pointer, 1)
-
-        mock_split_into_parts.assert_called_once_with(input_pointer)
-
-        if input_pointer.startswith((PaginationStrategy.PATH_PARAMS_IDENTIFIER, PaginationStrategy.QUERY_PARAMS_IDENTIFIER, PaginationStrategy.HEADER_PARAMS_IDENTIFIER)):
-            if PaginationStrategy.PATH_PARAMS_IDENTIFIER in input_pointer:
-                accessed_params = mock_request_builder.template_params
-                mock_get_value_by_json_pointer.assert_called_once_with(
-                    accessed_params, f"{input_pointer.split('#')[1]}/value")
-            elif PaginationStrategy.QUERY_PARAMS_IDENTIFIER in input_pointer:
-                accessed_params = mock_request_builder.query_params
-                mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
-            elif PaginationStrategy.HEADER_PARAMS_IDENTIFIER in input_pointer:
-                accessed_params = mock_request_builder.header_params
-                mock_get_value_by_json_pointer.assert_called_once_with(accessed_params, input_pointer.split('#')[1])
-        else:
-            mock_get_value_by_json_pointer.assert_not_called()
-
-        assert result == expected_value
+        self.assert_initial_param_extraction(
+            mocker,
+            mock_request_builder,
+            mock_metadata_wrapper,
+            input_pointer,
+            initial_params,
+            expected_value,
+            json_pointer_return_value,
+            default_value=0,
+            pagination_instance_creator=self._create_page_pagination_instance
+        )
