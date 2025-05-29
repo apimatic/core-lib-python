@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, date
 
 import jsonpickle
@@ -1100,3 +1101,72 @@ class TestApiHelper(Base):
             is_map_of_array,
             dimension_count)
         assert result == expected
+
+    @pytest.mark.parametrize(
+        "dictionary, pointer, expected",
+        [
+            ({"foo": "bar"}, "/foo", "bar"),  # basic access
+            ({"a": {"b": {"c": 1}}}, "/a/b/c", 1),  # nested path
+            ({"list": [10, 20, 30]}, "/list/1", 20),  # list index
+            ({}, "/missing", None),  # missing key
+            ({"x": {"y": 5}}, "/x/z", None),  # partial match but invalid final key
+            ({"": "empty_key"}, "/", "empty_key"),  # root-level empty string key
+        ]
+    )
+    def test_get_value_by_json_pointer_valid_and_invalid(self, dictionary, pointer, expected):
+        result = ApiHelper.get_value_by_json_pointer(dictionary, pointer)
+        assert result == expected
+
+    def test_get_value_by_json_pointer_raises_invalid_pointer(self):
+        # Pointer with invalid format (should raise and be caught internally)
+        result = ApiHelper.get_value_by_json_pointer({"foo": "bar"}, "invalid_pointer")
+        assert result is None
+
+    @pytest.mark.parametrize(
+        "pointer, json_body, json_headers, expected",
+        [
+            ("$response.body#/name", '{"name": "Alice"}', {}, "Alice"),
+            ("$response.body#/details/age", '{"details": {"age": 30}}', {}, 30),
+            ("$response.headers#/X-Request-ID", "", {"X-Request-ID": "abc-123"}, "abc-123"),
+            ("$response.body#/missing", '{"name": "Alice"}', {}, None),
+            ("$response.headers#/missing", "", {"X-Request-ID": "abc-123"}, None),
+            ("$response.unknown#/path", '{"some": "data"}', {}, None),
+            ("", '{"some": "data"}', {}, None),
+            (None, '{"some": "data"}', {}, None),
+        ]
+    )
+    def test_resolve_response_pointer(self, pointer, json_body, json_headers, expected):
+        result = ApiHelper.resolve_response_pointer(pointer, json_body, json_headers)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "json_pointer, expected",
+        [
+            ("$response.body#/name", ("$response.body", "/name")),
+            ("$response.headers#/X-Header", ("$response.headers", "/X-Header")),
+            ("$response.body#", ("$response.body", "")),
+            ("$response.body", ("$response.body", "")),
+            ("", (None, None)),
+            (None, (None, None)),
+        ]
+    )
+    def test_split_into_parts(self, json_pointer, expected):
+        result = ApiHelper.split_into_parts(json_pointer)
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        "initial_dict, pointer, new_value, inplace, expected_dict",
+        [
+            ({"name": "Alice"}, "/name", "Bob", True, {"name": "Bob"}),
+            ({"a": {"b": 1}}, "/a/b", 2, True, {"a": {"b": 2}}),
+            ({}, "/new/key", "value", True, {"new": {"key": "value"}}),
+            ({"x": 1}, "/x", {"nested": "yes"}, False, {"x": {"nested": "yes"}}),
+        ]
+    )
+    def test_update_entry_by_json_pointer(self, initial_dict, pointer, new_value, inplace, expected_dict):
+        original_copy = copy.deepcopy(initial_dict)
+        result = ApiHelper.update_entry_by_json_pointer(initial_dict, pointer, new_value, inplace=inplace)
+
+        assert result == expected_dict
+        if not inplace:
+            assert initial_dict == original_copy
