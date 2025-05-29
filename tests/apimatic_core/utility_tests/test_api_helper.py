@@ -1170,3 +1170,16 @@ class TestApiHelper(Base):
         assert result == expected_dict
         if not inplace:
             assert initial_dict == original_copy
+
+    @pytest.mark.parametrize("url, expected", [
+        (None, {}),
+        ("https://example.com/path?name=Sufyan", {"name": "Sufyan"}),
+        ("https://example.com/api?name=John&role=Engineer", {"name": "John", "role": "Engineer"}),
+        ("https://example.com/home", {}),
+        ("https://example.com/search?tag=python&tag=testing", {"tag": "testing"}),  # last one wins
+        ("https://example.com/?name=John%20Doe&role=Senior%20Engineer",
+         {"name": "John Doe", "role": "Senior Engineer"}),
+        ("https://example.com/?debug=&verbose=true", {"verbose": "true"}),
+    ])
+    def test_get_query_parameters(self, url, expected):
+        assert ApiHelper.get_query_parameters(url) == expected
