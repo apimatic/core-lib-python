@@ -1172,6 +1172,7 @@ class TestApiHelper(Base):
             assert initial_dict == original_copy
 
     @pytest.mark.parametrize("url, expected", [
+        (None, {}),
         ("https://example.com/path?name=Sufyan", {"name": "Sufyan"}),
         ("https://example.com/api?name=John&role=Engineer", {"name": "John", "role": "Engineer"}),
         ("https://example.com/home", {}),
