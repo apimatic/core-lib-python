@@ -30,6 +30,27 @@ class LinkPagination(PaginationStrategy):
         self._next_link_pointer = next_link_pointer
         self._next_link = None
 
+    def is_applicable(self, response):
+        """
+        Checks whether the link pagination strategy is a valid candidate based on the given HTTP response.
+
+        Args:
+            response: The response from the previous API call.
+
+        Returns:
+            bool: True if this strategy is valid based on the given HTTP response..
+        """
+        if response is None:
+            return True
+
+        self._next_link = ApiHelper.resolve_response_pointer(
+            self._next_link_pointer,
+            response.text,
+            response.headers
+        )
+
+        return self._next_link is not None
+
     def apply(self, paginated_data):
         """
         Updates the request builder with query parameters from the next page

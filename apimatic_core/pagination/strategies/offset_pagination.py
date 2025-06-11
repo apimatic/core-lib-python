@@ -31,6 +31,18 @@ class OffsetPagination(PaginationStrategy):
         self._input = input_
         self._offset = 0
 
+    def is_applicable(self, response):
+        """
+        Checks whether the offset pagination strategy is a valid candidate based on the given HTTP response.
+
+        Args:
+            response: The response from the previous API call.
+
+        Returns:
+            bool: True if this strategy is valid based on the given HTTP response..
+        """
+        return True
+
     def apply(self, paginated_data):
         """
         Updates the request builder to fetch the next page of results using offset-based pagination.

@@ -37,6 +37,27 @@ class CursorPagination(PaginationStrategy):
         self._input = input_
         self._cursor_value = None
 
+    def is_applicable(self, response):
+        """
+        Checks whether the cursor pagination strategy is a valid candidate based on the given HTTP response.
+
+        Args:
+            response: The response from the previous API call.
+
+        Returns:
+            bool: True if this strategy is valid based on the given HTTP response..
+        """
+        if response is None:
+            return True
+
+        self._cursor_value = ApiHelper.resolve_response_pointer(
+            self._output,
+            response.text,
+            response.headers
+        )
+
+        return self._cursor_value is not None
+
     def apply(self, paginated_data):
         """
         Advances the pagination by updating the request builder with the next cursor value.
