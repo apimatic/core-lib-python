@@ -51,6 +51,7 @@ class PaginatedData(Iterator):
         self._paginated_items_converter = paginated_items_converter
         self._initial_request_builder = api_call.request_builder
         self._last_request_builder = None
+        self._locked_strategy = None
         self._pagination_strategies = self._api_call.get_pagination_strategies
         self._http_call_context =\
             self._api_call.global_configuration.get_http_client_configuration().http_callback or HttpCallContext()
@@ -123,19 +124,38 @@ class PaginatedData(Iterator):
         Raises:
             Exception: Propagates any exceptions encountered during the API call execution.
         """
+
+        if self._locked_strategy is not None:
+            return self._execute_strategy(self._locked_strategy)
+
         for pagination_strategy in self._pagination_strategies:
-            request_builder = pagination_strategy.apply(self)
-            if request_builder is None:
+            response = self._execute_strategy(pagination_strategy)
+            if response is None:
                 continue
 
-            self._last_request_builder = request_builder
+            if self._locked_strategy is None:
+                self._locked_strategy = self._get_locked_strategy()
 
-            response = self._api_call.clone(
-                global_configuration=self._global_configuration, request_builder=request_builder
-            ).execute()
-            return pagination_strategy.apply_metadata_wrapper(response)
+            return response
 
         return None
+
+    def _execute_strategy(self, pagination_strategy):
+        request_builder = pagination_strategy.apply(self)
+        if request_builder is None:
+            return None
+
+        self._last_request_builder = request_builder
+
+        response = self._api_call.clone(
+            global_configuration=self._global_configuration, request_builder=request_builder
+        ).execute()
+        return pagination_strategy.apply_metadata_wrapper(response)
+
+    def _get_locked_strategy(self):
+        for pagination_strategy in self._pagination_strategies:
+            if pagination_strategy.is_applicable(self.last_response):
+                return pagination_strategy
 
     def clone(self):
         """

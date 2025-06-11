@@ -181,3 +181,54 @@ class TestPaginatedData:
         pages_generator = mock_paginated_data_instance.pages()
         with pytest.raises(StopIteration):
             next(pages_generator)
+
+    def test_fetch_next_page_with_locked_strategy(self, mock_api_call, mocker):
+        paginated_data = PaginatedData(mock_api_call, paginated_items_converter=mocker.Mock())
+        strategy = mocker.Mock()
+        strategy.apply.return_value = mocker.Mock()
+        strategy.apply_metadata_wrapper.return_value = mocker.Mock()
+
+        paginated_data._locked_strategy = strategy
+
+        result = paginated_data._fetch_next_page()
+
+        strategy.apply.assert_called_once()
+        strategy.apply_metadata_wrapper.assert_called_once()
+        assert result == strategy.apply_metadata_wrapper.return_value
+
+    def test_fetch_next_page_first_strategy_successful(self, mock_api_call, mocker):
+        paginated_data = PaginatedData(mock_api_call, paginated_items_converter=mocker.Mock())
+
+        strategy = mocker.Mock()
+        strategy.apply.return_value = mocker.Mock()
+        strategy.apply_metadata_wrapper.return_value = mocker.Mock()
+        strategy.is_applicable.return_value = True
+
+        paginated_data._pagination_strategies = [strategy]
+
+        mocker.patch.object(paginated_data, "_get_locked_strategy", return_value=strategy)
+
+        result = paginated_data._fetch_next_page()
+
+        strategy.apply.assert_called_once()
+        strategy.apply_metadata_wrapper.assert_called_once()
+        assert result == strategy.apply_metadata_wrapper.return_value
+        assert paginated_data._locked_strategy == strategy
+
+    def test_fetch_next_page_all_strategies_none(self, mock_api_call, mocker):
+        paginated_data = PaginatedData(mock_api_call, paginated_items_converter=mocker.Mock())
+
+        strategy1 = mocker.Mock()
+        strategy1.apply.return_value = None
+
+        strategy2 = mocker.Mock()
+        strategy2.apply.return_value = None
+
+        paginated_data._pagination_strategies = [strategy1, strategy2]
+
+        result = paginated_data._fetch_next_page()
+
+        strategy1.apply.assert_called_once()
+        strategy2.apply.assert_called_once()
+        assert result is None
+        assert paginated_data._locked_strategy is None

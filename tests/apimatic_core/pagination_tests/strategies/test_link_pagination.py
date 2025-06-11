@@ -153,3 +153,11 @@ class TestLinkPagination:
 
         mock_metadata_wrapper.assert_called_once_with(mock_paged_response, "https://api.example.com/data?page=2")
         assert result == "wrapped_response_with_link"
+
+    def test_is_applicable_for_none_response(self, mock_metadata_wrapper):
+        lp = LinkPagination(
+            next_link_pointer="$response.body#/next_cursor",
+            metadata_wrapper=mock_metadata_wrapper
+        )
+        result = lp.is_applicable(None)
+        assert result == True

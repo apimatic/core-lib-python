@@ -174,6 +174,16 @@ class TestCursorPagination:
         mock_metadata_wrapper.assert_called_once_with(mock_paged_response, "some_cursor_value")
         assert result == "wrapped_response"
 
+
+    def test_is_applicable_for_none_response(self, mock_metadata_wrapper):
+        cp = CursorPagination(
+            input_="$request.query#/cursor",
+            output="$response.body#/next_cursor",
+            metadata_wrapper=mock_metadata_wrapper
+        )
+        result = cp.is_applicable(None)
+        assert result == True
+
     # Test _get_initial_cursor_value
     def test_get_initial_cursor_value_path(self, mocker, mock_request_builder):
         mock_split_into_parts = mocker.patch.object(

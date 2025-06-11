@@ -33,6 +33,19 @@ class PaginationStrategy(ABC):
         self._metadata_wrapper = metadata_wrapper
 
     @abstractmethod
+    def is_applicable(self, response):
+        """
+        Checks whether the pagination strategy is a valid candidate based on the given HTTP response.
+
+        Args:
+            response: The response from the previous API call.
+
+        Returns:
+            bool: True if this strategy is valid based on the given HTTP response..
+        """
+        ...
+
+    @abstractmethod
     def apply(self, paginated_data):
         """
         Modifies the request builder to fetch the next page of results based on the provided paginated data.
