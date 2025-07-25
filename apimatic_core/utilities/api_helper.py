@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from collections import abc
+import json
 import re
 import copy
 import datetime
@@ -813,6 +814,9 @@ class ApiHelper(object):
             current = current[part]
         current[parts[-1]] = value
         return dictionary
+    @staticmethod
+    def pretty_print_json(json_data):
+        print(json.dumps(json_data, indent=4))
 
     @staticmethod
     def get_value_by_json_pointer(dictionary, pointer):
