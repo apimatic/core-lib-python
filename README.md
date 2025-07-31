@@ -1,7 +1,9 @@
 # apimatic-core
 [![PyPI][pypi-version]][apimatic-core-pypi-url]
 [![Tests][test-badge]][test-url]
-[![Test Coverage][test-coverage-url]][code-climate-url]
+[![Test Coverage][coverage-badge]][coverage-url]
+[![Maintainability Rating][maintainability-badge]][maintainability-url]
+[![Vulnerabilities][vulnerabilities-badge]][vulnerabilities-url]
 [![Licence][license-badge]][license-url]
 
 ## Introduction
@@ -125,8 +127,11 @@ pip install apimatic-core
 [apimatic-core-pypi-url]: https://pypi.org/project/apimatic-core/
 [test-badge]: https://github.com/apimatic/core-lib-python/actions/workflows/test-runner.yml/badge.svg
 [test-url]: https://github.com/apimatic/core-lib-python/actions/workflows/test-runner.yml
-[code-climate-url]: https://codeclimate.com/github/apimatic/core-lib-python
-[maintainability-url]: https://api.codeclimate.com/v1/badges/32e7abfdd4d27613ae76/maintainability
-[test-coverage-url]: https://api.codeclimate.com/v1/badges/32e7abfdd4d27613ae76/test_coverage
+[coverage-badge]: https://sonarcloud.io/api/project_badges/measure?project=apimatic_core-lib-python&metric=coverage
+[coverage-url]: https://sonarcloud.io/summary/new_code?id=apimatic_core-lib-python
+[maintainability-badge]: https://sonarcloud.io/api/project_badges/measure?project=apimatic_core-lib-python&metric=sqale_rating
+[maintainability-url]: https://sonarcloud.io/summary/new_code?id=apimatic_core-lib-python
+[vulnerabilities-badge]: https://sonarcloud.io/api/project_badges/measure?project=apimatic_core-lib-python&metric=vulnerabilities
+[vulnerabilities-url]: https://sonarcloud.io/summary/new_code?id=apimatic_core-lib-python
 [license-badge]: https://img.shields.io/badge/licence-MIT-blue
 [license-url]: LICENSE
