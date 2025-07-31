@@ -34,7 +34,7 @@ jobs:
         run: coverage xml
 
       - name: SonarQube Scan
-        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.13' && github.actor != 'dependabot[bot]' }}
+        if: ${{ matrix.python == '3.13' && github.actor != 'dependabot[bot]' }}
         uses: SonarSource/sonarqube-scan-action@v5.2.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
