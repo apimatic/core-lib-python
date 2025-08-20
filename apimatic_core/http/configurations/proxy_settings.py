@@ -11,8 +11,6 @@ class ProxySettings:
     HTTPS_SCHEME: str = "https://"
 
     address: str
-    port: Optional[int] = None
-    username: Optional[str] = None
     port: Optional[int]
     username: Optional[str]
     password: Optional[str]
