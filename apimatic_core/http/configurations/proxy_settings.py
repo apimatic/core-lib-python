@@ -13,7 +13,9 @@ class ProxySettings:
     address: str
     port: Optional[int] = None
     username: Optional[str] = None
-    password: Optional[str] = None
+    port: Optional[int]
+    username: Optional[str]
+    password: Optional[str]
 
     def __init__(self, address: str, port: Optional[int] = None,
                  username: Optional[str] = None, password: Optional[str] = None) -> None:
