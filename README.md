@@ -69,9 +69,9 @@ pip install apimatic-core
 ## HTTP
 | Name                                                                                        | Description                                                 |
 |---------------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| [`HttpCallBack`](apimatic_core/http/http_callback.py)                          | A factory class to create an HTTP Response                  |
-| [`HttpRequest`](apimatic_core/http/request/http_request.py)                                 | A class which contains information about the HTTP Response  |
-| [`ApiResponse`](apimatic_core/http/response/api_response.py)                                | A wrapper class for Api Response                            |
+| [`HttpCallBack`](apimatic_core/http/http_callback.py)                          | A class to register hooks for the API request and response                  |
+| [`HttpRequest`](apimatic_core/http/request/http_request.py)                                 | A class which contains information about the HTTP Request  |
+| [`ApiResponse`](apimatic_core/http/response/api_response.py)                                | A wrapper class for the complete Http Response including raw body and headers etc.                            |
 | [`HttpResponse`](apimatic_core/http/response/http_response.py)                              | A class which contains information about the HTTP Response  |
 
 ## Logging Configuration
