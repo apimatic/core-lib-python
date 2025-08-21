@@ -25,6 +25,7 @@ class HmacSignatureVerifier(SignatureVerifier):
             raise ValueError("HMAC verification requires a non-empty key.")
         if not signature_header:
             raise ValueError("signature_header must be a non-empty string.")
+
         self._key = key
         self._signature_header = signature_header.lower()
 
@@ -40,8 +41,14 @@ class HmacSignatureVerifier(SignatureVerifier):
             bool: True if the computed HMAC matches the provided signature.
 
         Raises:
+            TypeError: If input types are invalid.
             ValueError: If the signature header is missing.
         """
+        if headers is None or not hasattr(headers, "items"):
+            raise TypeError("headers must be a Mapping[str, str]")
+        if payload is None or not isinstance(payload, str):
+            raise TypeError("payload must be a str containing raw JSON")
+
         normalized = {k.lower(): v for k, v in headers.items()}
         provided = normalized.get(self._signature_header)
         if not provided:
