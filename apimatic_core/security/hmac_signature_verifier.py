@@ -3,6 +3,7 @@ import hmac
 from typing import Mapping
 
 from apimatic_core_interfaces.security.signature_verifier import SignatureVerifier
+from apimatic_core_interfaces.types.event_request import EventRequest
 
 
 class HmacSignatureVerifier(SignatureVerifier):
@@ -29,21 +30,22 @@ class HmacSignatureVerifier(SignatureVerifier):
         self._key = key
         self._signature_header = signature_header.lower()
 
-    def verify(self, headers: Mapping[str, str], payload: str) -> bool:
-        """
-        Verify the payload against the signature in headers.
+    def verify(self, request: EventRequest) -> bool:
+        """Check the HMAC signature against the request body.
 
         Args:
-            headers (Mapping[str, str]): HTTP headers of the request.
-            payload (str): Raw request body as a JSON string.
+            request: The incoming event request.
 
         Returns:
-            bool: True if the computed HMAC matches the provided signature.
+            True if the signature in `X-Signature` matches the computed HMAC
+            of the raw body; otherwise False.
 
         Raises:
             TypeError: If input types are invalid.
             ValueError: If the signature header is missing.
         """
+        headers = request.headers
+        payload = request.body
         if headers is None or not hasattr(headers, "items"):
             raise TypeError("headers must be a Mapping[str, str]")
         if payload is None or not isinstance(payload, str):
