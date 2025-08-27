@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import base64
 import hashlib
 import hmac
@@ -7,11 +8,8 @@ from typing import Mapping, Optional, Sequence, Protocol
 from apimatic_core_interfaces.security.signature_verifier import SignatureVerifier
 from apimatic_core_interfaces.http.request import Request
 
-from apimatic_core.exceptions.signature_verification_error import SignatureVerificationError
-
 
 class DigestEncoder(Protocol):
-    """Encodes raw HMAC digest bytes into the on-wire string."""
     def encode(self, digest: bytes) -> str: ...
 
 
@@ -27,23 +25,18 @@ class Base64Encoder:
 
 class Base64UrlEncoder:
     def encode(self, digest: bytes) -> str:
-        # Trim '=' padding to match many providers’ behavior
         return base64.urlsafe_b64encode(digest).decode("utf-8").rstrip("=")
 
+
 class HmacOrder(Enum):
-    """Defines how additional headers are combined with the body in the HMAC message."""
     PREPEND = "prepend"
     APPEND = "append"
+
 
 class HmacSignatureVerifier(SignatureVerifier):
     """
     HMAC-SHA256 verifier with pluggable digest encoder and flexible message shape.
-
-    Behavior:
-        - Returns True on valid signature.
-        - Raises SignatureVerificationError when the signature header is missing
-          or the signature does not match.
-        - Raises ValueError for invalid inputs (misuse).
+    verify() never raises for verification outcomes; it returns VerificationResult.
     """
 
     def __init__(
@@ -67,51 +60,54 @@ class HmacSignatureVerifier(SignatureVerifier):
             raise ValueError("order must be HmacOrder.PREPEND or HmacOrder.APPEND.")
 
         self._key_bytes = key.encode("utf-8")
-        self._signature_header = signature_header.lower().strip()
-        self._additional_headers = [h.lower().strip() for h in (additional_headers or ())]
+        self._sig_header = signature_header.lower().strip()
+        self._headers = [h.lower().strip() for h in (additional_headers or ())]
         self._order = order
         self._delimiter = delimiter
         self._encoder = encoder
         self._hash_alg = hash_alg
 
-    def verify(self, request: Request) -> bool:
-        if request is None or not isinstance(request, Request):
-            raise ValueError("request must be an EventRequest.")
-
-        if not isinstance(request.body, str):
-            raise ValueError("request.body must be a str (raw JSON).")
-
-        # normalize headers
-        normalized: Mapping[str, str] = {
-            str(k).lower(): str(v) for k, v in request.headers.items()
-        }
-        provided = normalized.get(self._signature_header)
-        if provided is None or not str(provided).strip():
-            raise SignatureVerificationError(
-                f"Signature header '{self._signature_header}' is missing from the request."
-            )
-        provided = str(provided).strip()
-
-        # Build canonical message
-        parts: list[str] = []
-        if self._order is HmacOrder.PREPEND:
-            for h in self._additional_headers:
-                val = normalized.get(h)
-                if val is not None:
-                    parts.append(str(val).strip())
-            parts.append(request.body)
-        else:
-            parts.append(request.body)
-            for h in self._additional_headers:
-                val = normalized.get(h)
-                if val is not None:
-                    parts.append(str(val).strip())
-
-        message = self._delimiter.join(parts).encode("utf-8")
-
+    def verify(self, request: Request) -> VerificationResult:
         try:
+            # Basic request shape checks
+            if request is None or not hasattr(request, "headers") or not hasattr(request, "body"):
+                return VerificationResult.failed(ValueError("Invalid request object."))
+
+            normalized: Mapping[str, str] = {str(k).lower(): str(v) for k, v in request.headers.items()}
+            provided = normalized.get(self._sig_header)
+
+            if provided is None or not str(provided).strip():
+                return VerificationResult.failed(ValueError(f"Signature header '{self._sig_header}' is missing."))
+
+            # Select body
+            if not isinstance(request.body, str):
+                return VerificationResult.failed(ValueError("request.body must be a str (raw JSON/text)."))
+
+            # Build canonical message
+            parts: list[str] = []
+            if self._order is HmacOrder.PREPEND:
+                for h in self._headers:
+                    val = normalized.get(h)
+                    if val is not None:
+                        parts.append(str(val).strip())
+                parts.append(request.body)
+            else:
+                parts.append(request.body)
+                for h in self._headers:
+                    val = normalized.get(h)
+                    if val is not None:
+                        parts.append(str(val).strip())
+
+            message = self._delimiter.join(parts).encode("utf-8")
+
+            # Compute digest
             digest = hmac.new(self._key_bytes, message, self._hash_alg).digest()
             expected = self._encoder.encode(digest)
-            return hmac.compare_digest(provided, expected)
+
+            # Constant-time compare
+            ok = hmac.compare_digest(str(provided).strip(), expected)
+            return VerificationResult.passed() if ok else VerificationResult.failed(ValueError("Signature mismatch."))
+
         except Exception as e:
-            raise SignatureVerificationError("HMAC digest computation failed.") from e
+            # Convert any unexpected error into a failure result
+            return VerificationResult.failed(e)
