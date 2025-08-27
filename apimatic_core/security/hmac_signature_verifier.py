@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import base64
 import hashlib
 import hmac
@@ -7,6 +6,9 @@ from typing import Mapping, Optional, Sequence, Protocol
 
 from apimatic_core_interfaces.security.signature_verifier import SignatureVerifier
 from apimatic_core_interfaces.http.request import Request
+from apimatic_core_interfaces.security.verification_result import VerificationResult
+
+from apimatic_core.exceptions.signature_verification_error import SignatureVerificationError
 
 
 class DigestEncoder(Protocol):
@@ -59,7 +61,7 @@ class HmacSignatureVerifier(SignatureVerifier):
         if order not in (HmacOrder.PREPEND, HmacOrder.APPEND):
             raise ValueError("order must be HmacOrder.PREPEND or HmacOrder.APPEND.")
 
-        self._key_bytes = key.encode("utf-8")
+        self._key = key
         self._sig_header = signature_header.lower().strip()
         self._headers = [h.lower().strip() for h in (additional_headers or ())]
         self._order = order
@@ -101,13 +103,13 @@ class HmacSignatureVerifier(SignatureVerifier):
             message = self._delimiter.join(parts).encode("utf-8")
 
             # Compute digest
-            digest = hmac.new(self._key_bytes, message, self._hash_alg).digest()
+            digest = hmac.new(self._key.encode("utf-8"), message, self._hash_alg).digest()
             expected = self._encoder.encode(digest)
 
             # Constant-time compare
             ok = hmac.compare_digest(str(provided).strip(), expected)
-            return VerificationResult.passed() if ok else VerificationResult.failed(ValueError("Signature mismatch."))
+            return VerificationResult.passed() if ok else VerificationResult.failed(SignatureVerificationError("Signature mismatch."))
 
         except Exception as e:
             # Convert any unexpected error into a failure result
-            return VerificationResult.failed(e)
+            return VerificationResult.failed(SignatureVerificationError(f"Signature Verification Failed: {e}"))
