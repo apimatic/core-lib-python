@@ -1,5 +1,7 @@
+from typing import Mapping
+
 from apimatic_core_interfaces.security.signature_verifier import SignatureVerifier
-from apimatic_core_interfaces.http.request import Request
+from apimatic_core_interfaces.types.event_request import EventRequest
 
 
 class NoOpSignatureVerifier(SignatureVerifier):
@@ -8,12 +10,12 @@ class NoOpSignatureVerifier(SignatureVerifier):
     Useful for testing or when verification is disabled.
     """
 
-    def verify(self, request: Request) -> bool:
+    def verify(self, request: EventRequest) -> bool:
         """
         Always returns True regardless of input.
 
         Args:
-            request: Framework-agnostic HTTP request snapshot used by verifiers and the webhook manager.
+            request: The incoming event request.
 
         Returns:
             bool: Always True.
