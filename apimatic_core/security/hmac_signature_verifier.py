@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Mapping, Optional, Sequence, Protocol
 
 from apimatic_core_interfaces.security.signature_verifier import SignatureVerifier
-from apimatic_core_interfaces.types.event_request import EventRequest
+from apimatic_core_interfaces.http.request import Request
 
 from apimatic_core.exceptions.signature_verification_error import SignatureVerificationError
 
@@ -67,15 +67,15 @@ class HmacSignatureVerifier(SignatureVerifier):
             raise ValueError("order must be HmacOrder.PREPEND or HmacOrder.APPEND.")
 
         self._key_bytes = key.encode("utf-8")
-        self._sig_header = signature_header.lower().strip()
-        self._headers = [h.lower().strip() for h in (additional_headers or ())]
+        self._signature_header = signature_header.lower().strip()
+        self._additional_headers = [h.lower().strip() for h in (additional_headers or ())]
         self._order = order
         self._delimiter = delimiter
         self._encoder = encoder
         self._hash_alg = hash_alg
 
-    def verify(self, request: EventRequest) -> bool:
-        if request is None or not isinstance(request, EventRequest):
+    def verify(self, request: Request) -> bool:
+        if request is None or not isinstance(request, Request):
             raise ValueError("request must be an EventRequest.")
 
         if not isinstance(request.body, str):
@@ -85,24 +85,24 @@ class HmacSignatureVerifier(SignatureVerifier):
         normalized: Mapping[str, str] = {
             str(k).lower(): str(v) for k, v in request.headers.items()
         }
-        provided = normalized.get(self._sig_header)
+        provided = normalized.get(self._signature_header)
         if provided is None or not str(provided).strip():
             raise SignatureVerificationError(
-                f"Signature header '{self._sig_header}' is missing from the request."
+                f"Signature header '{self._signature_header}' is missing from the request."
             )
         provided = str(provided).strip()
 
         # Build canonical message
         parts: list[str] = []
         if self._order is HmacOrder.PREPEND:
-            for h in self._headers:
+            for h in self._additional_headers:
                 val = normalized.get(h)
                 if val is not None:
                     parts.append(str(val).strip())
             parts.append(request.body)
         else:
             parts.append(request.body)
-            for h in self._headers:
+            for h in self._additional_headers:
                 val = normalized.get(h)
                 if val is not None:
                     parts.append(str(val).strip())

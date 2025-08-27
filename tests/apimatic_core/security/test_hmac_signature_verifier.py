@@ -8,7 +8,7 @@ from typing import Dict, List
 
 import pytest
 
-from apimatic_core_interfaces.types.event_request import EventRequest
+from apimatic_core_interfaces.http.request import Request
 from apimatic_core.exceptions.signature_verification_error import SignatureVerificationError
 
 # ⬇️ UPDATE THIS IMPORT PATH TO YOUR MODULE
@@ -140,7 +140,7 @@ class TestHmacSignatureVerifier:
             delimiter=delimiter,
             encoder=encoder,
         )
-        req = EventRequest(headers=headers, body=self.BODY)
+        req = Request(headers=headers, body=self.BODY)
         assert verifier.verify(req) is True
 
     def test_verify_true_with_signature_header_whitespace_trimmed(self, base_headers):
@@ -166,7 +166,7 @@ class TestHmacSignatureVerifier:
             delimiter="|",
             encoder=HexEncoder(),
         )
-        req = EventRequest(headers=headers, body=self.BODY)
+        req = Request(headers=headers, body=self.BODY)
         assert verifier.verify(req) is True
 
     def test_verify_true_when_configured_additional_header_is_missing(self, base_headers):
@@ -193,7 +193,7 @@ class TestHmacSignatureVerifier:
             delimiter="|",
             encoder=HexEncoder(),
         )
-        req = EventRequest(headers=headers, body=self.BODY)
+        req = Request(headers=headers, body=self.BODY)
         assert verifier.verify(req) is True
 
     @pytest.mark.parametrize(
@@ -221,7 +221,7 @@ class TestHmacSignatureVerifier:
             delimiter=delimiter,
             encoder=HexEncoder(),
         )
-        req = EventRequest(headers=headers, body=self.BODY)
+        req = Request(headers=headers, body=self.BODY)
         assert verifier.verify(req) is True
 
     def test_verify_false_when_signature_mismatch(self, base_headers):
@@ -245,7 +245,7 @@ class TestHmacSignatureVerifier:
             delimiter="|",
             encoder=HexEncoder(),
         )
-        req = EventRequest(headers=headers, body=self.BODY)
+        req = Request(headers=headers, body=self.BODY)
         assert verifier.verify(req) is False
 
     # ==========================================================================
@@ -264,7 +264,7 @@ class TestHmacSignatureVerifier:
             delimiter="|",
             encoder=HexEncoder(),
         )
-        req = EventRequest(headers=headers, body=self.BODY)
+        req = Request(headers=headers, body=self.BODY)
         with pytest.raises(SignatureVerificationError) as exc:
             verifier.verify(req)
         assert "Signature header 'x-signature' is missing from the request." == str(exc.value)
@@ -281,7 +281,7 @@ class TestHmacSignatureVerifier:
             delimiter="|",
             encoder=None,
         )
-        req = EventRequest(headers=headers, body=self.BODY)
+        req = Request(headers=headers, body=self.BODY)
         with pytest.raises(SignatureVerificationError) as exc:
             verifier.verify(req)
         assert "HMAC digest computation failed." == str(exc.value)
