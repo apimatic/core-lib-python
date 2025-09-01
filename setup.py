@@ -29,7 +29,7 @@ setup(
         'requests~=2.31',
         'setuptools>=68.0.0',
         'jsonpointer~=2.3',
-        'typing-extensions~=4.15'
+        'typing-extensions~=4.0'
     ],
     tests_require=[
         'pytest~=7.2.2',
