@@ -4,3 +4,4 @@ git+https://github.com/apimatic/core-interfaces-python@webhooks-support
 requests~=2.31
 setuptools>=68.0.0
 jsonpointer~=2.3
+typing-extensions~=4.15
