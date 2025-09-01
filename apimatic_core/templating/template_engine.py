@@ -1,4 +1,4 @@
-from typing import List, Optional, Callable, Union
+from typing import List, Optional, Callable, Union, Tuple
 from apimatic_core_interfaces.http.request import Request
 from apimatic_core.templating.template_resolver import ExprResolver, MethodResolver, UrlResolver, PathResolver, HeaderResolver, \
     QueryResolver, JsonBodyPointerResolver
@@ -115,7 +115,7 @@ class TemplateEngine:
 
     # inside class TemplateEngine
     @staticmethod
-    def __tokenize(template: str) -> list[tuple[str, Union[bytes, str]]]:
+    def __tokenize(template: str) -> List[Tuple[str, Union[bytes, str]]]:
         """
         Tokenize in one pass using a simple state machine.
         Produces:
@@ -128,9 +128,9 @@ class TemplateEngine:
 
         LIT, RAW_CANDIDATE, EXPR = 0, 1, 2
         state = LIT
-        out: list[tuple[str, Union[bytes, str]]] = []
-        buf: list[str] = []
-        expr: list[str] = []
+        out: List[Tuple[str, Union[bytes, str]]] = []
+        buf: List[str] = []
+        expr: List[str] = []
 
         i = 0
         s = template
