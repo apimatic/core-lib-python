@@ -113,48 +113,93 @@ class TemplateEngine:
         body = getattr(req, "body", None)
         return (body or "").encode("utf-8")
 
+    # inside class TemplateEngine
     @staticmethod
-    def __tokenize(template: str) -> List[tuple[str, Union[bytes, str]]]:
+    def __tokenize(template: str) -> list[tuple[str, Union[bytes, str]]]:
         """
-        Parse a template string into tokens of types:
-            - literal: static text
-            - raw: {raw_body}
-            - expr: {$...}
-
-        Args:
-            template: Template string.
-
-        Returns:
-            List of tuples (kind, value):
-                - ("literal", bytes)
-                - ("raw", "")
-                - ("expr", "expression text")
+        Tokenize in one pass using a simple state machine.
+        Produces:
+          - ("literal", bytes)
+          - ("raw", "")
+          - ("expr", "request.header.X-Foo")
         """
         if not isinstance(template, str) or not template:
             raise ValueError("message_template must be a non-empty string.")
-        out: List[tuple[str, Union[bytes, str]]] = []
-        i, s = 0, template
-        rb, rblen = "{raw_body}", len("{raw_body}")
-        while i < len(s):
-            if s.startswith(rb, i):
-                out.append(("raw", ""))
-                i += rblen
-                continue
-            if s.startswith("{$", i):
-                j = s.find("}", i + 2)
-                if j == -1:
+
+        LIT, RAW_CANDIDATE, EXPR = 0, 1, 2
+        state = LIT
+        out: list[tuple[str, Union[bytes, str]]] = []
+        buf: list[str] = []
+        expr: list[str] = []
+
+        i = 0
+        s = template
+        n = len(s)
+        rb = "{raw_body}"
+        rbl = len(rb)
+
+        def flush_lit():
+            if buf:
+                out.append(("literal", "".join(buf).encode("utf-8")))
+                buf.clear()
+
+        def validate_expr(text: str):
+            e = text.strip()
+            if not e:
+                raise ValueError("Empty runtime expression '{$ }' in message_template.")
+            if "{" in e or "}" in e:
+                raise ValueError("Runtime expression must not contain '{' or '}'.")
+            if e.startswith("request.header."):
+                if not e[len("request.header."):]:
+                    raise ValueError("Header expression must specify a header name.")
+            elif e.startswith("request.query."):
+                if not e[len("request.query."):]:
+                    raise ValueError("Query expression must specify a parameter name.")
+            elif e.startswith("request.body#"):
+                ptr = e[len("request.body#"):]
+                if not ptr or not ptr.startswith("/"):
+                    raise ValueError("JSON Pointer expression must start with '/'.")
+            # unknown expressions are allowed; resolved to empty later
+
+        while i < n:
+            if state == LIT:
+                # raw_body takes precedence
+                if s.startswith(rb, i):
+                    flush_lit()
+                    out.append(("raw", ""))
+                    i += rbl
+                    continue
+                # expression start
+                if s.startswith("{$", i):
+                    flush_lit()
+                    i += 2
+                    state = EXPR
+                    expr.clear()
+                    continue
+                # keep literal char
+                buf.append(s[i])
+                i += 1
+            elif state == EXPR:
+                if i >= n:
+                    # hit EOF without closing brace
                     raise ValueError("Unclosed '{$' in message_template.")
-                expr = s[i + 2 : j].strip()
-                if not expr:
-                    raise ValueError("Empty runtime expression '{$ }' in message_template.")
-                out.append(("expr", expr))
-                i = j + 1
-                continue
-            j1, j2 = s.find(rb, i), s.find("{$", i)
-            next_pos = min([p for p in (j1, j2) if p != -1], default=-1)
-            if next_pos == -1:
-                out.append(("literal", s[i:].encode("utf-8")))
-                break
-            out.append(("literal", s[i:next_pos].encode("utf-8")))
-            i = next_pos
+                ch = s[i]
+                if ch == "}":
+                    text = "".join(expr)
+                    validate_expr(text)
+                    out.append(("expr", text.strip()))
+                    expr.clear()
+                    state = LIT
+                    i += 1
+                else:
+                    # Forbid nested braces *inside* an expression
+                    if ch == "{" or ch == "}":
+                        raise ValueError("Runtime expression must not contain '{' or '}'.")
+                    expr.append(ch)
+                    i += 1
+
+        if state == EXPR:
+            raise ValueError("Unclosed '{$' in message_template.")
+
+        flush_lit()
         return out

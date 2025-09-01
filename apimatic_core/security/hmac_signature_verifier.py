@@ -1,6 +1,3 @@
-# ======================================================================
-# HMAC verifier
-# ======================================================================
 import hashlib
 import hmac
 from typing import Optional, List, Callable
@@ -71,19 +68,8 @@ class HmacSignatureVerifier:
         self._engine = TemplateEngine()
         self._plan: List[Callable[[Request], bytes]] = self._engine.compile(message_template)
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
     def verify(self, request: Request) -> VerificationResult:
-        """
-        Verify the signature on the given request.
-
-        Returns
-        -------
-        VerificationResult
-            - passed() if signature matches
-            - failed(error) otherwise
-        """
+        """Verify the signature in the request headers."""
         try:
             provided = self._read_signature_header(request)
             if provided is None:
@@ -91,7 +77,15 @@ class HmacSignatureVerifier:
                     ValueError(f"Signature header '{self._signature_header_lc}' is missing.")
                 )
 
-            expected = self._compute_expected_signature_text(request)
+            message = self._engine.render(self._plan, request)
+            digest = hmac.new(self._key_bytes, message, self._hash_alg).digest()
+            encoded = self._encoder.encode(digest)
+            expected = (
+                self._sig_value_template.replace("{digest}", encoded)
+                if self._sig_value_template else
+                encoded
+            )
+
             ok = hmac.compare_digest(provided, expected)
             return VerificationResult.passed() if ok else VerificationResult.failed(
                 SignatureVerificationError("Signature mismatch.")
@@ -101,17 +95,6 @@ class HmacSignatureVerifier:
                 SignatureVerificationError(f"Signature Verification Failed: {exc}")
             )
 
-    def compute_expected_signature(self, request: Request) -> str:
-        """
-        Compute the *exact* expected signature text for this request (useful for tests or debugging).
-
-        Returns
-        -------
-        str
-            The fully formatted signature string (after digest encoding and optional value templating).
-        """
-        return self._compute_expected_signature_text(request)
-
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------
@@ -119,9 +102,3 @@ class HmacSignatureVerifier:
         headers = {str(k).lower(): str(v) for k, v in (getattr(request, "headers", {}) or {}).items()}
         value = headers.get(self._signature_header_lc)
         return None if value is None or str(value).strip() == "" else str(value)
-
-    def _compute_expected_signature_text(self, request: Request) -> str:
-        message = self._engine.render(self._plan, request)
-        digest = hmac.new(self._key_bytes, message, self._hash_alg).digest()
-        encoded = self._encoder.encode(digest)
-        return self._sig_value_template.replace("{digest}", encoded) if self._sig_value_template else encoded
