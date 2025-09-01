@@ -83,12 +83,19 @@ pip install apimatic-core
 
 ---
 
+## HTTP Configurations
+| Name                                                                                        | Description                                                                                                                               |
+|---------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| [`HttpClientConfiguration`](apimatic_core/http/configurations/http_client_configuration.py) | A class used for configuring the SDK by a user                                                                                            |
+| [`ProxySettings`](apimatic_core/http/configurations/proxy_settings.py)                      | ProxySettings encapsulates HTTP proxy configuration for Requests, e.g. address, port and optional basic authentication for HTTP and HTTPS |
+
+---
+
 ## HTTP
 
 | Name                                                                                        | Description                                |
 | ------------------------------------------------------------------------------------------- | ------------------------------------------ |
 | [`HttpCallBack`](apimatic_core/factories/http_response_factory.py)                          | Callback handler for HTTP lifecycle events |
-| [`HttpClientConfiguration`](apimatic_core/http/configurations/http_client_configuration.py) | Configures the HTTP client                 |
 | [`HttpRequest`](apimatic_core/http/request/http_request.py)                                 | Represents an HTTP request                 |
 | [`ApiResponse`](apimatic_core/http/response/api_response.py)                                | Wraps an API response                      |
 | [`HttpResponse`](apimatic_core/http/response/http_response.py)                              | Represents an HTTP response                |
