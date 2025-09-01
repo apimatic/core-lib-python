@@ -1,115 +1,127 @@
-import base64
+# ======================================================================
+# HMAC verifier
+# ======================================================================
 import hashlib
 import hmac
-from enum import Enum
-from typing import Mapping, Optional, Sequence, Protocol
+from typing import Optional, List, Callable
 
-from apimatic_core_interfaces.security.signature_verifier import SignatureVerifier
 from apimatic_core_interfaces.http.request import Request
 from apimatic_core_interfaces.security.verification_result import VerificationResult
 
 from apimatic_core.exceptions.signature_verification_error import SignatureVerificationError
+from apimatic_core.security.encoders import DigestEncoder, HexEncoder
+from apimatic_core.templating.template_engine import TemplateEngine
 
 
-class DigestEncoder(Protocol):
-    def encode(self, digest: bytes) -> str: ...
-
-
-class HexEncoder:
-    def encode(self, digest: bytes) -> str:
-        return digest.hex()
-
-
-class Base64Encoder:
-    def encode(self, digest: bytes) -> str:
-        return base64.b64encode(digest).decode("utf-8")
-
-
-class Base64UrlEncoder:
-    def encode(self, digest: bytes) -> str:
-        return base64.urlsafe_b64encode(digest).decode("utf-8").rstrip("=")
-
-
-class HmacOrder(Enum):
-    PREPEND = "prepend"
-    APPEND = "append"
-
-
-class HmacSignatureVerifier(SignatureVerifier):
+class HmacSignatureVerifier:
     """
-    HMAC-SHA256 verifier with pluggable digest encoder and flexible message shape.
-    verify() never raises for verification outcomes; it returns VerificationResult.
+    Template-driven HMAC signature verifier.
+
+    - Builds the message to sign using a template with placeholders:
+        {raw_body}
+        {$method} | {$url} | {$request.path}
+        {$request.header.<HeaderName>}
+        {$request.query.<ParamName>}
+        {$request.body#/json/pointer}
+    - Computes HMAC(message, key, hash_alg) and encodes with the chosen encoder.
+    - Optionally wraps the encoded digest via `signature_value_template`, e.g., "sha256={digest}".
+
+    Parameters
+    ----------
+    key : str
+        Shared secret (non-empty).
+    signature_header : str
+        Name of the header carrying the provided signature (case-insensitive lookup).
+    message_template : str
+        Template to construct the signed message (see placeholders above).
+    hash_alg : callable, optional
+        Hash function from hashlib (default: hashlib.sha256).
+    encoder : DigestEncoder, optional
+        Encoder for the raw HMAC bytes (default: HexEncoder()).
+    signature_value_template : str, optional
+        Optional template for the expected signature value, where `{digest}` is replaced
+        by the encoded digest. If omitted, the expected signature is the encoded digest itself.
     """
 
     def __init__(
         self,
         *,
         key: str,
-        signature_header: str = "X-Signature",
-        additional_headers: Optional[Sequence[str]] = None,
-        order: HmacOrder = HmacOrder.PREPEND,
-        delimiter: str = "|",
-        encoder: DigestEncoder = HexEncoder(),
+        signature_header: str,
+        message_template: str,
         hash_alg=hashlib.sha256,
-    ):
+        encoder: DigestEncoder = HexEncoder(),
+        signature_value_template: Optional[str] = None,
+    ) -> None:
+        # Basic config validation
         if not isinstance(key, str) or not key:
-            raise ValueError("HMAC key must be a non-empty string.")
+            raise ValueError("key must be a non-empty string.")
         if not isinstance(signature_header, str) or not signature_header.strip():
             raise ValueError("signature_header must be a non-empty string.")
-        if not isinstance(delimiter, str) or not delimiter:
-            raise ValueError("delimiter must be a non-empty string.")
-        if order not in (HmacOrder.PREPEND, HmacOrder.APPEND):
-            raise ValueError("order must be HmacOrder.PREPEND or HmacOrder.APPEND.")
+        if not isinstance(message_template, str) or not message_template:
+            raise ValueError("message_template must be a non-empty string.")
 
-        self._key = key
-        self._sig_header = signature_header.lower().strip()
-        self._headers = [h.lower().strip() for h in (additional_headers or ())]
-        self._order = order
-        self._delimiter = delimiter
-        self._encoder = encoder
+        self._key_bytes: bytes = key.encode("utf-8")
+        self._signature_header_lc = signature_header.lower().strip()
         self._hash_alg = hash_alg
+        self._encoder = encoder
+        self._sig_value_template = signature_value_template
 
+        # Compile template once for performance
+        self._engine = TemplateEngine()
+        self._plan: List[Callable[[Request], bytes]] = self._engine.compile(message_template)
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
     def verify(self, request: Request) -> VerificationResult:
+        """
+        Verify the signature on the given request.
+
+        Returns
+        -------
+        VerificationResult
+            - passed() if signature matches
+            - failed(error) otherwise
+        """
         try:
-            # Basic request shape checks
-            if request is None or not hasattr(request, "headers") or not hasattr(request, "body"):
-                return VerificationResult.failed(ValueError("Invalid request object."))
+            provided = self._read_signature_header(request)
+            if provided is None:
+                return VerificationResult.failed(
+                    ValueError(f"Signature header '{self._signature_header_lc}' is missing.")
+                )
 
-            normalized: Mapping[str, str] = {str(k).lower(): str(v) for k, v in request.headers.items()}
-            provided = normalized.get(self._sig_header)
+            expected = self._compute_expected_signature_text(request)
+            ok = hmac.compare_digest(provided, expected)
+            return VerificationResult.passed() if ok else VerificationResult.failed(
+                SignatureVerificationError("Signature mismatch.")
+            )
+        except Exception as exc:
+            return VerificationResult.failed(
+                SignatureVerificationError(f"Signature Verification Failed: {exc}")
+            )
 
-            if provided is None or not str(provided).strip():
-                return VerificationResult.failed(ValueError(f"Signature header '{self._sig_header}' is missing."))
+    def compute_expected_signature(self, request: Request) -> str:
+        """
+        Compute the *exact* expected signature text for this request (useful for tests or debugging).
 
-            # Select body
-            if not isinstance(request.body, str):
-                return VerificationResult.failed(ValueError("request.body must be a str (raw JSON/text)."))
+        Returns
+        -------
+        str
+            The fully formatted signature string (after digest encoding and optional value templating).
+        """
+        return self._compute_expected_signature_text(request)
 
-            # Build canonical message
-            parts: list[str] = []
-            if self._order is HmacOrder.PREPEND:
-                for h in self._headers:
-                    val = normalized.get(h)
-                    if val is not None:
-                        parts.append(str(val).strip())
-                parts.append(request.body)
-            else:
-                parts.append(request.body)
-                for h in self._headers:
-                    val = normalized.get(h)
-                    if val is not None:
-                        parts.append(str(val).strip())
+    # ------------------------------------------------------------------
+    # Internals
+    # ------------------------------------------------------------------
+    def _read_signature_header(self, request: Request) -> Optional[str]:
+        headers = {str(k).lower(): str(v) for k, v in (getattr(request, "headers", {}) or {}).items()}
+        value = headers.get(self._signature_header_lc)
+        return None if value is None or str(value).strip() == "" else str(value)
 
-            message = self._delimiter.join(parts).encode("utf-8")
-
-            # Compute digest
-            digest = hmac.new(self._key.encode("utf-8"), message, self._hash_alg).digest()
-            expected = self._encoder.encode(digest)
-
-            # Constant-time compare
-            ok = hmac.compare_digest(str(provided).strip(), expected)
-            return VerificationResult.passed() if ok else VerificationResult.failed(SignatureVerificationError("Signature mismatch."))
-
-        except Exception as e:
-            # Convert any unexpected error into a failure result
-            return VerificationResult.failed(SignatureVerificationError(f"Signature Verification Failed: {e}"))
+    def _compute_expected_signature_text(self, request: Request) -> str:
+        message = self._engine.render(self._plan, request)
+        digest = hmac.new(self._key_bytes, message, self._hash_alg).digest()
+        encoded = self._encoder.encode(digest)
+        return self._sig_value_template.replace("{digest}", encoded) if self._sig_value_template else encoded

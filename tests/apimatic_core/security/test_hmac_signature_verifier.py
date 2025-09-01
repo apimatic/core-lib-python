@@ -1,287 +1,297 @@
-# tests/test_hmac_signature_verifier.py
-# -*- coding: utf-8 -*-
-
-import base64
+# test_hmac_signature_verifier.py
 import hashlib
-import hmac
-from typing import Dict, List
-
+import types
 import pytest
 
-from apimatic_core_interfaces.http.request import Request
-from apimatic_core.exceptions.signature_verification_error import SignatureVerificationError
-
-# ⬇️ UPDATE THIS IMPORT PATH TO YOUR MODULE
-from apimatic_core.security.hmac_signature_verifier import (
+from apimatic_core.security import (
     HmacSignatureVerifier,
-    HmacOrder,
     HexEncoder,
     Base64Encoder,
-    Base64UrlEncoder,
+    SignatureVerificationError,
 )
 
-
-class TestHmacSignatureVerifier:
-    # -----------------------------
-    # Class-scoped constants
-    # -----------------------------
-    KEY = "supersecretkey"
-    DEFAULT_SIG_HEADER = "X-Signature"
-    BODY = '{"event_type":"order_created","order_id":"123"}'
-
-    # -----------------------------
-    # Class-scoped fixture: baseline headers
-    # -----------------------------
-    @pytest.fixture(scope="class")
-    def base_headers(self) -> Dict[str, str]:
-        # common headers you might see on requests
-        return {
-            "Content-Type": "application/json",
-            # optional; some tests override or remove these
-            "X-Timestamp": "1699123456",
-            "X-Request-Id": "req_123",
-            "X-Nonce": "n-abc",
-        }
-
-    # -----------------------------
-    # Static helpers (canonical signing helpers)
-    # -----------------------------
-    @staticmethod
-    def _build_message(
-        *,
-        body: str,
-        headers: Dict[str, str],
-        additional_header_names: List[str],
-        order: HmacOrder,
-        delimiter: str,
-    ) -> bytes:
-        """
-        Recreate the canonical string EXACTLY as the verifier does,
-        then return it as UTF-8 bytes for HMAC.
-        """
-        norm = {str(k).lower(): str(v).strip() for k, v in headers.items()}
-        parts: List[str] = []
-        if order is HmacOrder.PREPEND:
-            for name in additional_header_names:
-                val = norm.get(name.lower())
-                if val is not None:
-                    parts.append(val)
-            parts.append(body)
-        else:
-            parts.append(body)
-            for name in additional_header_names:
-                val = norm.get(name.lower())
-                if val is not None:
-                    parts.append(val)
-        return delimiter.join(parts).encode("utf-8")
-
-    @staticmethod
-    def _sign_hex(key: str, message: bytes) -> str:
-        return hmac.new(key.encode("utf-8"), message, hashlib.sha256).hexdigest()
-
-    @staticmethod
-    def _sign_b64(key: str, message: bytes) -> str:
-        digest = hmac.new(key.encode("utf-8"), message, hashlib.sha256).digest()
-        return base64.b64encode(digest).decode("utf-8")
-
-    @staticmethod
-    def _sign_b64url_nopad(key: str, message: bytes) -> str:
-        digest = hmac.new(key.encode("utf-8"), message, hashlib.sha256).digest()
-        return base64.urlsafe_b64encode(digest).decode("utf-8").rstrip("=")
-
-    # ==========================================================================
-    # SUCCESS PATHS
-    # ==========================================================================
-
-    @pytest.mark.parametrize(
-        "additional_headers,order,delimiter,encoder,signer",
-        [
-            # Hex, PREPEND timestamp & req-id before body
-            (["X-Timestamp", "X-Request-Id"], HmacOrder.PREPEND, "|", HexEncoder(), _sign_hex.__func__),
-            # Hex, APPEND nonce after body with ":" delimiter
-            (["X-Nonce"], HmacOrder.APPEND, ":", HexEncoder(), _sign_hex.__func__),
-            # Base64, PREPEND timestamp
-            (["X-Timestamp"], HmacOrder.PREPEND, "|", Base64Encoder(), _sign_b64.__func__),
-            # Base64Url (no padding), PREPEND timestamp
-            (["X-Timestamp"], HmacOrder.PREPEND, "|", Base64UrlEncoder(), _sign_b64url_nopad.__func__),
-        ],
-        ids=[
-            "hex_prepend_ts_and_reqid",
-            "hex_append_nonce_with_colon",
-            "base64_prepend_ts",
-            "base64url_prepend_ts",
-        ],
+# ---------- Simple Request factory ----------
+def make_request(**kwargs):
+    """
+    Minimal Request-like object exposing attributes the verifier reads:
+    headers, body (str), raw_body (bytes), path, url, method, query (dict[str, list[str] | str]).
+    """
+    defaults = dict(
+        headers={},
+        body=None,
+        raw_body=None,
+        path="",
+        url="",
+        method="",
+        query=None,
     )
-    def test_verify_true_for_valid_signatures_across_encoders_orders_and_delimiters(
-        self,
-        base_headers,
-        additional_headers,
-        order,
-        delimiter,
-        encoder,
-        signer,
-    ):
-        headers = dict(base_headers)  # copy
-        message = self._build_message(
-            body=self.BODY,
-            headers=headers,
-            additional_header_names=additional_headers,
-            order=order,
-            delimiter=delimiter,
-        )
-        signature = signer(self.KEY, message)
-        headers[self.DEFAULT_SIG_HEADER] = signature
+    defaults.update(kwargs)
+    return types.SimpleNamespace(**defaults)
 
-        verifier = HmacSignatureVerifier(
-            key=self.KEY,
-            signature_header=self.DEFAULT_SIG_HEADER,
-            additional_headers=additional_headers,
-            order=order,
-            delimiter=delimiter,
-            encoder=encoder,
-        )
-        req = Request(headers=headers, body=self.BODY)
-        assert verifier.verify(req) is True
 
-    def test_verify_true_with_signature_header_whitespace_trimmed(self, base_headers):
-        """
-        Leading/trailing whitespace around the signature header value should be ignored.
-        """
-        headers = dict(base_headers)
-        message = self._build_message(
-            body=self.BODY,
-            headers=headers,
-            additional_header_names=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter="|",
-        )
-        signature = self._sign_hex(self.KEY, message)
-        headers[self.DEFAULT_SIG_HEADER] = f"   {signature}   "  # padded with spaces
+# ---------- Common fixtures ----------
+@pytest.fixture
+def hex_encoder():
+    return HexEncoder()
 
-        verifier = HmacSignatureVerifier(
-            key=self.KEY,
-            signature_header=self.DEFAULT_SIG_HEADER,
-            additional_headers=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter="|",
-            encoder=HexEncoder(),
-        )
-        req = Request(headers=headers, body=self.BODY)
-        assert verifier.verify(req) is True
+@pytest.fixture
+def b64_encoder():
+    return Base64Encoder()
 
-    def test_verify_true_when_configured_additional_header_is_missing(self, base_headers):
-        """
-        If a configured additional header is missing in the request, it is skipped,
-        and verification still succeeds if the signer skipped it when generating the signature.
-        """
-        headers = {"Content-Type": base_headers["Content-Type"]}  # intentionally omit X-Timestamp
-        message = self._build_message(
-            body=self.BODY,
-            headers=headers,
-            additional_header_names=["X-Timestamp"],  # configured but absent → ignored
-            order=HmacOrder.PREPEND,
-            delimiter="|",
-        )
-        signature = self._sign_hex(self.KEY, message)
-        headers[self.DEFAULT_SIG_HEADER] = signature
+@pytest.fixture
+def json_body():
+    # compact JSON (stable string for predictable HMAC)
+    return '{"event":{"id":"evt_123","type":"update"},"payload":{"checksum":"abc123"}}'
 
-        verifier = HmacSignatureVerifier(
-            key=self.KEY,
-            signature_header=self.DEFAULT_SIG_HEADER,
-            additional_headers=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter="|",
-            encoder=HexEncoder(),
-        )
-        req = Request(headers=headers, body=self.BODY)
-        assert verifier.verify(req) is True
+@pytest.fixture
+def json_body_bytes(json_body):
+    return json_body.encode("utf-8")
 
-    @pytest.mark.parametrize(
-        "delimiter",
-        [":", ".", ";", "~"],
-        ids=["colon", "dot", "semicolon", "tilde"],
+
+# ---------- Helper to seed signature header ----------
+def seed_header(verifier: HmacSignatureVerifier, req, header_name: str):
+    sig = verifier.compute_expected_signature(req)
+    req.headers[header_name] = sig
+    return sig
+
+
+# ================== HAPPY PATHS ==================
+
+def test_signs_raw_body_only_with_hex_digest(hex_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="secret123",
+        signature_header="X-Signature",
+        message_template="{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
     )
-    def test_verify_true_with_various_delimiters(self, base_headers, delimiter):
-        headers = dict(base_headers)
-        message = self._build_message(
-            body=self.BODY,
-            headers=headers,
-            additional_header_names=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter=delimiter,
+    req = make_request(headers={}, body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-Signature")
+    assert verifier.verify(req).ok is True
+
+
+def test_signing_with_timestamp_header_and_literal_prefix_in_expected_value(hex_encoder, json_body, json_body_bytes):
+    # Pattern: "v0:{header}:{raw_body}" -> expected "v0={digest}"
+    verifier = HmacSignatureVerifier(
+        key="ts-secret",
+        signature_header="X-Signature-TS",
+        message_template="v0:{$request.header.X-Event-Timestamp}:{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+        signature_value_template="v0={digest}",
+    )
+    req = make_request(headers={"X-Event-Timestamp": "1724925600"}, body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-Signature-TS")
+    assert verifier.verify(req).ok is True
+
+
+def test_signing_raw_body_with_prefixed_signature_value_template(hex_encoder, json_body, json_body_bytes):
+    # Pattern: "{raw_body}" -> expected "sha256={digest}"
+    verifier = HmacSignatureVerifier(
+        key="prefixed-secret",
+        signature_header="X-Digest-256",
+        message_template="{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+        signature_value_template="sha256={digest}",
+    )
+    req = make_request(headers={}, body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-Digest-256")
+    assert verifier.verify(req).ok is True
+
+
+def test_signing_raw_body_with_base64_encoding(b64_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="b64-secret",
+        signature_header="X-B64-Digest",
+        message_template="{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=b64_encoder,
+    )
+    req = make_request(headers={}, body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-B64-Digest")
+    assert verifier.verify(req).ok is True
+
+
+def test_signing_path_plus_raw_body_with_sha512_and_base64(b64_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="sha512-secret",
+        signature_header="X-Path-Body-Digest",
+        message_template="{$request.path}:{raw_body}",
+        hash_alg=hashlib.sha512,
+        encoder=b64_encoder,
+    )
+    req = make_request(headers={}, path="/orders/123", body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-Path-Body-Digest")
+    assert verifier.verify(req).ok is True
+
+
+def test_signing_json_pointer_value_concatenated_with_raw_body(hex_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="jsonptr-secret",
+        signature_header="X-JsonPtr-Digest",
+        message_template="{$request.body#/event/id}:{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+    )
+    req = make_request(headers={}, body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-JsonPtr-Digest")
+    assert verifier.verify(req).ok is True
+
+
+def test_signing_method_url_and_raw_body(hex_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="method-url-secret",
+        signature_header="X-Method-Url-Digest",
+        message_template="{$method}:{$url}:{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+    )
+    req = make_request(headers={}, method="POST", url="https://api.example.com/orders",
+                       body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-Method-Url-Digest")
+    assert verifier.verify(req).ok is True
+
+
+def test_signing_header_path_and_json_pointer_plus_raw_with_prefixed_value(hex_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="composite-secret",
+        signature_header="X-Composite-Digest",
+        message_template="{$request.header.X-Event-TS}:{$request.path}:{$request.body#/payload/checksum}:{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+        signature_value_template="composite={digest}",
+    )
+    req = make_request(headers={"X-Event-TS": "1724925600"}, path="/orders/123",
+                       body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-Composite-Digest")
+    assert verifier.verify(req).ok is True
+
+
+# ================== EDGE CASES / NEGATIVE ==================
+
+def test_failed_when_signature_header_missing(hex_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="secret",
+        signature_header="X-Required",
+        message_template="{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+    )
+    req = make_request(headers={}, body=json_body, raw_body=json_body_bytes)
+    result = verifier.verify(req)
+    assert result.ok is False
+    assert isinstance(result.error, Exception)
+
+
+def test_failed_on_signature_mismatch_returns_signature_verification_error(hex_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="secret",
+        signature_header="X-Signature",
+        message_template="{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+    )
+    req = make_request(headers={"X-Signature": "wrong"}, body=json_body, raw_body=json_body_bytes)
+    result = verifier.verify(req)
+    assert result.ok is False
+    assert isinstance(result.error, SignatureVerificationError)
+
+
+@pytest.mark.parametrize("header_name", ["X-SIGNATURE", "x-signature", "X-Signature"])
+def test_header_lookup_is_case_insensitive(hex_encoder, header_name, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="secret123",
+        signature_header="X-Signature",
+        message_template="{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+    )
+    req = make_request(headers={}, body=json_body, raw_body=json_body_bytes)
+    sig = verifier.compute_expected_signature(req)
+    req.headers = {header_name: sig}
+    assert verifier.verify(req).ok is True
+
+
+def test_raw_body_placeholder_falls_back_to_text_body_when_bytes_missing(hex_encoder):
+    body = '{"a":1}'
+    verifier = HmacSignatureVerifier(
+        key="secret",
+        signature_header="X-Signature",
+        message_template="{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+    )
+    req = make_request(headers={}, body=body, raw_body=None)
+    seed_header(verifier, req, "X-Signature")
+    assert verifier.verify(req).ok is True
+
+
+def test_missing_json_pointer_resolves_to_empty_string_but_is_consistent_with_compute(json_body, json_body_bytes, hex_encoder):
+    # Signed message becomes ":<raw_body>"
+    verifier = HmacSignatureVerifier(
+        key="secret",
+        signature_header="X-Signature",
+        message_template="{$request.body#/does/not/exist}:{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+    )
+    req = make_request(headers={}, body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-Signature")
+    assert verifier.verify(req).ok is True
+
+
+def test_request_query_and_method_can_be_used_in_template(hex_encoder, json_body, json_body_bytes):
+    verifier = HmacSignatureVerifier(
+        key="secret",
+        signature_header="X-Signature",
+        message_template="{$method}:{$request.query.foo}:{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=hex_encoder,
+    )
+    req = make_request(headers={}, method="GET", query={"foo": ["bar", "baz"]},
+                       body=json_body, raw_body=json_body_bytes)
+    seed_header(verifier, req, "X-Signature")
+    assert verifier.verify(req).ok is True
+
+
+@pytest.mark.parametrize(
+    "bad_template",
+    [
+        "prefix:{$request.header.X-TS:{raw_body}",  # unclosed expr
+        "{$}: {raw_body}",                          # empty expr
+    ],
+)
+def test_constructor_raises_on_invalid_template(hex_encoder, bad_template):
+    with pytest.raises(ValueError):
+        HmacSignatureVerifier(
+            key="k",
+            signature_header="X-Signature",
+            message_template=bad_template,
+            hash_alg=hashlib.sha256,
+            encoder=hex_encoder,
         )
-        signature = self._sign_hex(self.KEY, message)
-        headers[self.DEFAULT_SIG_HEADER] = signature
 
-        verifier = HmacSignatureVerifier(
-            key=self.KEY,
-            signature_header=self.DEFAULT_SIG_HEADER,
-            additional_headers=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter=delimiter,
-            encoder=HexEncoder(),
-        )
-        req = Request(headers=headers, body=self.BODY)
-        assert verifier.verify(req) is True
 
-    def test_verify_false_when_signature_mismatch(self, base_headers):
-        headers = dict(base_headers)
-        # Compute a valid message but provide an incorrect signature
-        message = self._build_message(
-            body=self.BODY,
-            headers=headers,
-            additional_header_names=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter="|",
-        )
-        _ = self._sign_hex(self.KEY, message)  # not used
-        headers[self.DEFAULT_SIG_HEADER] = "definitely-not-correct"
-
-        verifier = HmacSignatureVerifier(
-            key=self.KEY,
-            signature_header=self.DEFAULT_SIG_HEADER,
-            additional_headers=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter="|",
-            encoder=HexEncoder(),
-        )
-        req = Request(headers=headers, body=self.BODY)
-        assert verifier.verify(req) is False
-
-    # ==========================================================================
-    # FAILURE PATHS
-    # ==========================================================================
-
-    def test_verify_raises_signature_verification_error_when_signature_header_missing(self, base_headers):
-        headers = dict(base_headers)
-        headers.pop(self.DEFAULT_SIG_HEADER, None)  # ensure missing
-
-        verifier = HmacSignatureVerifier(
-            key=self.KEY,
-            signature_header=self.DEFAULT_SIG_HEADER,
-            additional_headers=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter="|",
-            encoder=HexEncoder(),
-        )
-        req = Request(headers=headers, body=self.BODY)
-        with pytest.raises(SignatureVerificationError) as exc:
-            verifier.verify(req)
-        assert "Signature header 'x-signature' is missing from the request." == str(exc.value)
-
-    def test_verify_raises_signature_verification_error_when_none_encoder_missing(self, base_headers):
-        headers = dict(base_headers)
-        headers[self.DEFAULT_SIG_HEADER] = "definitely-not-correct"
-
-        verifier = HmacSignatureVerifier(
-            key=self.KEY,
-            signature_header=self.DEFAULT_SIG_HEADER,
-            additional_headers=["X-Timestamp"],
-            order=HmacOrder.PREPEND,
-            delimiter="|",
-            encoder=None,
-        )
-        req = Request(headers=headers, body=self.BODY)
-        with pytest.raises(SignatureVerificationError) as exc:
-            verifier.verify(req)
-        assert "HMAC digest computation failed." == str(exc.value)
+@pytest.mark.parametrize(
+    "encoder_cls, value_prefix",
+    [
+        (HexEncoder, "sha256="),
+        (Base64Encoder, "sha256="),
+    ],
+)
+def test_signature_value_template_prefix_is_applied_consistently(encoder_cls, value_prefix, json_body, json_body_bytes):
+    encoder = encoder_cls()
+    verifier = HmacSignatureVerifier(
+        key="secret",
+        signature_header="X-Digest",
+        message_template="{raw_body}",
+        hash_alg=hashlib.sha256,
+        encoder=encoder,
+        signature_value_template="sha256={digest}",
+    )
+    req = make_request(headers={}, body=json_body, raw_body=json_body_bytes)
+    sig = verifier.compute_expected_signature(req)
+    assert sig.startswith(value_prefix)
+    req.headers["X-Digest"] = sig
+    assert verifier.verify(req).ok is True
