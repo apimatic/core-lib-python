@@ -3,14 +3,15 @@ import hmac
 from typing import Optional, List, Callable
 
 from apimatic_core_interfaces.http.request import Request
-from apimatic_core_interfaces.security.verification_result import VerificationResult
+from apimatic_core_interfaces.types.signature_verification_result import SignatureVerificationResult
+from apimatic_core_interfaces.security.signature_verifier import SignatureVerifier
 
 from apimatic_core.exceptions.signature_verification_error import SignatureVerificationError
 from apimatic_core.security.encoders import DigestEncoder, HexEncoder
 from apimatic_core.templating.template_engine import TemplateEngine
 
 
-class HmacSignatureVerifier:
+class HmacSignatureVerifier(SignatureVerifier):
     """
     Template-driven HMAC signature verifier.
 
@@ -68,12 +69,12 @@ class HmacSignatureVerifier:
         self._engine = TemplateEngine()
         self._plan: List[Callable[[Request], bytes]] = self._engine.compile(message_template)
 
-    def verify(self, request: Request) -> VerificationResult:
+    def verify(self, request: Request) -> SignatureVerificationResult:
         """Verify the signature in the request headers."""
         try:
             provided = self._read_signature_header(request)
             if provided is None:
-                return VerificationResult.failed(
+                return SignatureVerificationResult.failed(
                     ValueError(f"Signature header '{self._signature_header_lc}' is missing.")
                 )
 
@@ -87,11 +88,11 @@ class HmacSignatureVerifier:
             )
 
             ok = hmac.compare_digest(provided, expected)
-            return VerificationResult.passed() if ok else VerificationResult.failed(
+            return SignatureVerificationResult.passed() if ok else SignatureVerificationResult.failed(
                 SignatureVerificationError("Signature mismatch.")
             )
         except Exception as exc:
-            return VerificationResult.failed(
+            return SignatureVerificationResult.failed(
                 SignatureVerificationError(f"Signature Verification Failed: {exc}")
             )
 
