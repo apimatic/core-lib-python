@@ -13,6 +13,5 @@ __all__ = [
     'exceptions',
     'constants',
     'pagination',
-    'security',
-    'templating'
+    'security'
 ]
