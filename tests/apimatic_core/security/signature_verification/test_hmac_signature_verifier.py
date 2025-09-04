@@ -213,7 +213,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key=key,
             signature_header=header_name,
-            message_resolver=resolver,
+            canonical_message_builder=resolver,
             hash_alg=hash_alg,
             encoder=encoder,
             signature_value_template=svt,
@@ -237,7 +237,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key=key,
             signature_header=header,
-            message_resolver=None,  # triggers raw_body fallback
+            canonical_message_builder=None,  # triggers raw_body fallback
             encoder=enc_hex,
         )
         # raw_body present; body intentionally different
@@ -257,7 +257,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key=key,
             signature_header=header,
-            message_resolver=resolve_none_returns_none,  # returns None => fallback
+            canonical_message_builder=resolve_none_returns_none,  # returns None => fallback
             encoder=enc_hex,
         )
         req = Request(headers={}, body='{"a": 1}', raw_body=b'{"a":1}')
@@ -276,7 +276,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key=key,
             signature_header=header,
-            message_resolver=None,  # no resolver
+            canonical_message_builder=None,  # no resolver
             encoder=enc_hex,
         )
         req = Request(headers={}, body='{"z":2}')  # no raw_body
@@ -298,7 +298,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key=key,
             signature_header=header,
-            message_resolver=resolve_body,
+            canonical_message_builder=resolve_body,
             encoder=enc_hex,
         )
         req = Request(headers={}, body="{}")
@@ -312,7 +312,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key=key,
             signature_header=header,
-            message_resolver=resolve_body,
+            canonical_message_builder=resolve_body,
             encoder=enc_hex,
             signature_value_template="CONST",
         )
@@ -332,7 +332,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key="k-missing",
             signature_header="X-Missing",
-            message_resolver=resolve_body,
+            canonical_message_builder=resolve_body,
             encoder=enc_hex,
         )
         res = verifier.verify(req_json_device)
@@ -342,7 +342,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key="k-blank",
             signature_header="X-Blank",
-            message_resolver=resolve_body,
+            canonical_message_builder=resolve_body,
             encoder=enc_hex,
         )
         req = Request(headers={"X-Blank": "   "}, body="{}")
@@ -353,7 +353,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key="k-mismatch",
             signature_header="X-Sig",
-            message_resolver=resolve_body,
+            canonical_message_builder=resolve_body,
             encoder=enc_hex,
         )
         req = Request(headers={"X-Sig": "wrong"}, body="{}")
@@ -372,7 +372,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key="k-enc-boom",
             signature_header="X-Err",
-            message_resolver=resolve_body,
+            canonical_message_builder=resolve_body,
             encoder=self.ExplodingEncoder(),
         )
         req_json_device.headers = {"X-Err": "anything"}
@@ -383,7 +383,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key="k-hash-boom",
             signature_header="X-Err",
-            message_resolver=resolve_body,
+            canonical_message_builder=resolve_body,
             hash_alg=self.ExplodingHash(),
             encoder=enc_hex,
         )
@@ -398,7 +398,7 @@ class TestHmacSignatureVerifier:
         verifier = HmacSignatureVerifier(
             key="k-bad",
             signature_header="X-Sig",
-            message_resolver=bad_resolver,
+            canonical_message_builder=bad_resolver,
         )
         req = Request(headers={"X-Sig": "anything"}, body="{}")
         res = verifier.verify(req)

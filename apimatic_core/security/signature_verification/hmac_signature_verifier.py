@@ -45,7 +45,7 @@ class HmacSignatureVerifier(SignatureVerifier):
         Shared secret used for HMAC.
     signature_header : str
         Header name containing the provided signature (case-insensitive lookup).
-    message_resolver : Optional[Callable[[Request], Union[bytes, str, None]]]
+    canonical_message_builder : Optional[Callable[[Request], Union[bytes, str, None]]]
         Function that produces the exact message to sign. If omitted (None) or returns None,
         the verifier will use request.raw_body (bytes) if present, otherwise request.body (text, UTF-8).
     hash_alg : Callable (defaults to hashlib.sha256)
@@ -62,7 +62,7 @@ class HmacSignatureVerifier(SignatureVerifier):
         *,
         key: str,
         signature_header: str,
-        message_resolver: Optional[Callable[[Request], Union[bytes, str, None]]] = None,
+        canonical_message_builder: Optional[Callable[[Request], Union[bytes, str, None]]] = None,
         hash_alg=hashlib.sha256,
         encoder: Optional[DigestEncoder] = None,
         signature_value_template: Optional[str] = None,
@@ -74,7 +74,7 @@ class HmacSignatureVerifier(SignatureVerifier):
 
         self._key_bytes = key.encode("utf-8")
         self._signature_header_lc = signature_header.lower().strip()
-        self._message_resolver = message_resolver
+        self._message_resolver = canonical_message_builder
         self._hash_alg = hash_alg
         self._encoder = encoder or HexEncoder()
         self._signature_value_template = signature_value_template
