@@ -165,26 +165,14 @@ pip install apimatic-core
 
 ---
 
-## **Templating**
+## **Signature Verification**
 
-| Name                                                                       | Description                                                                                   |
-| -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`TemplateEngine`](apimatic_core/templating/template_engine.py)            | Core engine for parsing and rendering runtime message templates used in signing or validation |
-| [`TemplateResolver`](apimatic_core/templating/template_resolver.py)        | Built-in resolvers to extract method, URL, path, headers, query, and body data                |
-| [`JsonPointerResolver`](apimatic_core/templating/json_pointer_resolver.py) | Utility to resolve RFC 6901 JSON Pointers from request bodies                                 |
-
-Use cases include building canonicalized signing strings, consistent logging templates, and custom request signatures.
-
----
-
-## **Security**
-
-| Name                                                                                     | Description                                                                          |
-| ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| [`HmacSignatureVerifier`](apimatic_core/security/hmac_signature_verifier.py)             | Verifies HMAC signatures using configurable templates, hash algorithms, and encoders |
-| [`HexEncoder`](apimatic_core/security/encoders.py)                                       | Encodes digest as lowercase hex                                                      |
-| [`Base64Encoder`](apimatic_core/security/encoders.py)                                    | Encodes digest as Base64                                                             |
-| [`Base64UrlEncoder`](apimatic_core/security/encoders.py)                                 | Encodes digest as URL-safe Base64 without padding                                    |
+| Name                                                                                                 | Description                                                                          |
+|------------------------------------------------------------------------------------------------------| ------------------------------------------------------------------------------------ |
+| [`HmacSignatureVerifier`](apimatic_core/security/signature_verification/hmac_signature_verifier.py)  | Verifies HMAC signatures using configurable templates, hash algorithms, and encoders |
+| [`HexEncoder`](apimatic_core/security/signature_verification/hmac_signature_verifier.py)             | Encodes digest as lowercase hex                                                      |
+| [`Base64Encoder`](apimatic_core/security/signature_verification/hmac_signature_verifier.py)          | Encodes digest as Base64                                                             |
+| [`Base64UrlEncoder`](apimatic_core/security/signature_verification/hmac_signature_verifier.py)       | Encodes digest as URL-safe Base64 without padding                                    |
 
 This layer enables secure handling of webhooks, callbacks, and API integrations that rely on HMAC or other signing strategies.
 
