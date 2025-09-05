@@ -1,161 +1,161 @@
-import json
 import hashlib
-from typing import Callable, Optional, Union
+import hmac as _hmac
+from typing import Callable, Optional, Union, Dict, Any
 
 import pytest
 from apimatic_core_interfaces.http.request import Request
-from apimatic_core.utilities.api_helper import ApiHelper
 
 from apimatic_core.security.signature_verification.hmac_signature_verifier import (
     HmacSignatureVerifier,
     HexEncoder,
-    Base64UrlEncoder,
     Base64Encoder,
+    Base64UrlEncoder,
 )
 
 # ---------------------------
-# Module-level resolver factories (work with pytest parametrize)
+# Helpers for frozen Request
 # ---------------------------
 
-def exact_body_bytes(request: Request) -> bytes:
-    """Return the exact textual body (UTF-8). Models '{$request.body}'."""
-    return (getattr(request, "body", None) or "").encode("utf-8")
+def _clone_with(req: Request, **overrides: Any) -> Request:
+    """
+    Return a NEW Request with selected fields overridden.
+    Avoids in-place mutation (works with frozen dataclasses/objects).
+    """
+    def _get(name: str, default=None):
+        return getattr(req, name, default)
 
+    # Copy current fields (keep defaults if a field is missing)
+    payload: Dict[str, Any] = dict(
+        method=_get("method"),
+        path=_get("path"),
+        url=_get("url"),
+        headers=dict(_get("headers", {}) or {}),
+        query=dict(_get("query", {}) or {}),
+        cookies=dict(_get("cookies", {}) or {}),
+        raw_body=_get("raw_body", None),
+        form=dict(_get("form", {}) or {}),
+        files=dict(_get("files", {}) or {}),
+    )
+    # Apply overrides
+    payload.update(overrides)
+    return Request(**payload)
 
-def resolve_body(request: Request) -> bytes:
-    """Message = '{$request.body}' (text body only)."""
-    return exact_body_bytes(request)
-
-
-def resolve_method_header_and_body(header_name: str) -> Callable[[Request], bytes]:
-    """Message = '{method}:{header}:{body}'."""
-    def _resolver(request: Request) -> bytes:
-        method = getattr(request, "method", "") or ""
-        headers = getattr(request, "headers", {}) or {}
-        header_value = ""
-        needle = header_name.lower()
-        for k, v in headers.items():
-            if str(k).lower() == needle:
-                header_value = str(v)
-                break
-        prefix = f"{method}:{header_value}:".encode("utf-8")
-        return prefix + exact_body_bytes(request)
-    return _resolver
-
-
-def resolve_pointer_and_body(pointer: str) -> Callable[[Request], bytes]:
-    """Message = '<value at JSON pointer>:{body}' using ApiHelper.get_value_by_json_pointer."""
-    def _resolver(request: Request) -> bytes:
-        body_text = getattr(request, "body", None)
-        try:
-            data = json.loads(body_text) if isinstance(body_text, str) and body_text.strip() else None
-        except Exception:
-            data = None
-        picked = ApiHelper.get_value_by_json_pointer(data, pointer) if data is not None else None
-        if isinstance(picked, (dict, list)):
-            head = json.dumps(picked, separators=(",", ":"), sort_keys=True).encode("utf-8")
-        elif picked is None:
-            head = b""
-        else:
-            head = str(picked).encode("utf-8")
-        return head + b":" + exact_body_bytes(request)
-    return _resolver
-
-
-def resolve_path_and_body(request: Request) -> bytes:
-    """Message = '{path}:{body}'."""
-    path = getattr(request, "path", "") or ""
-    return f"{path}:".encode("utf-8") + exact_body_bytes(request)
-
-
-def resolve_method_url_and_body(request: Request) -> bytes:
-    """Message = '{method}:{url}:{body}'."""
-    method = getattr(request, "method", "") or ""
-    url = getattr(request, "url", "") or ""
-    return f"{method}:{url}:".encode("utf-8") + exact_body_bytes(request)
-
-
-def resolve_none_returns_none(_request: Request):
-    """Resolver returning None to trigger raw_body fallback in verifier."""
-    return None
-
+def _with_header(req: Request, name: str, value: str) -> Request:
+    new_headers = dict(getattr(req, "headers", {}) or {})
+    new_headers[name] = value
+    return _clone_with(req, headers=new_headers)
 
 # ---------------------------
-# Signature helpers
+# Helpers (mirror verifier semantics)
 # ---------------------------
 
-def compute_expected_signature(
+def _compute_expected_signature(
     *,
-    key: str,
-    resolver: Optional[Callable[[Request], Union[str, bytes, None]]],
+    secret_key: str,
+    signature_value_template: Optional[str],
+    resolver: Optional[Callable[[Request], Union[bytes, str, None]]],
     request: Request,
     hash_alg=hashlib.sha256,
     encoder=HexEncoder(),
-    signature_value_template: Optional[str] = None,
 ) -> str:
     """
-    Compute expected signature string exactly like the verifier will:
-    - If resolver is None or returns None -> use raw_body, else body text.
+    Build expected signature string exactly as the verifier does:
+
+    - If resolver is provided: its return value is passed to hmac.new(...) as-is.
+      (bytes OK; str/None raise TypeError in hmac; verifier catches this.)
+    - If resolver is None: use request.raw_body directly.
+    - Encoded digest gets interpolated into template by replacing '{digest}'.
+      If template lacks '{digest}', it’s used as-is (constant literal).
     """
-    import hmac as _hmac
-
-    # Resolve message
-    if callable(resolver):
-        msg = resolver(request)
-        if msg is None:
-            # fallback same as verifier
-            raw = getattr(request, "raw_body", None)
-            if isinstance(raw, (bytes, bytearray)):
-                message = bytes(raw)
-            else:
-                message = (getattr(request, "body", None) or "").encode("utf-8")
-        else:
-            message = msg.encode("utf-8") if isinstance(msg, str) else msg
+    if resolver is None:
+        message = getattr(request, "raw_body", None)
     else:
-        raw = getattr(request, "raw_body", None)
-        if isinstance(raw, (bytes, bytearray)):
-            message = bytes(raw)
-        else:
-            message = (getattr(request, "body", None) or "").encode("utf-8")
+        message = resolver(request)
 
-    # HMAC + encode
-    digest = _hmac.new(key.encode("utf-8"), message, hash_alg).digest()
+    if isinstance(message, str):
+        # We deliberately don’t encode here to mirror the real failure path.
+        raise TypeError("Test attempted to seed using str message; this path should fail in verifier.")
+
+    digest = _hmac.new(secret_key.encode("utf-8"), message, hash_alg).digest()  # may raise
     encoded = encoder.encode(digest)
+    template = signature_value_template if signature_value_template is not None else "{digest}"
+    return template.replace("{digest}", encoded) if "{digest}" in template else template
 
-    if signature_value_template and "{digest}" not in signature_value_template:
-        return signature_value_template
-    return (signature_value_template or "{digest}").replace("{digest}", encoded)
-
-
-def seed_header_signature(
+def _seed_signature_header(
+    request: Request,
     *,
     header_name: str,
-    key: str,
-    resolver: Optional[Callable[[Request], Union[str, bytes, None]]],
-    request: Request,
+    secret_key: str,
+    signature_value_template: Optional[str],
+    resolver: Optional[Callable[[Request], Union[bytes, str, None]]],
     hash_alg=hashlib.sha256,
     encoder=HexEncoder(),
-    signature_value_template: Optional[str] = None,
-) -> str:
-    value = compute_expected_signature(
-        key=key,
+) -> Request:
+    """
+    Return a NEW Request with the signature header set (no in-place mutation).
+    """
+    expected = _compute_expected_signature(
+        secret_key=secret_key,
+        signature_value_template=signature_value_template,
         resolver=resolver,
         request=request,
         hash_alg=hash_alg,
         encoder=encoder,
-        signature_value_template=signature_value_template,
     )
-    request.headers = request.headers or {}
-    request.headers[header_name] = value
-    return value
-
+    return _with_header(request, header_name, expected)
 
 # ---------------------------
-# Tests (wrapped in a class)
+# Module-level resolvers
+# ---------------------------
+
+def resolver_body_bytes(request: Request) -> bytes:
+    """Return textual body encoded to UTF-8 bytes (explicit builder)."""
+    body = getattr(request, "body", None)
+    return (body or "").encode("utf-8")
+
+def resolver_bytes_prefix_header(header_name: str) -> Callable[[Request], bytes]:
+    """Return b'{method}:{header}:{body-as-bytes}' (bytes builder)."""
+    def _f(req: Request) -> bytes:
+        method = getattr(req, "method", "") or ""
+        hdrs = getattr(req, "headers", {}) or {}
+        target = ""
+        needle = header_name.lower()
+        for k, v in hdrs.items():
+            if str(k).lower() == needle:
+                target = str(v)
+                break
+        body = getattr(req, "body", None)
+        return f"{method}:{target}:".encode("utf-8") + (body or "").encode("utf-8")
+    return _f
+
+def resolver_returns_str(_req: Request) -> str:
+    """Intentionally wrong: returns str so hmac.new raises TypeError (should fail)."""
+    return "not-bytes"
+
+def resolver_returns_none(_req: Request):
+    """Intentionally returns None so hmac.new raises TypeError (should fail)."""
+    return None
+
+# ---------------------------
+# Test suite
 # ---------------------------
 
 class TestHmacSignatureVerifier:
-    # ---------- fixtures ----------
+    # ---------- Fixtures ----------
+    @pytest.fixture
+    def req_base(self) -> Request:
+        return Request(
+            method="POST",
+            path="/events",
+            url="https://example.test/events",
+            headers={"X-Timestamp": "111", "X-Meta": "ABC", "Content-Type": "application/json"},
+            query={},     # Mapping[str, List[str]]
+            cookies={},   # Mapping[str, str]
+            raw_body=b'{"event":{"id":"evt_1"},"payload":{"checksum":"abc"}}',
+            form={},      # Mapping[str, List[str]]
+            files={},     # Mapping[str, List[FilePart]]
+        )
+
     @pytest.fixture
     def enc_hex(self) -> HexEncoder:
         return HexEncoder()
@@ -168,238 +168,180 @@ class TestHmacSignatureVerifier:
     def enc_b64url(self) -> Base64UrlEncoder:
         return Base64UrlEncoder()
 
-    @pytest.fixture
-    def req_minimal(self) -> Request:
-        # Minimal request, no body/raw initially
-        return Request(headers={})
+    # ---------- Constructor validation ----------
+    @pytest.mark.parametrize("secret", ["", None])
+    def test_ctor_rejects_bad_secret(self, secret):
+        with pytest.raises(ValueError):
+            HmacSignatureVerifier(
+                secret_key=secret,  # type: ignore[arg-type]
+                signature_header="X-Sig",
+            )
 
-    @pytest.fixture
-    def req_json_device(self) -> Request:
-        body = '{"event":{"id":"evt_1"},"payload":{"checksum":"abc"},"device":{"id":"dev_007"}}'
-        return Request(
-            method="POST",
-            path="/devices",
-            url="https://api.example.test/devices",
-            headers={"X-TS": "111", "X-Mixed": "MiXeD"},
-            body=body,
-        )
+    @pytest.mark.parametrize("header", ["", "   "])
+    def test_ctor_rejects_bad_header(self, header):
+        with pytest.raises(ValueError):
+            HmacSignatureVerifier(
+                secret_key="secret",
+                signature_header=header,  # type: ignore[arg-type]
+            )
 
-    # ---------- happy paths ----------
-
+    # ---------- Happy paths ----------
     @pytest.mark.parametrize(
-        "header_name,resolver,hash_alg,encoder,svt",
+        "header, resolver, hash_alg, encoder, template",
         [
-            # 1) Body-only with sha256 hex
-            ("X-Sig", resolve_body, hashlib.sha256, HexEncoder(), None),
-            # 2) Method + header + body; hex with wrapper
-            ("X-Sig-TS", resolve_method_header_and_body("X-TS"), hashlib.sha256, HexEncoder(), "v0={digest}"),
-            # 3) JSON pointer + body; sha512 + base64url
-            ("X-Json", resolve_pointer_and_body("/event/id"), hashlib.sha512, Base64UrlEncoder(), None),
-            # 4) Path + body; sha256 + base64
-            ("X-Path", resolve_path_and_body, hashlib.sha256, Base64Encoder(), None),
-            # 5) Method + URL + body; sha512 + hex
-            ("X-MU", resolve_method_url_and_body, hashlib.sha512, HexEncoder(), None),
+            ("X-Sig",       resolver_body_bytes,                 hashlib.sha256, HexEncoder(),     "{digest}"),
+            ("X-Wrapped",   resolver_bytes_prefix_header("X-Timestamp"), hashlib.sha256, HexEncoder(),     "v0={digest}"),
+            ("X-Base64",    resolver_body_bytes,                 hashlib.sha512, Base64Encoder(),  "{digest}"),
+            ("X-Base64Url", resolver_body_bytes,                 hashlib.sha512, Base64UrlEncoder(), "{digest}"),
+            ("X-Const",     resolver_body_bytes,                 hashlib.sha256, HexEncoder(),     "CONST"),
         ],
-        ids=[
-            "body_only_hex_sha256",
-            "method_header_body_hex_wrapped",
-            "json_pointer_body_b64url_sha512",
-            "path_body_b64_sha256",
-            "method_url_body_hex_sha512",
-        ],
+        ids=["hex_default", "hex_wrapped", "b64_sha512", "b64url_sha512", "constant_literal"],
     )
-    def test_hmac_verifier_happy(self, header_name, resolver, hash_alg, encoder, svt, req_json_device):
-        key = "test-secret"
+    def test_verify_success_variants(self, header, resolver, hash_alg, encoder, template, req_base):
         verifier = HmacSignatureVerifier(
-            key=key,
-            signature_header=header_name,
+            secret_key="secret",
+            signature_header=header,
             canonical_message_builder=resolver,
             hash_alg=hash_alg,
             encoder=encoder,
-            signature_value_template=svt,
+            signature_value_template=template,
         )
-        seed_header_signature(
-            header_name=header_name,
-            key=key,
+        req_signed = _seed_signature_header(
+            req_base,
+            header_name=header,
+            secret_key="secret",
+            signature_value_template=template,
             resolver=resolver,
-            request=req_json_device,
             hash_alg=hash_alg,
             encoder=encoder,
-            signature_value_template=svt,
         )
-        assert verifier.verify(req_json_device).ok
+        assert verifier.verify(req_signed).ok
 
-    # ---------- fallback to raw_body when resolver missing or returns None ----------
-
-    def test_none_resolver_uses_raw_body(self, enc_hex):
-        key = "k-none-resolver"
+    @pytest.mark.parametrize("cased", ["X-SIG", "x-sig", "X-Sig"])
+    def test_verify_header_lookup_case_insensitive(self, cased, enc_hex, req_base):
         header = "X-Sig"
         verifier = HmacSignatureVerifier(
-            key=key,
+            secret_key="secret",
             signature_header=header,
-            canonical_message_builder=None,  # triggers raw_body fallback
+            canonical_message_builder=resolver_body_bytes,
             encoder=enc_hex,
         )
-        # raw_body present; body intentionally different
-        req = Request(headers={}, body='{"x": 1}', raw_body=b'{"x":1}')
-        seed_header_signature(
-            header_name=header,
-            key=key,
-            resolver=None,  # seed helper mirrors verifier fallback
-            request=req,
+        value = _compute_expected_signature(
+            secret_key="secret",
+            signature_value_template="{digest}",
+            resolver=resolver_body_bytes,
+            request=req_base,
+            hash_alg=hashlib.sha256,
             encoder=enc_hex,
         )
-        assert verifier.verify(req).ok
+        req_signed = _with_header(req_base, cased, value)
+        assert verifier.verify(req_signed).ok
 
-    def test_resolver_returning_none_uses_raw_body(self, enc_hex):
-        key = "k-none-return"
-        header = "X-Sig"
+    # ---------- Fallback behavior when builder is None ----------
+    def test_verify_uses_raw_body_when_builder_none(self, enc_hex, req_base):
+        # Build a NEW request with a different raw_body
+        req_alt = _clone_with(req_base, raw_body=b'{"event":{"id":"DIFFERENT"}}')
         verifier = HmacSignatureVerifier(
-            key=key,
-            signature_header=header,
-            canonical_message_builder=resolve_none_returns_none,  # returns None => fallback
-            encoder=enc_hex,
-        )
-        req = Request(headers={}, body='{"a": 1}', raw_body=b'{"a":1}')
-        seed_header_signature(
-            header_name=header,
-            key=key,
-            resolver=resolve_none_returns_none,
-            request=req,
-            encoder=enc_hex,
-        )
-        assert verifier.verify(req).ok
-
-    def test_fallback_uses_text_body_when_no_raw_body(self, enc_hex):
-        key = "k-fallback-text"
-        header = "X-Sig"
-        verifier = HmacSignatureVerifier(
-            key=key,
-            signature_header=header,
-            canonical_message_builder=None,  # no resolver
-            encoder=enc_hex,
-        )
-        req = Request(headers={}, body='{"z":2}')  # no raw_body
-        seed_header_signature(
-            header_name=header,
-            key=key,
-            resolver=None,
-            request=req,
-            encoder=enc_hex,
-        )
-        assert verifier.verify(req).ok
-
-    # ---------- header case-insensitivity & constants ----------
-
-    @pytest.mark.parametrize("variant_header", ["X-SIG", "x-sig", "X-Sig"])
-    def test_signature_header_lookup_is_case_insensitive(self, variant_header, enc_hex):
-        key = "k-ci"
-        header = "X-Sig"
-        verifier = HmacSignatureVerifier(
-            key=key,
-            signature_header=header,
-            canonical_message_builder=resolve_body,
-            encoder=enc_hex,
-        )
-        req = Request(headers={}, body="{}")
-        sig = compute_expected_signature(key=key, resolver=resolve_body, request=req, encoder=enc_hex)
-        req.headers = {variant_header: sig}
-        assert verifier.verify(req).ok
-
-    def test_constant_signature_literal_accepted(self, enc_hex, req_minimal):
-        key = "k-const"
-        header = "X-Const"
-        verifier = HmacSignatureVerifier(
-            key=key,
-            signature_header=header,
-            canonical_message_builder=resolve_body,
-            encoder=enc_hex,
-            signature_value_template="CONST",
-        )
-        seed_header_signature(
-            header_name=header,
-            key=key,
-            resolver=resolve_body,
-            request=req_minimal,
-            encoder=enc_hex,
-            signature_value_template="CONST",
-        )
-        assert verifier.verify(req_minimal).ok
-
-    # ---------- negative paths ----------
-
-    def test_missing_signature_header_fails(self, req_json_device, enc_hex):
-        verifier = HmacSignatureVerifier(
-            key="k-missing",
-            signature_header="X-Missing",
-            canonical_message_builder=resolve_body,
-            encoder=enc_hex,
-        )
-        res = verifier.verify(req_json_device)
-        assert not res.ok and res.error is not None
-
-    def test_blank_signature_header_fails(self, enc_hex):
-        verifier = HmacSignatureVerifier(
-            key="k-blank",
-            signature_header="X-Blank",
-            canonical_message_builder=resolve_body,
-            encoder=enc_hex,
-        )
-        req = Request(headers={"X-Blank": "   "}, body="{}")
-        res = verifier.verify(req)
-        assert not res.ok
-
-    def test_signature_mismatch_fails(self, enc_hex):
-        verifier = HmacSignatureVerifier(
-            key="k-mismatch",
+            secret_key="secret",
             signature_header="X-Sig",
-            canonical_message_builder=resolve_body,
+            canonical_message_builder=None,  # fallback path
             encoder=enc_hex,
         )
-        req = Request(headers={"X-Sig": "wrong"}, body="{}")
-        res = verifier.verify(req)
-        assert not res.ok and res.error is not None
-
-    class ExplodingEncoder:
-        def encode(self, _digest: bytes) -> str:
-            raise RuntimeError("boom")
-
-    class ExplodingHash:
-        def __call__(self, *args, **kwargs):
-            raise RuntimeError("hash boom")
-
-    def test_verify_handles_encoder_exception(self, req_json_device):
-        verifier = HmacSignatureVerifier(
-            key="k-enc-boom",
-            signature_header="X-Err",
-            canonical_message_builder=resolve_body,
-            encoder=self.ExplodingEncoder(),
-        )
-        req_json_device.headers = {"X-Err": "anything"}
-        res = verifier.verify(req_json_device)
-        assert not res.ok and "Signature Verification Failed" in str(res.error)
-
-    def test_verify_handles_hash_exception(self, req_json_device, enc_hex):
-        verifier = HmacSignatureVerifier(
-            key="k-hash-boom",
-            signature_header="X-Err",
-            canonical_message_builder=resolve_body,
-            hash_alg=self.ExplodingHash(),
+        req_signed = _seed_signature_header(
+            req_alt,
+            header_name="X-Sig",
+            secret_key="secret",
+            signature_value_template="{digest}",
+            resolver=None,  # seed matches "builder None" path
+            hash_alg=hashlib.sha256,
             encoder=enc_hex,
         )
-        req_json_device.headers = {"X-Err": "anything"}
-        res = verifier.verify(req_json_device)
-        assert not res.ok and "Signature Verification Failed" in str(res.error)
+        assert verifier.verify(req_signed).ok
 
-    def test_resolver_wrong_type_results_in_failure(self):
-        def bad_resolver(_req: Request):
-            return 123  # not bytes/str/None
-
+    # ---------- Negative: header problems ----------
+    def test_missing_signature_header_fails(self, req_base, enc_hex):
         verifier = HmacSignatureVerifier(
-            key="k-bad",
+            secret_key="secret",
+            signature_header="X-Missing",
+            canonical_message_builder=resolver_body_bytes,
+            encoder=enc_hex,
+        )
+        result = verifier.verify(req_base)
+        assert not result.ok and isinstance(result.error, Exception)
+
+    def test_blank_signature_header_fails(self, req_base, enc_hex):
+        verifier = HmacSignatureVerifier(
+            secret_key="secret",
+            signature_header="X-Blank",
+            canonical_message_builder=resolver_body_bytes,
+            encoder=enc_hex,
+        )
+        req_with_blank = _with_header(req_base, "X-Blank", "   ")
+        result = verifier.verify(req_with_blank)
+        assert not result.ok
+
+    # ---------- Negative: mismatch ----------
+    def test_signature_mismatch_fails(self, req_base, enc_hex):
+        verifier = HmacSignatureVerifier(
+            secret_key="secret",
+            signature_header="X-Sig",
+            canonical_message_builder=resolver_body_bytes,
+            encoder=enc_hex,
+        )
+        req_wrong = _with_header(req_base, "X-Sig", "wrong")
+        result = verifier.verify(req_wrong)
+        assert not result.ok and "Signature mismatch" in str(result.error)
+
+    # ---------- Negative: resolver returns wrong type / None ----------
+    @pytest.mark.parametrize("bad_resolver, error_message", [
+        (resolver_returns_str,  "Signature Verification Failed: Strings must be encoded before hashing"),
+        (resolver_returns_none, "Signature mismatch"),
+    ])
+    def test_resolver_returning_invalid_leads_to_failed_result(self, bad_resolver, error_message, req_base):
+        verifier = HmacSignatureVerifier(
+            secret_key="secret",
             signature_header="X-Sig",
             canonical_message_builder=bad_resolver,
         )
-        req = Request(headers={"X-Sig": "anything"}, body="{}")
-        res = verifier.verify(req)
-        assert not res.ok and "Signature mismatch." == str(res.error)
+        req_seeded = _with_header(req_base, "X-Sig", "does-not-matter")
+        result = verifier.verify(req_seeded)
+        assert not result.ok and error_message == str(result.error)
+
+    # ---------- Negative: encoder misconfigured (None) ----------
+    def test_encoder_none_causes_failed_result(self, req_base):
+        verifier = HmacSignatureVerifier(
+            secret_key="secret",
+            signature_header="X-Sig",
+            canonical_message_builder=resolver_body_bytes,
+            encoder=None,  # will cause AttributeError when .encode is called
+        )
+        req_seeded = _with_header(req_base, "X-Sig", "whatever")
+        result = verifier.verify(req_seeded)
+        assert not result.ok and "Signature Verification Failed" in str(result.error)
+
+    # ---------- Negative: fallback path with builder=None and raw_body=None ----------
+    def test_builder_none_and_no_raw_body_causes_failed_result(self, req_base):
+        req = _clone_with(req_base, headers={"X-Sig": "whatever"}, raw_body=None)
+        verifier = HmacSignatureVerifier(
+            secret_key="secret",
+            signature_header="X-Sig",
+            canonical_message_builder=None,
+        )
+        result = verifier.verify(req)
+        assert not result.ok and "Signature mismatch" in str(result.error)
+
+    # ---------- Negative: custom hash that raises ----------
+    class BoomHash:
+        def __call__(self, *args, **kwargs):
+            raise RuntimeError("boom")
+
+    def test_hash_function_raises_produces_failed_result(self, req_base):
+        verifier = HmacSignatureVerifier(
+            secret_key="secret",
+            signature_header="X-Sig",
+            canonical_message_builder=resolver_body_bytes,
+            hash_alg=self.BoomHash(),  # invoking hmac.new will trigger our error
+        )
+        req_seeded = _with_header(req_base, "X-Sig", "anything")
+        result = verifier.verify(req_seeded)
+        assert not result.ok and "Signature Verification Failed" in str(result.error)

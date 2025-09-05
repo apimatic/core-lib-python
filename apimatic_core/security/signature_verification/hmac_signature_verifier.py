@@ -1,4 +1,3 @@
-# hmac_signature_verifier.py
 import hmac
 import hashlib
 from typing import Callable, Optional, Union
@@ -41,7 +40,7 @@ class HmacSignatureVerifier(SignatureVerifier):
 
     Parameters
     ----------
-    key : str
+    secret_key : str
         Shared secret used for HMAC.
     signature_header : str
         Header name containing the provided signature (case-insensitive lookup).
@@ -60,23 +59,23 @@ class HmacSignatureVerifier(SignatureVerifier):
     def __init__(
         self,
         *,
-        key: str,
+        secret_key: str,
         signature_header: str,
-        canonical_message_builder: Optional[Callable[[Request], Union[bytes, str, None]]] = None,
+        canonical_message_builder: Optional[Callable[[Request], Union[bytes, None]]] = None,
         hash_alg=hashlib.sha256,
-        encoder: Optional[DigestEncoder] = None,
-        signature_value_template: Optional[str] = None,
+        encoder: Optional[DigestEncoder] = HexEncoder(),
+        signature_value_template: Optional[str] = '{digest}',
     ) -> None:
-        if not isinstance(key, str) or not key:
-            raise ValueError("key must be a non-empty string.")
+        if not isinstance(secret_key, str) or not secret_key:
+            raise ValueError("key must be a non-empty string")
         if not isinstance(signature_header, str) or not signature_header.strip():
-            raise ValueError("signature_header must be a non-empty string.")
+            raise ValueError("signature_header must be a non-empty string")
 
-        self._key_bytes = key.encode("utf-8")
+        self._secret_key = secret_key
         self._signature_header_lc = signature_header.lower().strip()
         self._message_resolver = canonical_message_builder
         self._hash_alg = hash_alg
-        self._encoder = encoder or HexEncoder()
+        self._encoder = encoder
         self._signature_value_template = signature_value_template
 
     def verify(self, request: Request) -> SignatureVerificationResult:
@@ -84,17 +83,17 @@ class HmacSignatureVerifier(SignatureVerifier):
             provided = self._read_signature_header(request)
             if provided is None:
                 return SignatureVerificationResult.failed(
-                    ValueError(f"Signature header '{self._signature_header_lc}' is missing.")
+                    ValueError(f"Signature header '{self._signature_header_lc}' is missing")
                 )
 
             message_bytes = self._resolve_message_bytes(request)
-            digest = hmac.new(self._key_bytes, message_bytes, self._hash_alg).digest()
+            digest = hmac.new(self._secret_key.encode("utf-8"), message_bytes, self._hash_alg).digest()
             encoded_digest = self._encoder.encode(digest)
-            expected = self._wrap_expected_signature(encoded_digest)
+            expected = self._signature_value_template.replace("{digest}", encoded_digest)
 
             is_match = hmac.compare_digest(provided, expected)
             return SignatureVerificationResult.passed() if is_match else SignatureVerificationResult.failed(
-                SignatureVerificationError("Signature mismatch.")
+                SignatureVerificationError("Signature mismatch")
             )
         except Exception as exc:
             return SignatureVerificationResult.failed(
@@ -109,28 +108,7 @@ class HmacSignatureVerifier(SignatureVerifier):
         return None if value is None or value.strip() == "" else value
 
     def _resolve_message_bytes(self, request: Request) -> bytes:
-        """
-        Resolve the message to be signed:
-        - If message_resolver is provided and returns bytes/str -> use it.
-          If it returns None -> fall back to raw/text body.
-        - If no resolver provided -> fall back to raw/text body.
-        """
-        if callable(self._message_resolver):
-            resolved = self._message_resolver(request)
-            if isinstance(resolved, bytes):
-                return resolved
-            if isinstance(resolved, str):
-                return resolved.encode("utf-8")
-            # resolved is None -> fall through to default
-        # default fallback: prefer raw_body, else textual body
-        raw = getattr(request, "raw_body", None)
-        if isinstance(raw, (bytes, bytearray)):
-            return bytes(raw)
-        body = getattr(request, "body", None)
-        return (body or "").encode("utf-8")
+        if self._message_resolver is None:
+            return request.raw_body
 
-    def _wrap_expected_signature(self, encoded_digest: str) -> str:
-        template = self._signature_value_template
-        if not template:
-            return encoded_digest
-        return template.replace("{digest}", encoded_digest) if "{digest}" in template else template
+        return self._message_resolver(request)
