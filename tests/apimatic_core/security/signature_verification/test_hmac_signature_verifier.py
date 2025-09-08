@@ -34,7 +34,6 @@ def _clone_with(req: Request, **overrides: Any) -> Request:
         cookies=dict(_get("cookies", {}) or {}),
         raw_body=_get("raw_body", None),
         form=dict(_get("form", {}) or {}),
-        files=dict(_get("files", {}) or {}),
     )
     # Apply overrides
     payload.update(overrides)
@@ -153,7 +152,6 @@ class TestHmacSignatureVerifier:
             cookies={},   # Mapping[str, str]
             raw_body=b'{"event":{"id":"evt_1"},"payload":{"checksum":"abc"}}',
             form={},      # Mapping[str, List[str]]
-            files={},     # Mapping[str, List[FilePart]]
         )
 
     @pytest.fixture
