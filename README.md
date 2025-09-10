@@ -178,6 +178,13 @@ This layer enables secure handling of webhooks, callbacks, and API integrations 
 
 ---
 
+| Name                                                                     | Description                                                                                                                                                                                      |
+|--------------------------------------------------------------------------| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`to_unified_request`](apimatic_core/adapters/request_adapter.py)        | **Async** adapter that converts Starlette/FastAPI, Flask/Werkzeug, or Django requests into a framework-agnostic `Request` snapshot (method, path, url, headers, raw body, query, form, cookies). |
+| [`to_unified_request_sync`](apimatic_core/adapters/request_adapter.py)   | **Sync** wrapper for Flask/Django (WSGI). Unwraps Flask `LocalProxy` when present and bridges to the async converter using an event loop.                                                        |
+
+---
+
 ## Links
 
 * [apimatic-core-interfaces](https://pypi.org/project/apimatic-core-interfaces/)
