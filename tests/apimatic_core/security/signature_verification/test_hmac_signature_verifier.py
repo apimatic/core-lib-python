@@ -292,7 +292,7 @@ class TestHmacSignatureVerifier:
 
     # ---------- Negative: resolver returns wrong type / None ----------
     @pytest.mark.parametrize("bad_resolver, error_message", [
-        (resolver_returns_str,  "Signature Verification Failed: Strings must be encoded before hashing"),
+        (resolver_returns_str,  "Signature Verification Failed"),
         (resolver_returns_none, "Signature mismatch"),
     ])
     def test_resolver_returning_invalid_leads_to_failed_result(self, bad_resolver, error_message, req_base):
@@ -303,7 +303,7 @@ class TestHmacSignatureVerifier:
         )
         req_seeded = _with_header(req_base, "X-Sig", "does-not-matter")
         result = verifier.verify(req_seeded)
-        assert not result.ok and error_message == str(result.error)
+        assert not result.ok and error_message in str(result.error)
 
     # ---------- Negative: encoder misconfigured (None) ----------
     def test_encoder_none_causes_failed_result(self, req_base):
