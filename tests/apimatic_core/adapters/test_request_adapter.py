@@ -3,8 +3,9 @@ import pytest
 from apimatic_core_interfaces.http.request import Request
 
 from apimatic_core.adapters.request_adapter import (
-    to_unified_request,  # async core
-    to_unified_request_sync, _as_listdict,  # sync wrapper
+    to_unified_request,            # async core
+    to_unified_request_sync,       # sync wrapper
+    _as_listdict,                  # helper (public in module)
 )
 
 
@@ -26,10 +27,8 @@ class MappingStub:
     """Plain mapping (no getlist) with .keys and __getitem__."""
     def __init__(self, mapping):
         self._m = dict(mapping)
-
     def keys(self):
         return list(self._m.keys())
-
     def __getitem__(self, k):
         return self._m[k]
 
@@ -37,6 +36,7 @@ class MappingStub:
 class MappingWithNonCallableGetlist(MappingStub):
     """Has a non-callable attribute named 'getlist' to exercise callable(getlist) == False."""
     getlist = 42  # not callable
+
 
 # -------- Starlette/FastAPI-like duck types --------
 
@@ -47,6 +47,7 @@ class URLStub:
     def __str__(self):
         return self._url
 
+
 class UploadFileLike:
     def __init__(self, filename: str, data: bytes):
         self.filename = filename
@@ -55,6 +56,7 @@ class UploadFileLike:
         return self._data
     read = read
 
+
 class FormDataStarletteLike:
     def __init__(self, mapping):
         self._m = {k: list(v) for k, v in mapping.items()}
@@ -62,6 +64,7 @@ class FormDataStarletteLike:
         return list(self._m.keys())
     def getlist(self, key):
         return list(self._m.get(key, []))
+
 
 class StarletteRequestLikeStub:
     def __init__(
@@ -216,6 +219,28 @@ class TestRequestAdapter:
         assert snap.form == {"user": ["alice", "bob"]}
         assert "upload" not in snap.form
 
+    def test_starlette_form_urlencoded_parses_scalars_and_lists(self):
+        form = FormDataStarletteLike({
+            "name": ["Sufyan"],
+            "roles": ["admin", "editor"],
+        })
+        req = StarletteRequestLikeStub(
+            method="POST",
+            url="https://ex.com/fast-form/1?x=1",
+            path="/fast-form/1",
+            headers={"content-type": "application/x-www-form-urlencoded"},
+            body=b"a=1",
+            query_params=MultiDictStub({"x": ["1"]}),
+            cookies={"c": "2"},
+            formdata=form,
+        )
+        snap: Request = asyncio.run(to_unified_request(req))
+        assert snap.method == "POST"
+        assert snap.path == "/fast-form/1"
+        assert snap.query == {"x": ["1"]}
+        assert snap.cookies == {"c": "2"}
+        assert snap.form == {"name": ["Sufyan"], "roles": ["admin", "editor"]}
+
     # ------- Flask branch -------
 
     def test_flask_basic_and_cookie_header_fallback(self):
@@ -242,6 +267,21 @@ class TestRequestAdapter:
         assert snap.form == {"name": ["Sufyan"]}
         assert snap.raw_body == b"a=1&b=2"
 
+    def test_flask_uses_cookie_jar_when_present_no_header_needed(self):
+        headers = {"x": "y", "cookie": "ignored=1"}  # lowercase 'cookie' shouldn't be used
+        req = FlaskRequestLikeStub(
+            method="GET",
+            path="/flask-cookies/1",
+            url="http://localhost/flask-cookies/1",
+            headers=headers,
+            data=b"",
+            args=MultiDictStub({}),
+            cookies={"sid": "JAR"},
+            form=MultiDictStub({}),
+        )
+        snap: Request = to_unified_request_sync(req)
+        assert snap.cookies == {"sid": "JAR"}  # header fallback not used
+
     # ------- Django branch -------
 
     def test_django_headers_meta_fallback_and_basic_mapping(self):
@@ -266,6 +306,21 @@ class TestRequestAdapter:
         assert snap.query == {"x": ["1", "2"]}
         assert snap.form == {"a": ["1"], "b": ["2"]}
         assert snap.raw_body == b"payload"
+
+    def test_django_headers_present_no_meta_fallback(self):
+        req = DjangoRequestLikeStub(
+            method="GET",
+            path="/h",
+            headers={"X-Direct": "yes"},
+            meta={"HTTP_X_META": "nope"},
+            body=b"",
+            GET=MultiDictStub({"p": "1"}),
+            COOKIES={"c": "v"},
+            POST=MultiDictStub({}),
+            absolute="http://testserver/h?p=1",
+        )
+        snap: Request = to_unified_request_sync(req)
+        assert snap.headers == {"X-Direct": "yes"}  # no META fallback used
 
     # ------- Sync wrapper LocalProxy unwrapping -------
 
@@ -307,6 +362,22 @@ class TestRequestAdapter:
         assert snap.query == {"q": ["ok"]}
         assert snap.cookies == {"sid": "abc"}
 
+    def test_sync_wrapper_plain_object_pass_through(self):
+        # Ensures _unwrap_local_proxy returns obj when there's no _get_current_object
+        req = DjangoRequestLikeStub(
+            method="GET",
+            path="/plain",
+            headers={"A": "B"},
+            body=b"",
+            GET=MultiDictStub({}),
+            COOKIES={},
+            POST=MultiDictStub({}),
+            absolute="http://testserver/plain",
+        )
+        snap = to_unified_request_sync(req)
+        assert snap.path == "/plain"
+        assert snap.headers == {"A": "B"}
+
     # ------- Error branch -------
 
     def test_async_adapter_rejects_unsupported_type(self):
@@ -314,6 +385,8 @@ class TestRequestAdapter:
             pass
         with pytest.raises(TypeError):
             asyncio.run(to_unified_request(Unknown()))
+
+    # ------- _as_listdict coverage -------
 
     def test_empty_object_returns_empty_dict(self):
         # Path 1: 'if not obj' → True

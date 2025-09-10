@@ -1,35 +1,163 @@
-import asyncio
-from typing import Dict, List, Optional, Union, Any
-from http.cookies import SimpleCookie
-from apimatic_core_interfaces.http.request import Request
+# apimatic_core/adapters/request_adapter.py
 
+from __future__ import annotations
+
+import asyncio
+from typing import Any, Dict, List, Mapping, Optional, Union
+
+from http.cookies import SimpleCookie
+
+from apimatic_core_interfaces.http.request import Request
 from apimatic_core.adapters.types.django_request_like import DjangoRequestLike
 from apimatic_core.adapters.types.flask_request_like import FlaskRequestLike
 from apimatic_core.adapters.types.starlette_request_like import StarletteRequestLike
 
 
+# -----------------------
+# Shared utilities
+# -----------------------
+
 def _as_listdict(obj: Any) -> Dict[str, List[str]]:
-    """
-    Normalize a query/form-like mapping to a plain `Dict[str, List[str]]`.
-
-    Supports:
-      - Objects exposing a `getlist(key)` API (e.g., Django `QueryDict`,
-        Werkzeug `MultiDict`) → copies each list.
-      - Plain mappings (`Mapping[str, str]`) → wraps scalar values in single-item lists.
-
-    Args:
-        obj: A mapping or MultiDict/QueryDict-like object. Falsy values return `{}`.
-
-    Returns:
-        A new dict where each key maps to a list of strings.
-    """
     if not obj:
         return {}
     getlist = getattr(obj, "getlist", None)
     if callable(getlist):
-        return {k: list(getlist(k)) for k in obj.keys()}
-    return {k: [obj[k]] for k in obj.keys()}
+        return {str(k): list(getlist(k)) for k in obj.keys()}
+    return {str(k): [str(v)] for k, v in dict(obj).items()}
 
+
+def _content_type(headers: Mapping[str, str]) -> str:
+    """Return lower-cased Content-Type value or empty string."""
+    return (headers.get("content-type") or headers.get("Content-Type") or "").lower()
+
+
+def _is_urlencoded_or_multipart(headers: Mapping[str, str]) -> bool:
+    """Check if body is form-like (urlencoded/multipart)."""
+    ct = _content_type(headers)
+    return ct.startswith(("multipart/form-data", "application/x-www-form-urlencoded"))
+
+
+def _cookies_from_header(headers: Mapping[str, str]) -> Dict[str, str]:
+    """Parse Cookie header into a dict, returns {} if absent/empty."""
+    cookie_header = headers.get("Cookie") or headers.get("cookie")
+    if not cookie_header:
+        return {}
+    jar = SimpleCookie()
+    jar.load(cookie_header)
+    return {k: morsel.value for k, morsel in jar.items()}
+
+
+def _django_headers_fallback(req: DjangoRequestLike) -> Dict[str, str]:
+    """
+    Fallback for very old Django where `request.headers` is missing/empty.
+    Builds headers from META['HTTP_*'] entries.
+    """
+    meta = getattr(req, "META", {}) or {}
+    return {
+        k[5:].replace("_", "-"): str(v)
+        for k, v in meta.items()
+        if isinstance(k, str) and k.startswith("HTTP_")
+    }
+
+
+def _unwrap_local_proxy(obj: Any) -> Any:
+    """
+    Best-effort unwrapping for LocalProxy-like objects (e.g., Werkzeug/Flask).
+    If `_get_current_object` exists and works, return the underlying object.
+    If calling it raises, swallow and return the original object.
+    If it doesn't exist, return the original object.
+    """
+    get_current = getattr(obj, "_get_current_object", None)
+    if callable(get_current):
+        try:
+            return get_current()
+        except Exception:
+            return obj
+    return obj
+
+
+# -----------------------
+# Per-framework converters
+# -----------------------
+
+async def _from_starlette(req: StarletteRequestLike) -> Request:
+    headers = dict(req.headers)
+    raw = await req.body()
+    query = _as_listdict(req.query_params)
+    cookies = dict(req.cookies)
+    url_str = str(req.url)
+    path = req.url.path
+
+    form: Dict[str, List[str]] = {}
+    if _is_urlencoded_or_multipart(headers):
+        form_data = await req.form()
+        for k in form_data.keys():
+            # Filter out file-like parts (e.g., UploadFile: has filename & read)
+            values = [
+                str(v)
+                for v in form_data.getlist(k)
+                if not (hasattr(v, "filename") and hasattr(v, "read"))
+            ]
+            if values:
+                form[k] = values
+
+    return Request(
+        method=req.method,
+        path=path,
+        url=url_str,
+        headers=headers,
+        raw_body=raw,
+        query=query,
+        cookies=cookies,
+        form=form,
+    )
+
+
+def _from_flask(req: FlaskRequestLike) -> Request:
+    headers = dict(req.headers)
+    url_str: Optional[str] = getattr(req, "url", None)
+    path: str = req.path
+    raw: bytes = req.get_data(cache=True)
+    query = _as_listdict(req.args)
+    cookies = dict(req.cookies) or _cookies_from_header(headers)
+    form = _as_listdict(req.form)
+
+    return Request(
+        method=req.method,
+        path=path,
+        url=url_str,
+        headers=headers,
+        raw_body=raw,
+        query=query,
+        cookies=cookies,
+        form=form,
+    )
+
+
+def _from_django(req: DjangoRequestLike) -> Request:
+    headers = dict(getattr(req, "headers", {}) or {}) or _django_headers_fallback(req)
+    url_str = req.build_absolute_uri()
+    path = req.path
+    raw = bytes(getattr(req, "body", b"") or b"")
+    query = _as_listdict(getattr(req, "GET", {}))
+    cookies = dict(getattr(req, "COOKIES", {}) or {})
+    form = _as_listdict(getattr(req, "POST", {}))
+
+    return Request(
+        method=req.method,
+        path=path,
+        url=url_str,
+        headers=headers,
+        raw_body=raw,
+        query=query,
+        cookies=cookies,
+        form=form,
+    )
+
+
+# -----------------------
+# Public API
+# -----------------------
 
 async def to_unified_request(
     req: Union[StarletteRequestLike, FlaskRequestLike, DjangoRequestLike]
@@ -37,177 +165,24 @@ async def to_unified_request(
     """
     Convert a framework request (Starlette/FastAPI, Flask/Werkzeug, or Django) to a unified snapshot.
 
-    This function uses structural typing (Protocols) to detect the request "shape"
-    at runtime and extracts a compact, immutable snapshot that excludes file uploads.
-
-    Extraction rules:
-      • Method/path/url: copied verbatim (with Starlette `url` stringified).
-      • Headers: copied into a plain `dict` (case preserved as-provided by the framework).
-      • Raw body: captured as bytes (Starlette: `await req.body()`; Flask: `get_data(cache=True)`;
-        Django: `req.body`).
-      • Query/form: normalized to `Dict[str, List[str]]` via `_as_listdict(...)`.
-        For Starlette, form parsing only occurs for `multipart/form-data` or
-        `application/x-www-form-urlencoded` content types, and file parts are ignored.
-      • Cookies: copied to a `dict`. Flask additionally falls back to parsing the
-        `Cookie` header if `req.cookies` is empty.
-      • Django headers: if `req.headers` is missing/empty (very old Django),
-        a best-effort fallback uses `req.META["HTTP_*"]`.
-
-    Args:
-        req: A request object structurally compatible with one of the supported
-             frameworks' request shapes.
-
-    Returns:
-        Request: The framework-agnostic snapshot.
-
-    Raises:
-        TypeError: If `req` does not match any supported Protocol.
+    Uses structural typing to detect the request “shape” and extracts an immutable snapshot
+    (no file uploads). See per-framework helpers for exact extraction rules.
     """
-    # --- Starlette/FastAPI ---
     if isinstance(req, StarletteRequestLike):
-        headers = dict(req.headers)
-        raw = await req.body()
-        query = _as_listdict(req.query_params)
-        cookies = dict(req.cookies)
-        url_str = str(req.url)
-        path = req.url.path
-        ct = (headers.get("content-type") or headers.get("Content-Type") or "").lower()
-        form: Dict[str, List[str]] = {}
-        if ct.startswith(("multipart/form-data", "application/x-www-form-urlencoded")):
-            form_data = await req.form()
-            for k in form_data.keys():
-                for v in form_data.getlist(k):
-                    # Ignore file-like values (UploadFile or similar)
-                    if not (hasattr(v, "filename") and hasattr(v, "read")):
-                        form.setdefault(k, []).append(str(v))
-        return Request(
-            method=req.method,
-            path=path,
-            url=url_str,
-            headers=headers,
-            raw_body=raw,
-            query=query,
-            cookies=cookies,
-            form=form,
-        )
-
-    # --- Flask ---
+        return await _from_starlette(req)
     if isinstance(req, FlaskRequestLike):
-        headers = dict(req.headers)
-        url_str: Optional[str] = getattr(req, "url", None)
-        path: str = req.path
-        raw: bytes = req.get_data(cache=True)
-        query = _as_listdict(req.args)
-        cookies = dict(req.cookies)
-        # Best-effort cookie header fallback if the jar is empty
-        if not cookies:
-            cookie_header = headers.get("Cookie") or headers.get("cookie")
-            if cookie_header:
-                jar = SimpleCookie()
-                jar.load(cookie_header)
-                cookies = {k: morsel.value for k, morsel in jar.items()}
-        form = _as_listdict(req.form)
-        return Request(
-            method=req.method,
-            path=path,
-            url=url_str,
-            headers=headers,
-            raw_body=raw,
-            query=query,
-            cookies=cookies,
-            form=form,
-        )
-
-    # --- Django ---
+        return _from_flask(req)
     if isinstance(req, DjangoRequestLike):
-        headers = dict(getattr(req, "headers", {}) or {})
-        # Fallback for very old Django: META → headers
-        if not headers:
-            meta = getattr(req, "META", {}) or {}
-            headers = {
-                k[5:].replace("_", "-"): str(v)
-                for k, v in meta.items()
-                if k.startswith("HTTP_")
-            }
-        url_str = req.build_absolute_uri()
-        path = req.path
-        raw = bytes(getattr(req, "body", b"") or b"")
-        query = _as_listdict(getattr(req, "GET", {}))
-        cookies = dict(getattr(req, "COOKIES", {}) or {})
-        form = _as_listdict(getattr(req, "POST", {}))
-        return Request(
-            method=req.method,
-            path=path,
-            url=url_str,
-            headers=headers,
-            raw_body=raw,
-            query=query,
-            cookies=cookies,
-            form=form,
-        )
-
+        return _from_django(req)
     raise TypeError(f"Unsupported request type: {type(req)!r}")
 
 
-def _unwrap_local_proxy(obj: Any) -> Any:
-    """
-    Best-effort, dependency-free unwrapping for Flask's `LocalProxy`.
-
-    We intentionally do not import `werkzeug.local.LocalProxy` to keep this adapter
-    framework-agnostic. Instead, we use duck typing: if the object exposes
-    `_get_current_object()` (the LocalProxy API), we call it to retrieve the real
-    underlying request. If the object is not a LocalProxy, or unwrapping fails,
-    the original object is returned.
-
-    Args:
-        obj: Potentially a `LocalProxy` or any object.
-
-    Returns:
-        The unwrapped underlying object when possible; otherwise `obj` unchanged.
-    """
-    getter = getattr(obj, "_get_current_object", None)
-    if callable(getter):
-        try:
-            return getter()
-        except Exception:
-            # If unwrapping fails for any reason, fall back to the original object.
-            # The async core will still attempt structural dispatch via Protocols.
-            return obj
-    return obj
-
-
 def to_unified_request_sync(
-    req: Union[FlaskRequestLike, DjangoRequestLike]
+    req: Union[StarletteRequestLike, FlaskRequestLike, DjangoRequestLike, Any]
 ) -> Request:
     """
-    Synchronous wrapper around `to_unified_request(...)` for WSGI-style apps.
-
-    This bridges sync Flask/Django views to the async core by:
-      • Unwrapping Flask's `LocalProxy` via duck typing (no Werkzeug import).
-      • Reusing the running event loop when present; otherwise creating one.
-      • Delegating to the async adapter which handles structural dispatch.
-
-    Args:
-        req: A Flask- or Django-like request object (structurally typed). Passing an
-             already unified `Request` snapshot is an error.
-
-    Returns:
-        Request: The framework-agnostic snapshot.
-
-    Raises:
-        TypeError: If the provided object is not a supported request shape.
+    Synchronous wrapper around `to_unified_request` with LocalProxy unwrapping.
     """
-    # 1) Unwrap LocalProxy-like objects (no werkzeug import; duck-typing)
-    req = _unwrap_local_proxy(req)
-
-    # 3) Bridge sync -> async: run the async core in (or with) an event loop.
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        # No running loop in this thread (typical in WSGI). Create one.
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    # 4) Delegate to the single async entrypoint that handles Starlette/Flask/Django
-    #    via structural typing (Protocols).
-    return loop.run_until_complete(to_unified_request(req))
+    unwrapped = _unwrap_local_proxy(req)
+    # We expect to be called from sync code; create and run a fresh loop.
+    return asyncio.run(to_unified_request(unwrapped))
