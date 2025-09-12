@@ -5,7 +5,7 @@ from typing import Callable, Optional, Union, Dict, Any
 import pytest
 from apimatic_core_interfaces.http.request import Request
 
-from apimatic_core.security.signature_verification.hmac_signature_verifier import (
+from apimatic_core.security.signature_verifiers.hmac_signature_verifier import (
     HmacSignatureVerifier,
     HexEncoder,
     Base64Encoder,
@@ -265,7 +265,7 @@ class TestHmacSignatureVerifier:
             encoder=enc_hex,
         )
         result = verifier.verify(req_base)
-        assert not result.ok and isinstance(result.error, Exception)
+        assert not result.ok and "Signature header 'x-missing' is missing" == result.errors[0]
 
     def test_blank_signature_header_fails(self, req_base, enc_hex):
         verifier = HmacSignatureVerifier(
@@ -288,7 +288,7 @@ class TestHmacSignatureVerifier:
         )
         req_wrong = _with_header(req_base, "X-Sig", "wrong")
         result = verifier.verify(req_wrong)
-        assert not result.ok and "Signature mismatch" in str(result.error)
+        assert not result.ok and "Signature mismatch" in str(result.errors[0])
 
     # ---------- Negative: resolver returns wrong type / None ----------
     @pytest.mark.parametrize("bad_resolver, error_message", [
@@ -303,7 +303,7 @@ class TestHmacSignatureVerifier:
         )
         req_seeded = _with_header(req_base, "X-Sig", "does-not-matter")
         result = verifier.verify(req_seeded)
-        assert not result.ok and error_message in str(result.error)
+        assert not result.ok and error_message in str(result.errors[0])
 
     # ---------- Negative: encoder misconfigured (None) ----------
     def test_encoder_none_causes_failed_result(self, req_base):
@@ -315,7 +315,7 @@ class TestHmacSignatureVerifier:
         )
         req_seeded = _with_header(req_base, "X-Sig", "whatever")
         result = verifier.verify(req_seeded)
-        assert not result.ok and "Signature Verification Failed" in str(result.error)
+        assert not result.ok and "Signature Verification Failed" in str(result.errors[0])
 
     # ---------- Negative: fallback path with builder=None and raw_body=None ----------
     def test_builder_none_and_no_raw_body_causes_failed_result(self, req_base):
@@ -326,7 +326,7 @@ class TestHmacSignatureVerifier:
             canonical_message_builder=None,
         )
         result = verifier.verify(req)
-        assert not result.ok and "Signature mismatch" in str(result.error)
+        assert not result.ok and "Signature mismatch" in str(result.errors[0])
 
     # ---------- Negative: custom hash that raises ----------
     class BoomHash:
@@ -342,4 +342,4 @@ class TestHmacSignatureVerifier:
         )
         req_seeded = _with_header(req_base, "X-Sig", "anything")
         result = verifier.verify(req_seeded)
-        assert not result.ok and "Signature Verification Failed" in str(result.error)
+        assert not result.ok and "Signature Verification Failed" in str(result.errors[0])

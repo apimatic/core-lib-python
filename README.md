@@ -71,7 +71,6 @@ pip install apimatic-core
 | [`OneOfValidationException`](apimatic_core/exceptions/oneof_validation_exception.py)     | Thrown on failed validation of oneOf union-type cases   |
 | [`AnyOfValidationException`](apimatic_core/exceptions/anyof_validation_exception.py)     | Thrown on failed validation of anyOf union-type cases   |
 | [`AuthValidationException`](apimatic_core/exceptions/auth_validation_exception.py)       | Thrown when authentication scheme validation fails      |
-| [`SignatureVerificationError`](apimatic_core/exceptions/signature_verification_error.py) | Thrown when HMAC or custom signature verification fails |
 
 ---
 
@@ -169,10 +168,10 @@ pip install apimatic-core
 
 | Name                                                                                                 | Description                                                                          |
 |------------------------------------------------------------------------------------------------------| ------------------------------------------------------------------------------------ |
-| [`HmacSignatureVerifier`](apimatic_core/security/signature_verification/hmac_signature_verifier.py)  | Verifies HMAC signatures using configurable templates, hash algorithms, and encoders |
-| [`HexEncoder`](apimatic_core/security/signature_verification/hmac_signature_verifier.py)             | Encodes digest as lowercase hex                                                      |
-| [`Base64Encoder`](apimatic_core/security/signature_verification/hmac_signature_verifier.py)          | Encodes digest as Base64                                                             |
-| [`Base64UrlEncoder`](apimatic_core/security/signature_verification/hmac_signature_verifier.py)       | Encodes digest as URL-safe Base64 without padding                                    |
+| [`HmacSignatureVerifier`](apimatic_core/security/signature_verifiers/hmac_signature_verifier.py)  | Verifies HMAC signatures using configurable templates, hash algorithms, and encoders |
+| [`HexEncoder`](apimatic_core/security/signature_verifiers/hmac_signature_verifier.py)             | Encodes digest as lowercase hex                                                      |
+| [`Base64Encoder`](apimatic_core/security/signature_verifiers/hmac_signature_verifier.py)          | Encodes digest as Base64                                                             |
+| [`Base64UrlEncoder`](apimatic_core/security/signature_verifiers/hmac_signature_verifier.py)       | Encodes digest as URL-safe Base64 without padding                                    |
 
 This layer enables secure handling of webhooks, callbacks, and API integrations that rely on HMAC or other signing strategies.
 

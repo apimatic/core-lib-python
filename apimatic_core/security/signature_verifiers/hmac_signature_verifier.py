@@ -5,7 +5,6 @@ from typing import Callable, Optional, Union
 from apimatic_core_interfaces.http.request import Request
 from apimatic_core_interfaces.security.signature_verifier import SignatureVerifier
 from apimatic_core_interfaces.types.signature_verification_result import SignatureVerificationResult
-from apimatic_core.exceptions.signature_verification_error import SignatureVerificationError
 
 
 class DigestEncoder:
@@ -83,7 +82,7 @@ class HmacSignatureVerifier(SignatureVerifier):
             provided = self._read_signature_header(request)
             if provided is None:
                 return SignatureVerificationResult.failed(
-                    ValueError(f"Signature header '{self._signature_header_lc}' is missing")
+                    [f"Signature header '{self._signature_header_lc}' is missing"]
                 )
 
             message_bytes = self._resolve_message_bytes(request)
@@ -93,11 +92,11 @@ class HmacSignatureVerifier(SignatureVerifier):
 
             is_match = hmac.compare_digest(provided, expected)
             return SignatureVerificationResult.passed() if is_match else SignatureVerificationResult.failed(
-                SignatureVerificationError("Signature mismatch")
+                ["Signature mismatch"]
             )
         except Exception as exc:
             return SignatureVerificationResult.failed(
-                SignatureVerificationError(f"Signature Verification Failed: {exc}")
+                [f"Signature Verification Failed: {exc}"]
             )
 
     # ------------- internal helpers -------------
