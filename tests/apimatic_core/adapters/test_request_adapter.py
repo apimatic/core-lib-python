@@ -3,8 +3,8 @@ import pytest
 from apimatic_core_interfaces.http.request import Request
 
 from apimatic_core.adapters.request_adapter import (
-    to_unified_request,            # async core
-    to_unified_request_sync,       # sync wrapper
+    to_unified_request_async,            # async core
+    to_unified_request,       # sync wrapper
     _as_listdict,                  # helper (public in module)
 )
 
@@ -187,7 +187,7 @@ class TestRequestAdapter:
             cookies={"sid": "abc"},
             formdata=FormDataStarletteLike({"ignored": ["x"]}),
         )
-        snap: Request = asyncio.run(to_unified_request(req))
+        snap: Request = asyncio.run(to_unified_request_async(req))
         assert snap.method == "GET"
         assert snap.path == "/fast-json/42"
         assert snap.url == "https://ex.com/fast-json/42?q=ok"
@@ -211,7 +211,7 @@ class TestRequestAdapter:
             cookies={"c": "1"},
             formdata=form,
         )
-        snap: Request = asyncio.run(to_unified_request(req))
+        snap: Request = asyncio.run(to_unified_request_async(req))
         assert snap.method == "POST"
         assert snap.path == "/fast-mp/9"
         assert snap.query == {"z": ["ok"]}
@@ -234,7 +234,7 @@ class TestRequestAdapter:
             cookies={"c": "2"},
             formdata=form,
         )
-        snap: Request = asyncio.run(to_unified_request(req))
+        snap: Request = asyncio.run(to_unified_request_async(req))
         assert snap.method == "POST"
         assert snap.path == "/fast-form/1"
         assert snap.query == {"x": ["1"]}
@@ -257,7 +257,7 @@ class TestRequestAdapter:
             cookies={},  # force header fallback
             form=form,
         )
-        snap: Request = to_unified_request_sync(req)
+        snap: Request = to_unified_request(req)
         assert snap.method == "POST"
         assert snap.path == "/flask-form/5"
         assert snap.url.endswith("/flask-form/5?q=x&q=y")
@@ -279,7 +279,7 @@ class TestRequestAdapter:
             cookies={"sid": "JAR"},
             form=MultiDictStub({}),
         )
-        snap: Request = to_unified_request_sync(req)
+        snap: Request = to_unified_request(req)
         assert snap.cookies == {"sid": "JAR"}  # header fallback not used
 
     # ------- Django branch -------
@@ -297,7 +297,7 @@ class TestRequestAdapter:
             POST=MultiDictStub({"a": "1", "b": "2"}),
             absolute="http://testserver/django-form/7?x=1&x=2",
         )
-        snap: Request = to_unified_request_sync(req)
+        snap: Request = to_unified_request(req)
         assert snap.method == "POST"
         assert snap.path == "/django-form/7"
         assert snap.url.startswith("http://testserver/django-form/7?")
@@ -319,7 +319,7 @@ class TestRequestAdapter:
             POST=MultiDictStub({}),
             absolute="http://testserver/h?p=1",
         )
-        snap: Request = to_unified_request_sync(req)
+        snap: Request = to_unified_request(req)
         assert snap.headers == {"X-Direct": "yes"}  # no META fallback used
 
     # ------- Sync wrapper LocalProxy unwrapping -------
@@ -336,7 +336,7 @@ class TestRequestAdapter:
             absolute="http://testserver/p?q=ok",
         )
         proxy = LocalProxyLike(inner)
-        snap: Request = to_unified_request_sync(proxy)
+        snap: Request = to_unified_request(proxy)
         assert snap.method == "GET"
         assert snap.path == "/p"
         assert snap.query == {"q": ["ok"]}
@@ -356,7 +356,7 @@ class TestRequestAdapter:
             POST=MultiDictStub({}),
             absolute="http://testserver/ex?q=ok",
         )
-        snap = to_unified_request_sync(proxy)
+        snap = to_unified_request(proxy)
         assert snap.method == "GET"
         assert snap.path == "/ex"
         assert snap.query == {"q": ["ok"]}
@@ -374,7 +374,7 @@ class TestRequestAdapter:
             POST=MultiDictStub({}),
             absolute="http://testserver/plain",
         )
-        snap = to_unified_request_sync(req)
+        snap = to_unified_request(req)
         assert snap.path == "/plain"
         assert snap.headers == {"A": "B"}
 
@@ -384,7 +384,7 @@ class TestRequestAdapter:
         class Unknown:
             pass
         with pytest.raises(TypeError):
-            asyncio.run(to_unified_request(Unknown()))
+            asyncio.run(to_unified_request_async(Unknown()))
 
     # ------- _as_listdict coverage -------
 

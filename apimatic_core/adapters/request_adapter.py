@@ -159,7 +159,7 @@ def _from_django(req: DjangoRequestLike) -> Request:
 # Public API
 # -----------------------
 
-async def to_unified_request(
+async def to_unified_request_async(
     req: Union[StarletteRequestLike, FlaskRequestLike, DjangoRequestLike]
 ) -> Request:
     """
@@ -177,7 +177,7 @@ async def to_unified_request(
     raise TypeError(f"Unsupported request type: {type(req)!r}")
 
 
-def to_unified_request_sync(
+def to_unified_request(
     req: Union[StarletteRequestLike, FlaskRequestLike, DjangoRequestLike, Any]
 ) -> Request:
     """
@@ -185,4 +185,4 @@ def to_unified_request_sync(
     """
     unwrapped = _unwrap_local_proxy(req)
     # We expect to be called from sync code; create and run a fresh loop.
-    return asyncio.run(to_unified_request(unwrapped))
+    return asyncio.run(to_unified_request_async(unwrapped))
