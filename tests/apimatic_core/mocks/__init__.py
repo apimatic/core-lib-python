@@ -6,5 +6,7 @@ __all__ = [
     'exceptions',
     'http',
     'logger',
-    'union_type_lookup'
+    'union_type_lookup',
+    'pagination',
+    'configuration'
 ]
