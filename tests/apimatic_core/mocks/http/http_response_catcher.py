@@ -10,11 +10,18 @@ class HttpResponseCatcher(HttpCallBack):
     after a request is executed.
 
     """
+    @property
+    def response(self):
+        return self._response
+
+    def __init__(self):
+        self._response = None
+
     def on_before_request(self, request):
         pass
 
     def on_after_response(self, response):
-        self.response = response
+        self._response = response
 
 
 
