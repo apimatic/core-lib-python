@@ -4,6 +4,7 @@ import platform
 from datetime import datetime, date
 
 from apimatic_core.api_call import ApiCall
+from apimatic_core.configurations.endpoint_configuration import EndpointConfiguration
 from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
 from apimatic_core.http.http_callback import HttpCallBack
 from apimatic_core.logger.configuration.api_logging_configuration import ApiLoggingConfiguration, \
@@ -24,6 +25,7 @@ from tests.apimatic_core.mocks.exceptions.global_test_exception import GlobalTes
 from tests.apimatic_core.mocks.exceptions.nested_model_exception import NestedModelException
 from tests.apimatic_core.mocks.http.http_response_catcher import HttpResponseCatcher
 from tests.apimatic_core.mocks.http.http_client import MockHttpClient
+from tests.apimatic_core.mocks.http.mock_paginated_http_client import MockPaginatedHttpClient
 from tests.apimatic_core.mocks.models.cat_model import CatModel
 from tests.apimatic_core.mocks.models.complex_type import ComplexType
 from tests.apimatic_core.mocks.models.dog_model import DogModel
@@ -206,10 +208,16 @@ class Base:
         return MockHttpClient()
 
     @staticmethod
-    def http_client_configuration(http_callback=HttpResponseCatcher(), logging_configuration=None):
-        http_client_configurations = HttpClientConfiguration(http_call_back=http_callback,
-                                                             logging_configuration=logging_configuration)
-        http_client_configurations.set_http_client(Base.mocked_http_client())
+    def mocked_paginated_http_client():
+        return MockPaginatedHttpClient()
+
+    @staticmethod
+    def http_client_configuration(http_callback=HttpResponseCatcher(), logging_configuration=None, http_client=None):
+        http_client_configurations = HttpClientConfiguration(
+            http_call_back=http_callback,
+            logging_configuration=logging_configuration
+        )
+        http_client_configurations.set_http_client(Base.mocked_http_client() if http_client is None else http_client)
         return http_client_configurations
 
     @property
@@ -226,6 +234,14 @@ class Base:
         return GlobalConfiguration(self.http_client_configuration()) \
             .base_uri_executor(BaseUriCallable().get_base_uri) \
             .global_errors(self.global_errors())
+
+    @property
+    def paginated_global_configuration(self):
+        return (GlobalConfiguration(self.http_client_configuration(
+            http_callback=HttpResponseCatcher(),
+            http_client=Base.mocked_paginated_http_client()))
+                .base_uri_executor(BaseUriCallable().get_base_uri)
+                .global_errors(self.global_errors()))
 
     @property
     def global_configuration_without_http_callback(self):
@@ -324,3 +340,6 @@ class Base:
                                     one_of_req_nullable='abc',
                                     one_of_optional=200,
                                     any_of_opt_nullable=True)
+    @staticmethod
+    def endpoint_configuration():
+        return EndpointConfiguration
