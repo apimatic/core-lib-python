@@ -1,6 +1,8 @@
+from requests.structures import CaseInsensitiveDict
+
 from apimatic_core.http.configurations.http_client_configuration import HttpClientConfiguration
 from apimatic_core.utilities.api_helper import ApiHelper
-
+import copy
 
 class GlobalConfiguration:
 
@@ -27,8 +29,8 @@ class GlobalConfiguration:
     ):
         self._http_client_configuration = http_client_configuration
         self._global_errors = {}
-        self._global_headers = {}
-        self._additional_headers = {}
+        self._global_headers = CaseInsensitiveDict()
+        self._additional_headers = CaseInsensitiveDict()
         self._auth_managers = {}
         self._base_uri_executor = None
 
@@ -70,3 +72,18 @@ class GlobalConfiguration:
                 user_agent, user_agent_parameters).replace('  ', ' ')
         if user_agent:
             self._global_headers['user-agent'] = user_agent
+
+    def clone_with(self, http_client_configuration=None):
+        clone_instance = self.__deepcopy__()
+        clone_instance._http_client_configuration = http_client_configuration or self._http_client_configuration
+        return clone_instance
+
+    def __deepcopy__(self, memo={}):
+        copy_instance = GlobalConfiguration()
+        copy_instance._http_client_configuration = copy.deepcopy(self._http_client_configuration, memo)
+        copy_instance._global_errors = copy.deepcopy(self._global_errors, memo)
+        copy_instance._global_headers = copy.deepcopy(self._global_headers, memo)
+        copy_instance._additional_headers = copy.deepcopy(self._additional_headers, memo)
+        copy_instance._auth_managers = copy.deepcopy(self._auth_managers, memo)
+        copy_instance._base_uri_executor = copy.deepcopy(self._base_uri_executor, memo)
+        return copy_instance

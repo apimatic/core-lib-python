@@ -5,7 +5,7 @@ from apimatic_core_interfaces.logger.logger import Logger
 from apimatic_core.constants.logger_constants import LoggerConstants
 from apimatic_core.logger.default_logger import ConsoleLogger
 from apimatic_core.utilities.api_helper import ApiHelper
-
+import copy
 
 class ApiLoggingConfiguration:
 
@@ -47,6 +47,14 @@ class ApiLoggingConfiguration:
         self._request_logging_config = request_logging_config
         self._response_logging_config = response_logging_config
 
+    def __deepcopy__(self, memo={}):
+        return ApiLoggingConfiguration(
+            logger=self._logger,
+            log_level=self._log_level,
+            mask_sensitive_headers=self._mask_sensitive_headers,
+            request_logging_config=copy.deepcopy(self._request_logging_config),
+            response_logging_config=copy.deepcopy(self._response_logging_config)
+        )
 
 class BaseHttpLoggingConfiguration:
 
@@ -178,6 +186,14 @@ class BaseHttpLoggingConfiguration:
                 extracted_headers[key] = value
         return extracted_headers
 
+    def __deepcopy__(self, memo={}):
+        return self.__class__(
+            log_body=self._log_body,
+            log_headers=self._log_headers,
+            headers_to_include=copy.deepcopy(self._headers_to_include),
+            headers_to_exclude=copy.deepcopy(self._headers_to_exclude),
+            headers_to_unmask=copy.deepcopy(self._headers_to_unmask)
+        )
 
 class ApiRequestLoggingConfiguration(BaseHttpLoggingConfiguration):
 
@@ -221,6 +237,15 @@ class ApiRequestLoggingConfiguration(BaseHttpLoggingConfiguration):
 
         return ApiHelper.get_url_without_query(query_url)
 
+    def __deepcopy__(self, memo={}):
+        return ApiRequestLoggingConfiguration(
+            log_body=self._log_body,
+            log_headers=self._log_headers,
+            headers_to_include=copy.deepcopy(self._headers_to_include),
+            headers_to_exclude=copy.deepcopy(self._headers_to_exclude),
+            headers_to_unmask=copy.deepcopy(self._headers_to_unmask),
+            include_query_in_path=self._include_query_in_path
+        )
 
 class ApiResponseLoggingConfiguration(BaseHttpLoggingConfiguration):
 

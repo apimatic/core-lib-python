@@ -31,8 +31,6 @@ class ApiResponse(ApiResponse):
         """
 
         super().__init__(http_response, body, errors)
-        if type(self.body) is dict:
-            self.cursor = self.body.get('cursor')
 
     def __repr__(self):
         return '<Test ApiResponse [%s]>' % self.text
