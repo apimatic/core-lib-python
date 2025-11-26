@@ -1,3 +1,5 @@
+from requests.structures import CaseInsensitiveDict
+import copy
 from apimatic_core.exceptions.auth_validation_exception import AuthValidationException
 from apimatic_core.http.request.http_request import HttpRequest
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -12,15 +14,34 @@ class RequestBuilder:
             return None
         return param_value.name
 
+    @property
+    def template_params(self):
+        return self._template_params
+
+    @property
+    def header_params(self):
+        return self._header_params
+
+    @property
+    def query_params(self):
+        return self._query_params
+
+    @property
+    def body_params(self):
+        return self._body_param
+
+    @property
+    def form_params(self):
+        return self._form_params
+
     def __init__(
             self
     ):
-
         self._server = None
         self._path = None
         self._http_method = None
         self._template_params = {}
-        self._header_params = {}
+        self._header_params = CaseInsensitiveDict()
         self._query_params = {}
         self._form_params = {}
         self._additional_form_params = {}
@@ -107,9 +128,9 @@ class RequestBuilder:
     def build(self, global_configuration):
         _url = self.process_url(global_configuration)
 
-        _request_headers = self.process_request_headers(global_configuration)
-
         _request_body = self.process_body_params()
+
+        _request_headers = self.process_request_headers(global_configuration)
 
         _multipart_params = self.process_multipart_params()
 
@@ -147,14 +168,19 @@ class RequestBuilder:
         additional_headers = global_configuration.get_additional_headers()
 
         if global_headers:
-            prepared_headers = {key: str(value) if value is not None else value
-                                for key, value in self._header_params.items()}
-            request_headers = {**global_headers, **prepared_headers}
+            request_headers = {**global_headers, **self._header_params}
 
         if additional_headers:
             request_headers.update(additional_headers)
 
-        return request_headers
+        serialized_headers = CaseInsensitiveDict(
+            {
+                key: ApiHelper.json_serialize(value)
+                if value is not None else value
+                for key, value in request_headers.items()
+            }
+        )
+        return serialized_headers
 
     def process_body_params(self):
         if self._xml_attributes:
@@ -210,3 +236,57 @@ class RequestBuilder:
                 self._auth.apply(http_request)
             else:
                 raise AuthValidationException(self._auth.error_message)
+
+    def clone_with(
+            self, template_params=None, header_params=None, query_params=None,
+            body_param=None, form_params=None
+    ):
+        """
+        Clone the current instance with the given parameters.
+
+        Args:
+            template_params (dict, optional): The template parameters. Defaults to None.
+            header_params (dict, optional): The header parameters. Defaults to None.
+            query_params (dict, optional): The query parameters. Defaults to None.
+            body_param (dict, optional): The body parameters. Defaults to None.
+            form_params (dict, optional): The form parameters. Defaults to None.
+
+        Returns:
+            RequestBuilder: A new instance of the RequestBuilder class with the given parameters.
+        """
+        new_instance = copy.deepcopy(self)
+        new_instance._server = self._server
+        new_instance._path = self._path
+        new_instance._http_method = self._http_method
+        new_instance._template_params = template_params or self._template_params
+        new_instance._header_params = header_params or self._header_params
+        new_instance._query_params = query_params or self._query_params
+        new_instance._form_params = form_params or self._form_params
+        new_instance._additional_form_params = self._additional_form_params
+        new_instance._additional_query_params = self._additional_query_params
+        new_instance._multipart_params = self._multipart_params
+        new_instance._body_param = body_param or self._body_param
+        new_instance._body_serializer = self._body_serializer
+        new_instance._auth = self._auth
+        new_instance._array_serialization_format = self._array_serialization_format
+        new_instance._xml_attributes = self._xml_attributes
+        return new_instance
+
+    def __deepcopy__(self, memodict={}):
+        copy_instance = RequestBuilder()
+        copy_instance._server = copy.deepcopy(self._server, memodict)
+        copy_instance._path = copy.deepcopy(self._path, memodict)
+        copy_instance._http_method = copy.deepcopy(self._http_method, memodict)
+        copy_instance._template_params = copy.deepcopy(self._template_params, memodict)
+        copy_instance._header_params = copy.deepcopy(self._header_params, memodict)
+        copy_instance._query_params = copy.deepcopy(self._query_params, memodict)
+        copy_instance._form_params = copy.deepcopy(self._form_params, memodict)
+        copy_instance._additional_form_params = copy.deepcopy(self._additional_form_params, memodict)
+        copy_instance._additional_query_params = copy.deepcopy(self._additional_query_params, memodict)
+        copy_instance._multipart_params = copy.deepcopy(self._multipart_params, memodict)
+        copy_instance._body_param = copy.deepcopy(self._body_param, memodict)
+        copy_instance._body_serializer = copy.deepcopy(self._body_serializer, memodict)
+        copy_instance._auth = copy.deepcopy(self._auth, memodict)
+        copy_instance._array_serialization_format = copy.deepcopy(self._array_serialization_format, memodict)
+        copy_instance._xml_attributes = copy.deepcopy(self._xml_attributes, memodict)
+        return copy_instance
