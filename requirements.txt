@@ -3,5 +3,5 @@ python-dateutil~=2.8
 apimatic-core-interfaces~=0.1.0, >= 0.1.6
 requests~=2.31
 setuptools>=68.0.0
-jsonpointer~=2.3
+jsonpointer~=3.0
 typing-extensions~=4.0
