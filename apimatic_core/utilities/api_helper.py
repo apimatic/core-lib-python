@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 from collections import abc
 import re
+import copy
 import datetime
 import calendar
 import email.utils as eut
 from time import mktime
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlparse, parse_qsl
 
 import jsonpickle
 import dateutil.parser
-from jsonpointer import JsonPointerException, resolve_pointer
+from jsonpointer import set_pointer, JsonPointerException, resolve_pointer
 from apimatic_core.types.datetime_format import DateTimeFormat
 from apimatic_core.types.file_wrapper import FileWrapper
 from apimatic_core.types.array_serialization_format import SerializationFormats
@@ -437,6 +438,20 @@ class ApiHelper(object):
         return protocol + query_url + parameters
 
     @staticmethod
+    def get_query_parameters(url):
+        """Extracts query parameters from the given URL.
+
+        Args:
+            url (str): The URL string to extract query parameters from.
+
+        Returns:
+            dict: A dictionary of query parameter key-value pairs.
+        """
+        parsed_url = urlparse(url)
+        query_pairs = parse_qsl(parsed_url.query)
+        return dict(query_pairs)
+
+    @staticmethod
     def form_encode_parameters(form_parameters, array_serialization="indexed"):
         """Form encodes a dictionary of form parameters
 
@@ -722,6 +737,102 @@ class ApiHelper(object):
 
         return additional_properties
 
+    @staticmethod
+    def resolve_response_pointer(pointer, json_body, json_headers):
+        """
+        Resolves a JSON pointer within the response body or headers.
+
+        Args:
+            pointer (str): The JSON pointer string indicating the location in the response.
+            json_body (str): The JSON-serialized response body.
+            json_headers (dict): The response headers as a dictionary.
+
+        Returns:
+            The value found at the specified pointer location, or None if not found or pointer is invalid.
+
+        """
+        if pointer is None or pointer == '':
+            return None
+
+        prefix, path = ApiHelper.split_into_parts(pointer)
+        path = path.rstrip('}')
+
+        try:
+            if prefix == "$response.body":
+                response = ApiHelper.json_deserialize(json_body, as_dict=True)
+                return resolve_pointer(response, path)
+            elif prefix == "$response.headers":
+                return resolve_pointer(json_headers, path)
+            else:
+                return None
+        except JsonPointerException:
+            return None
+
+    @staticmethod
+    def split_into_parts(json_pointer):
+        """
+        Splits a JSON pointer string into its prefix and field path components.
+
+        Args:
+            json_pointer (str): The JSON pointer string to split.
+
+        Returns:
+            tuple: A tuple containing the path prefix and the field path. Returns None if input is None.
+        """
+        if json_pointer is None or json_pointer == '':
+            return None, None
+
+        pointer_parts = json_pointer.split("#")
+        path_prefix = pointer_parts[0]
+        field_path = pointer_parts[1] if len(pointer_parts) > 1 else ""
+
+        return path_prefix, field_path
+
+    @staticmethod
+    def update_entry_by_json_pointer(dictionary, pointer, value, inplace=True):
+        """
+        Update the value at a specified JSON pointer path within a dictionary.
+
+        Args:
+            dictionary (dict): The dictionary to modify.
+            pointer (str): The JSON pointer path indicating where to update the value.
+            value: The new value to set at the specified path.
+            inplace (bool, optional): If True, update the dictionary in place. Defaults to True.
+
+        Returns:
+            dict: The updated dictionary.
+        """
+        if not inplace:
+            dictionary = copy.deepcopy(dictionary)
+
+        parts = pointer.strip("/").split("/")
+        current = dictionary
+        for part in parts[:-1]:
+            if part not in current or not isinstance(current[part], dict):
+                current[part] = {}
+            current = current[part]
+        current[parts[-1]] = value
+        return dictionary
+
+    @staticmethod
+    def get_value_by_json_pointer(dictionary, pointer):
+        """
+        Retrieve a value from a dictionary using a JSON pointer path.
+
+        Args:
+            dictionary (dict): The dictionary to search.
+            pointer (str): The JSON pointer path to the desired value.
+
+        Returns:
+            The value at the specified JSON pointer path.
+
+        Raises:
+            JsonPointerException: If the pointer does not resolve to a value.
+        """
+        try:
+            return resolve_pointer(dictionary, pointer)
+        except JsonPointerException:
+            return None
 
     class CustomDate(object):
 
