@@ -24,7 +24,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'apimatic-core-interfaces~=0.1.0, >= 0.1.8',
-        'jsonpickle>=3.3, <4.1',
+        'jsonpickle>=3.3, <4.2',
         'python-dateutil>= 2.9, < 3.0',
         'requests~=2.31',
         'setuptools>=68.0.0',
