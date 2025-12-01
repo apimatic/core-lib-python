@@ -4,4 +4,4 @@ apimatic-core-interfaces~=0.1.0, >= 0.1.8
 requests~=2.31
 setuptools>=68.0.0
 jsonpointer~=3.0
-typing-extensions~=4.0
+typing-extensions~=4.15
