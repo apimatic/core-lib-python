@@ -35,6 +35,6 @@ setup(
         'pytest>=7.2.2, <9.1.0',
         'coverage>=7.2.2, <7.14.0',
         'pytest-cov>=4.0, <7.1',
-        'testfixtures>=8.3.0, <= 10.0.0'
+        'testfixtures>= 8.3.0, <= 12.0.0'
     ]
 )
