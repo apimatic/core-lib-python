@@ -826,7 +826,11 @@ class TestApiHelper(Base):
         ('I am not a file', False)
     ])
     def test_is_file_wrapper_instance(self, input_file_wrapper, is_file_instance):
-        assert ApiHelper.is_file_wrapper_instance(input_file_wrapper) == is_file_instance
+        try:
+            assert ApiHelper.is_file_wrapper_instance(input_file_wrapper) == is_file_instance
+        finally:
+            if is_file_instance:
+                input_file_wrapper.file_stream.close()
 
     @pytest.mark.parametrize(' input_date, output_date', [
         (datetime(1994, 2, 13, 5, 30, 15), Base.get_http_datetime(datetime(1994, 2, 13, 5, 30, 15))),
